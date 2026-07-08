@@ -53,6 +53,8 @@ identificado** — outro ponto a confirmar com o cliente.
 | `docs/PROPOSTA_COMERCIAL.md` + `docs/Proposta Comercial - Protege Club.pdf` | Proposta enviada ao cliente: R$ 2.000 desenvolvimento + R$ 300/mês manutenção, prazo de 10 a 15 dias. |
 | `docs/transcricoes/` | Transcrição bruta dos vídeos da reunião com o cliente e do tutorial de configuração da API Ileva. |
 | `.env` / `.env.example` | Credenciais (não versionado) e template das variáveis necessárias. |
+| `web/` | Código do sistema (Next.js 16 + Supabase). `web/.env.local` é a cópia usada em runtime pelo app (também não versionada). |
+| `web/supabase/migrations/0001_init.sql` | Schema inicial do banco (perfis, apurações, auditoria Omie, cache de token Ileva) — ainda não aplicado a um projeto real. |
 
 ## 4. Decisões técnicas já tomadas
 
@@ -66,6 +68,17 @@ identificado** — outro ponto a confirmar com o cliente.
   Bearer válido 24h, único por usuário (novo login invalida o anterior).
 - **Omie**: ainda sem chave de teste obtida — usar o "Novo teste grátis" em Meus Aplicativos antes
   de tocar na conta real.
+- **Next.js 16**: `middleware.ts` foi renomeado para **`proxy.ts`** nessa versão (breaking
+  change — não confundir com convenções de versões anteriores). Ver
+  `web/node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md` se
+  precisar confirmar algo da API. O `web/AGENTS.md` também avisa sobre isso — vale reler antes de
+  qualquer mudança estrutural no Next.js.
+- **Estrutura de pastas**: um único repositório git na raiz do projeto (`docs/`, arquivos de
+  contexto e `web/` — o código — convivem no mesmo repo). Não criar um `.git` dentro de `web/`.
+- **RBAC**: aplicado em duas camadas — `web/src/proxy.ts` (redireciona por perfil) e RLS no
+  Supabase (`web/supabase/migrations/0001_init.sql`). Nenhuma delas sozinha é suficiente; o Next
+  avisa explicitamente que rotas podem mudar sem passar pelo proxy, então toda Server
+  Action/Route Handler sensível deve reconferir o perfil.
 
 ## 5. Status atual
 
@@ -82,6 +95,12 @@ identificado** — outro ponto a confirmar com o cliente.
   qualquer forma, sem custo adicional, quando chegarmos na integração com a Omie (seção 6.5).
 - ⏳ Chave de teste da Omie ainda não obtida.
 - ⏳ Regras do plano de carreira ainda não detalhadas pelo cliente.
+- ✅ **Scaffold inicial do sistema criado** (07/07/2026): Next.js 16 em `web/`, rotas por perfil,
+  cliente de API do Ileva, esqueleto do cliente Omie, migrations do Supabase, RBAC via
+  `proxy.ts`. Build e lint passando. Primeiro commit git feito na raiz do projeto.
+- ⏳ **Bloqueios para o próximo passo real**: precisa (1) criar o projeto Supabase e colar as
+  credenciais em `web/.env.local`, (2) criar o repositório no GitHub (sem `gh` CLI autenticada
+  aqui — fazer manualmente ou autenticar o CLI), (3) autenticar Vercel para o primeiro deploy.
 
 ## 6. Checklist do sistema
 
@@ -92,31 +111,40 @@ identificado** — outro ponto a confirmar com o cliente.
 - [x] Transcrever e extrair requisitos da reunião com o cliente
 - [x] Mapear e validar a API real do Ileva
 - [x] Montar e enviar proposta comercial
-- [ ] Aprovação da proposta pelo cliente
+- [x] Aprovação da proposta pelo cliente
 - [ ] Obter chave de teste da Omie e mapear os endpoints dela
 - [ ] Regras completas do plano de carreira (níveis, faixas, bonificação de equipe) definidas
 - [ ] Confirmar onde o custo de instalação do rastreador (R$100) é lançado no Ileva
 
 ### 6.2 Setup do projeto
-- [ ] Repositório criado no GitHub
-- [ ] Projeto Next.js iniciado neste diretório
-- [ ] Projeto Supabase criado e variáveis preenchidas no `.env`
-- [ ] Deploy inicial (vazio) publicado no Vercel
-- [ ] `.gitignore` revisado (já criado — confirmar que segue válido conforme o projeto cresce)
+- [ ] Repositório criado no **GitHub** (só existe local por enquanto — sem `gh`/`vercel` CLI
+      autenticados neste ambiente; criar o repo e rodar `git remote add` + `git push` manualmente)
+- [x] Projeto Next.js iniciado em `web/` (Next 16, TypeScript, Tailwind, App Router) — build e
+      lint passando
+- [ ] Projeto Supabase criado e variáveis preenchidas em `web/.env.local` (migrations já escritas
+      em `web/supabase/migrations/0001_init.sql`, prontas para aplicar quando o projeto existir)
+- [ ] Deploy inicial publicado no Vercel (sem CLI autenticada neste ambiente — fazer via
+      dashboard ou `vercel login` manual)
+- [x] `.gitignore` revisado (raiz + `web/`, cobrindo `.env*`, `node_modules/`, `.next/`, `*.mp4`)
 
 ### 6.3 Autenticação e controle de acesso
-- [ ] Login (Supabase Auth)
-- [ ] Perfil **Gestor** (acesso total)
-- [ ] Perfil **Comercial** (consultores + apuração, sem financeiro)
-- [ ] Perfil **Consultor** (só os próprios dados)
-- [ ] Regras de acesso aplicadas no banco (RLS) e não só na tela
+- [ ] Login (Supabase Auth) — página e Server Action já escritos
+      (`web/src/app/login/`), falta o projeto Supabase para testar de ponta a ponta
+- [ ] Perfil **Gestor** (acesso total) — rota `/gestor` escrita, dados reais pendentes
+- [ ] Perfil **Comercial** (consultores + apuração, sem financeiro) — rota `/comercial` escrita
+- [ ] Perfil **Consultor** (só os próprios dados) — rota `/consultor` escrita
+- [x] RBAC entre perfis via `web/src/proxy.ts` (bloqueia perfil acessando rota de outro) — testado
+      no build, falta testar com sessão real
+- [ ] Regras de acesso no banco (RLS) — policies já na migration `0001_init.sql`, falta aplicar e
+      testar contra o projeto Supabase real
 
 ### 6.4 Integração com Ileva
-- [x] Autenticação validada (`/oauth/token`)
-- [ ] Sincronização de consultores e equipes (`/consultor/listar`, `/equipe/listar`)
-- [ ] Sincronização de veículos, com `cod_consultor` e `possui_rastreador` (`/veiculo/listar`)
-- [ ] Sincronização de boletos e lançamentos por benefício (`/cobranca/listar-associado-veiculo`,
-      `/cobranca/buscar`)
+- [x] Autenticação validada (`/oauth/token`) — cliente em `web/src/lib/ileva/client.ts`, com
+      cache de token em memória (⚠️ ver nota no código: precisa virar cache compartilhado —
+      tabela `ileva_token_cache` já criada na migration — antes de rodar em produção serverless)
+- [x] Funções de leitura escritas (`web/src/lib/ileva/api.ts`): consultores, veículos, boletos,
+      benefícios — ainda não usadas em nenhuma tela real
+- [ ] Sincronização de fato (rotina que popula o Supabase a partir da API do Ileva)
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
       (65 / 66 / 110 / 121)
 - [ ] Rotina periódica de atualização (cron/job) em vez de consultar a API a cada acesso de tela
@@ -124,6 +152,8 @@ identificado** — outro ponto a confirmar com o cliente.
 ### 6.5 Integração com Omie
 - [ ] Chave de teste (sandbox) obtida
 - [ ] Autenticação validada
+- [x] Esqueleto do cliente escrito (`web/src/lib/omie/client.ts`, convenção de `call` da API da
+      Omie) — sem credenciais ainda, não testado
 - [ ] Criação automática do título a pagar por consultor (`IncluirContaPagar` — confirmar
       método/payload exato quando tivermos a chave de teste)
 - [ ] Código interno de integração por lançamento, para evitar duplicidade ao reprocessar
