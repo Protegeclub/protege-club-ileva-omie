@@ -1,0 +1,28 @@
+# Segredos / ambiente
+.env
+.env.local
+.env.*.local
+
+# Node / build
+node_modules/
+.next/
+out/
+dist/
+build/
+.vercel/
+
+# Python (scripts auxiliares de transcrição/análise)
+__pycache__/
+*.pyc
+.venv/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+
+# Vídeos e material bruto de reunião (arquivos grandes, não versionar)
+*.mp4

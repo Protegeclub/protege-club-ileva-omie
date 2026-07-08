@@ -1,0 +1,32 @@
+[0.2s -> 7.2s] Então pessoal, tudo bem? Vou estar gravando um vídeo aqui e estará demonstrindo para você como que você vai estar criando um usuário de API.
+[7.2s -> 13.2s] E esse usuário de API é seu usuário, está aonde ele vai estar consumindo a API nossa documentado, certo?
+[13.2s -> 24.9s] Então, para isso, vocês vão estar vindo aqui, ó, no seu usuário, vai estar clicando em cima em Usuários.
+[24.9s -> 48.4s] Após carregar, vocês vão vir no registro, está o nome dele, o e-mail, telefone avatar caso queira.
+[48.4s -> 55.4s] E aqui a gente vai estar tendo o usuário dele. A gente pode deixar o e-mail ou colocar o usuário em questão.
+[55.4s -> 62.2s] Então, aqui é o usuário API, vou escolher uma senha para ele.
+[62.2s -> 67.2s] E após isso, eu vou vir aqui, ó, em Permit Access via API de integração.
+[67.2s -> 73.2s] Então, eu vou marcar somente a API de integração. Aqui em grupo, eu vou vir em Permissão Customizada.
+[73.2s -> 84.2s] E aqui eu vou estar marcando todas as permissões ao qual eu queira que meu usuário de API utilizem esse informaço que eu tenho no sistema.
+[84.2s -> 88.2s] Então, os menus aqui vão ser correspondentes aos menus laterais.
+[88.2s -> 94.2s] Então, essas informações vão ser informações que vão ser consumidas pelo seu usuário de API.
+[94.2s -> 111.2s] Então, após vocês criarem, se a gente descer lá embaixo, vou estar descendo aqui, clicar em Salvar, vou clicar aqui em Salvar.
+[111.2s -> 115.2s] Eu já tenho o meu usuário de API criado, certo?
+[115.2s -> 126.3s] Então, agora eu vou estar vindo em Configurações, Integrações, AppK, vou estar clicando em Adsonar.
+[126.3s -> 131.5s] Vou colocar aqui uma descrição.
+[131.5s -> 137.6s] Caso eu queira que esse toque tenha data de inspiração, eu posso selecionar.
+[137.6s -> 141.6s] Caso ele esteja vazio, vai ser um toque sem inspiração.
+[141.6s -> 145.5s] Vou salvar novo.
+[145.5s -> 149.5s] E ao salvar novo, eu vou ter aqui um API key, tá?
+[149.5s -> 155.5s] Então, é só eu copiar esse API key e encaminhar para o meu usuário de API, certo?
+[155.5s -> 159.5s] Então, o seu usuário de API vai estar pegando esse API key que você criou.
+[159.5s -> 162.5s] Ele vai estar entrando dentro da API, tá?
+[162.5s -> 164.5s] Documentada.
+[164.5s -> 167.5s] Ele vai vir aqui em Authenticação.
+[167.5s -> 171.7s] Vai estar vindo aqui no post.
+[171.7s -> 175.7s] Ele vai abrir ele, clicar em Try Out.
+[175.7s -> 178.7s] Vai jogar o API key que vocês encaminharam para ele.
+[178.7s -> 187.7s] E aqui agora, ele vai colocar o username e o password que foi o que vocês criaram lá na hora de criar o usuário e senha dele.
+[187.7s -> 191.7s] Então, após ele colocar aqui o usuário e senha dele,
+[191.7s -> 194.7s] ele vai estar vindo aqui em Execute.
+[194.7s -> 200.7s] E aqui, ele já vai ver aqui que o Curl da requisição dele já está aprovado.
+[200.7s -> 210.7s] Então, logo, ele consegue estar consumindo aqui e tá a todos esses endpoints conforme as permissões que vocês deram para ele lá no sistema.

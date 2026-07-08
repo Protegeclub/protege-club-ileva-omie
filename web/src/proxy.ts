@@ -1,0 +1,69 @@
+import { NextResponse, type NextRequest } from 'next/server'
+import { createSupabaseProxyClient } from '@/lib/supabase/proxy'
+import { ROTA_BASE_POR_PERFIL, perfilPermiteRota } from '@/lib/auth/roles'
+import type { Perfil } from '@/types/domain'
+
+// Renomeado de middleware.ts para proxy.ts no Next.js 16 (breaking change — ver
+// node_modules/next/dist/docs/.../file-conventions/proxy.md). Faz duas coisas:
+// 1. Redireciona quem não está logado para /login.
+// 2. Bloqueia um perfil de acessar a área de outro (ex.: consultor tentando /gestor).
+//
+// Isso é a primeira linha de defesa, não a única: cada Server Action/Route Handler que toca
+// dado sensível deve reconferir o perfil (RLS no Supabase + checagem explícita), porque o Next
+// avisa que mudanças de rota podem silenciosamente deixar de passar pelo proxy.
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const { supabase, getResponse } = createSupabaseProxyClient(request)
+
+  const { data: userData } = await supabase.auth.getUser()
+
+  if (!userData.user) {
+    if (pathname === '/login') return getResponse()
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  if (pathname === '/login') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
+  const { data: perfilRow } = await supabase
+    .from('perfis')
+    .select('perfil')
+    .eq('user_id', userData.user.id)
+    .single()
+
+  const perfil = perfilRow?.perfil as Perfil | undefined
+
+  if (!perfil) {
+    // Usuário autenticado mas sem perfil cadastrado na tabela `perfis` — não deveria acontecer
+    // em uso normal (o cadastro do usuário sempre cria o perfil). Ver seção 6.3 do checklist.
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('erro', 'perfil-nao-encontrado')
+    return NextResponse.redirect(url)
+  }
+
+  if (pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = ROTA_BASE_POR_PERFIL[perfil]
+    return NextResponse.redirect(url)
+  }
+
+  if (!perfilPermiteRota(perfil, pathname)) {
+    const url = request.nextUrl.clone()
+    url.pathname = ROTA_BASE_POR_PERFIL[perfil]
+    return NextResponse.redirect(url)
+  }
+
+  return getResponse()
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api/webhooks).*)',
+  ],
+}

@@ -1,0 +1,158 @@
+[0.0s -> 5.6s] que é o sistema, que é o sistema da Úmia, que é onde a gente faz toda gestão financeira
+[5.6s -> 12.9s] de contas a pagar, contas a receber, conciliação, essas coisas todas, certo? Tudo isso está sendo
+[12.9s -> 20.4s] feito hoje via API. O que é uma das primeiras dificuldades que a gente está tendo hoje? É a
+[20.4s -> 26.3s] apuração de comissão e a administração de um plano de carreira que a gente tem para os
+[26.3s -> 33.8s] consultores, tá? Rapidamente para você entender assim, o consultor vende uma proteção veicular,
+[33.8s -> 43.8s] ele cobra uma taxa de adesão, essa taxa de adesão é dele, tá? E dentro da mensalidade de proteção
+[43.8s -> 50.1s] veicular ele pode incluir um benefício lá que a gente chama ele de assistência profissional,
+[50.1s -> 58.0s] que na verdade é uma comissão dele, né? Para que ele possa estar acompanhando o associado ao longo
+[58.0s -> 63.6s] da vida dele dentro da associação, né? E quando ele tem uma colisão, uma assistência, sempre que ele
+[63.6s -> 71.2s] vai procurar primeiro o consultor. Então, ou seja, ele pode cobrar, a gente estabelece aí que não
+[71.2s -> 77.6s] trapace a 10% do valor da mensalidade, mas caso que ele conseguir negociar e até assim,
+[77.6s -> 85.1s] ele não atrapalha a negociação, a gente também não está barrando. E aí, essa questão de venda,
+[85.1s -> 90.7s] a gente tem um plano de carreira que de acordo com a quantidade de placas que ele coloca para dentro
+[90.7s -> 98.1s] no mês, ele vai ter uma bonificação e pode subir de nível, tá? Esse eu não vou entrar em
+[98.1s -> 103.8s] detalhamento porque eu teria que pegar o plano e mostrar ele todo para você, né? Mas enfim,
+[103.8s -> 109.7s] o que que a gente precisa ao final de cada mês fazer o fechamento para ver o que que eu tenho de adesão
+[109.7s -> 115.4s] para poder repassar para o consultor, o que que eu tenho de recorrência, a recorrência lembrando que
+[115.4s -> 121.2s] ele põe no valor da mensalidade, mas eu só repasso para ele depois que o boleto da mensalidade do
+[121.2s -> 128.4s] associado está pago, né? E a apuração do plano de carreira, que é a quantidade de placas que ele
+[128.7s -> 140.2s] formou, vendeu, que vai dar um e um último detalhe, é, veículos acima de 80 mil hoje a gente instala
+[140.2s -> 146.8s] rastreador nele. Só que aí o custo da instalação do rastreador a gente deduz nessa apuração do
+[146.8s -> 155.0s] consultor porque é responsabilidade dele o pagamento da instalação do rastreador. Então,
+[155.0s -> 160.0s] tipo assim, é o copo 100 reais hoje na instalação do rastreador, ele está fazendo adesão ali de um
+[160.0s -> 165.4s] veículo, ele tem que lembrar que na adesão ele vai ter que cobrar no mínimo 100 reais porque ele vai
+[165.4s -> 169.8s] ter que pagar o rastreador. Entendido? Tá.
+[169.8s -> 176.6s] Só uma dúvida nesse assunto, como você recebe a apuração de quem pagou ou não? Estudeja
+[176.6s -> 186.9s] o sistema? É, isso, isso. Quem pagou não, ele está alimentado tanto no sistema da ônibus quanto no
+[186.9s -> 195.6s] sistema do eleva, tá? Então, porque assim, o eleva hoje é o sistema que tem a comunicação de API
+[195.6s -> 202.2s] com o banco. Então, eu emito lá no eleva o boleto e ele recebe através de API o retorno do
+[202.2s -> 208.3s] banco. Então, no momento que ele emite o boleto, ele integra com a home e cria um contas a receber.
+[208.3s -> 215.3s] Quando ele recebe o retorno do banco confirmando que foi pago o título, ele vai lá na home e
+[215.3s -> 222.0s] baixo também. Então, seja, eu tenho tanto no eleva quanto na home, eu tenho a informação de
+[222.0s -> 228.5s] que o título foi pago. Agora, o detalhe daquele benefício que está ligado à recorrência,
+[228.5s -> 236.0s] a parte do consultor, esse você só tem o detalhamento dele dentro da base do eleva, tá?
+[236.0s -> 241.6s] Então, por isso que eu estou fazendo um comentário com você dos dois sistemas, porque apesar de ter
+[241.6s -> 247.3s] informação que você pode buscar tanto em um quanto em outro, mas há recorrência à assistência
+[247.3s -> 254.9s] profissional somente no eleva que você consegue enxergar o valor dela, tá? Bom, no meio de tudo
+[254.9s -> 261.7s] que esse fechamento está sendo feito ainda todo na mão, todo mês tem que ficar tirando planilhas aqui
+[261.7s -> 267.4s] excel para ficar fazendo isso. Eu tive um sobrinho meu que trabalhou com a gente e ele começou a
+[267.4s -> 272.5s] fazer essa integração que está na minha tela, que é uma integração com o BI. Então, aqui ele já
+[272.5s -> 278.0s] funciona bem o que a gente estava querendo. Só um problema é que aqui no Microsoft
+[278.0s -> 282.8s] o BI eu não tenho relatórios, eu não tenho como extrair nada porque a gente está trabalhando
+[282.8s -> 288.1s] com uma estrutura gratuita. Então, o que eu estou querendo é pegar isso que você está visualizando
+[288.1s -> 296.9s] aqui agora dentro dessa contexto todo que eu te falei e transformar isso daqui num app web,
+[296.9s -> 303.8s] não precisa nem ser aplicativo de celular. Pode ser alguma coisa que rode de uma forma que eu
+[303.8s -> 310.5s] tenho um gestor ou um comercial que faz apuração e um terceiro acesso que seria os
+[310.5s -> 318.0s] produtores para ele acompanhar como é que está o desenvolvimento dele, tá? Então, vou te mostrar
+[318.0s -> 340.0s] aqui a ideia é uma visão do consultor que é o que a gente chegou a desenvolver, tá? Aqui ele está
+[340.0s -> 345.8s] num exemplo de tela, essa tela também é uma tela que já atende para nós, ela é claro que
+[345.8s -> 351.6s] dentro de um design ela pode ser melhorada um pouquinho e aperfeiçoada, né? Mas ele tem
+[351.6s -> 358.4s] um consultor aqui por ano e por mês, né? Então, o mês de fevereiro, por exemplo, esse consultor que
+[358.4s -> 368.9s] eu acessei aqui, ele fez 19 adesões, tá? A equipe dele não fez nenhuma adesão, tá? Então,
+[368.9s -> 375.5s] a premiação individual dele, ou seja, por essa quantidade aqui de 19 adesões, ele está recebendo
+[375.5s -> 382.4s] uma premiação de 1.150. Se a equipe tivesse feito também uma quantidade de placas, eu teria
+[382.4s -> 388.6s] também a premiação da equipe. Essa aqui é a parte que está ligada ao que eu te falei, que é o
+[388.6s -> 395.8s] plano de carreira nosso, que aí esse, para você entender e fazer essas contas, eu teria que
+[395.8s -> 403.8s] pegar alguém do comercial e abrir para você o detalhamento disso, certo? Tá? Aqui ele
+[403.8s -> 409.4s] tem o total de adesões no mês, ou seja, as proteções que ele vendeu e ele cobrou a adesão.
+[409.4s -> 414.5s] Esse consultor especificamente, que eu estou te mostrando, ele é um consultor que não recebe
+[414.5s -> 421.2s] a adesão diretamente do associado. Ele manda para nós, a gente recebe e a gente depois repassa
+[421.2s -> 429.0s] para ele, tá? Essa grande maioria hoje, 99% dos nossos consultores, ele já retenha a adesão no
+[429.0s -> 442.7s] mês, tem que ele fecha a proteção, tá? Ela é gerada lá dentro do elevo e da mesma forma,
+[442.7s -> 447.0s] a gente gera um boleto no elevo, esse boleto também é integrado na homem. Então eu tenho um boleto,
+[447.0s -> 456.5s] a gente chama de categoria financeira, com a categoria financeira de adesão, beleza? Isso aqui é o
+[456.5s -> 461.8s] resumen de recorrência dentro do mês, ou seja, são associados, que ele já pôs para dentro,
+[461.8s -> 469.9s] que estão permanecendo na base, que pagou mensalidade durante o mês, tá? E dessas 19 adesões,
+[469.9s -> 476.9s] 12 dela foram instaladas os rastreadores, então R$ 100 cada um descontou R$ 1.200. Então esse é o
+[476.9s -> 481.9s] resumo do fechamento desse consultor, né? E aí nos botões aqui em cima eu tenho,
+[481.9s -> 487.9s] as 19 adesões, se eu quiser visualizar, eu tenho aqui a relação de quem foram as adesões que ele
+[487.9s -> 497.4s] fez, ó. Certo. Certo? Ah, recorrência, o que totalizou esses 8 mil, se eu clicar aqui eu vou ver então
+[497.4s -> 503.5s] a relação de todos os associados, né? Placas de veículo que foram pagos no mês e o valor da
+[503.5s -> 515.2s] presidência em cada placa, de cada um. Entendido? Aqui o desconto de rastreador, então esses R$ 1.200
+[515.2s -> 521.1s] ele clicou aqui, ele está vendo quais foram as placas, né, e os associados em que está se
+[521.1s -> 529.1s] fazendo esse desconto do rastreador dele. Quando ele vai fechar algum plano, ele já cadastra
+[529.1s -> 535.2s] diretamente o cliente no eLeva? É, ele tem um aplicativo comercial do eLeva, né? Que é
+[535.2s -> 542.1s] o que faz o processo de adesão. Os dados do associado, os dados do veículo, os planos que ele contratou.
+[543.6s -> 555.2s] Então assim, isso, exatamente. Então, o que a gente precisa é isso daqui e com uma forma deu
+[555.2s -> 561.8s] exportar relatório, porque olha aqui, deixa eu até te mostrar aqui, vou ter que compartilhar outra tela.
+[567.0s -> 585.0s] Uma das coisas, eu preciso daqueles relatórios que eu te mostrei em tela, né? Que é os relatórios de
+[585.0s -> 595.5s] só voltar lá. Aqui, ó, eu preciso ter isso daqui também em forma de PDF, eu consegui imprimir em
+[595.5s -> 605.8s] PDF, né? Todos esses aqui. Eita, não posso voltar aqui. E eu preciso também do relatório de
+[605.8s -> 611.9s] totalização disso. A gente vai compartilhar uma outra tela com o tipo, você vê que hoje a gente
+[611.9s -> 635.6s] está mandando aqui, mas está mandando um trem muito feio, nem no abril. Agora sim. Aí hoje o que
+[635.6s -> 642.0s] está mandando pro consultor, está vendo aqui, né? Esse relatório. Está mandando simplesmente esse
+[642.0s -> 647.9s] relatório com a totalização, né? Valor referente à adesão de placa, valor de recorrência,
+[647.9s -> 653.8s] as placas de recorrência. Eu queria fazer um relatório mais resumido disso daqui e com
+[653.8s -> 657.9s] todas as placas lá anexadas. Entendeu as placas?
+[657.9s -> 664.3s] Para resumir aqui, poderia ser então um PDF exatamente como está no sistema digital, por exemplo.
+[664.3s -> 670.2s] Sim, pode, pode ser. E isso exatamente.
+[670.2s -> 678.4s] Vou explicar imprimir, encaixado na fulha. Certo.
+[678.4s -> 687.5s] Já saí um pouco do gato, já flaria algum. Essa parte do relatório PDF. Isso aí na
+[687.5s -> 694.7s] fulha é um documento hoje que ele gera e esse gerai dele você gera dentro do próprio sistema
+[694.7s -> 699.7s] ou ele é enviado manual? Não, esse aqui ele está fazendo manualmente.
+[699.7s -> 711.9s] Entendi. Tá? Vou voltar. Tá. Vou logar aqui de novo, que acabou no fim. Eu cliquei no
+[711.9s -> 733.8s] local ali e ele. Então aqui você entendeu tudo, né?
+[733.8s -> 740.0s] Tá. Uma última coisa que tem aqui é esse cardzinho dos inadimplentes. Qual que é a finalidade disso
+[740.0s -> 746.0s] daqui? É o consultor ver dentro da carteira dele as pessoas que ele incluiu e que não estão
+[746.0s -> 751.6s] pagando mensalidade, que estão em atraso. Ou seja, desse consultor por exemplo,
+[751.6s -> 759.5s] aqui no Santos aqui, ó, tá devendo uma mensalidade, R$ 293. Se o consultor fizer contato,
+[759.5s -> 766.6s] conseguir receber ele tem R$ 26 de comissão. Vou voltar.
+[766.6s -> 772.4s] E mesmo o boleto seminado de implante quando ele pagar atrasado já entra pro sistema da mesma
+[772.4s -> 777.6s] forma, né? Exatamente, não importa se ele pagou atrasado. Então, seja nesse consultor aqui,
+[777.6s -> 783.2s] por exemplo, no mês de fevereiro, todos os associados ele tava em atraso, se ele conseguisse
+[783.2s -> 790.2s] fazer contato e que ia ajudar a gente a cobrar do cara, o consultor sozinho receberia aqui, ó, R$ 3.300 de
+[790.2s -> 797.6s] recorrência. Então, o objetivo aqui é estimular o consultor a ser um cobrador nosso também, né?
+[797.6s -> 806.7s] Pra manter o associado em dia, entendeu? Então a ideia hoje é essa, o que nós estamos precisando.
+[806.7s -> 817.4s] E ao final dessa apuração, eu tô hoje com mais ou menos 60, quase 70 consultores cadastrados.
+[817.4s -> 823.5s] Então, hoje, a hora que faz essa apuração, eu tenho que ir lá na OME, que é onde eu faço contas a pagar e
+[823.5s -> 829.7s] gerar o título à mão um por um. Então, o outro objetivo seria pegar essa plataforma aí que
+[829.7s -> 841.0s] é envolvendo, utilizar API da OME e criar automaticamente o título a pagar lá dentro do sistema da OME.
+[841.0s -> 847.0s] Eu tô ganhando nessa reunião, não? Acho que eu posso analisar e já fazer isso na prática, porque aí eu já vou
+[847.0s -> 853.0s] tirando as dúvidas que tem com a própria prática mesmo. Essa parte da OME, eu estava estudando
+[853.0s -> 859.3s] sobre a API dela, a API da OME ela é uma API pública. Certo. Ela é bem mais fácil de acessar.
+[859.3s -> 864.8s] A API da OME, ela é uma API não pública, que a gente tem que pedir pra eles. Inclusive,
+[864.8s -> 869.9s] pra fazer o sistema de automação do WhatsApp, já tá sendo utilizado a API com alguns endpoints
+[869.9s -> 875.8s] e aí a consulta. Então, a gente pode utilizar essa mesma API já criada, adicionando todos os
+[875.8s -> 881.7s] endpoints da questão de contas financeiras, dos associados, consultores. Isso não tá aí
+[881.7s -> 888.6s] num sistema só. Fazer o OME leva dentro de um sistema só, tem relatórios e com a adesão de
+[889.0s -> 894.6s] criação de títulos, né, que você fala? Pra criar o título dentro de um aplicativo só.
+[896.6s -> 902.7s] O único problema é saber se o pessoal da ELEVA ele consegue ajudar nós em questão de endpoints,
+[902.7s -> 907.8s] porque pelo que eu vi, eles não, no aplicativo mobile dele, por exemplo,
+[908.6s -> 913.3s] eles têm o checagem de placa, eles conseguem conflutar placa no aplicativo mobile.
+[913.3s -> 920.2s] Já pelo sistema API, eles não conflutam placa, por exemplo, isso seria um default de endpoints,
+[920.2s -> 926.6s] por exemplo. Esse endpoints, se eles não foram adquiridos pela ELEVA, por exemplo, se não existia
+[926.6s -> 933.0s] um endpoints ligado ao financeiro da ELEVA, aí a API não consegue pegar esses dados dentro
+[933.0s -> 938.7s] do sistema. Então, eu tenho que verificar se a API entra em contato com o suporte dele,
+[938.7s -> 943.8s] tá no esclarecer, e ver se ele consegue adicionar esse endpoints ou se ele já existe,
+[943.8s -> 947.8s] porque já existindo é um pouco do gato que a gente consegue fazer esse tema tranquilo.
+[948.7s -> 949.2s] Entendi.
+[951.4s -> 956.1s] Por isso, a questão do consultor é essa parte,
+[956.6s -> 960.6s] gestor vai ter acesso de todos os consultores, seria isso, né?
+[960.6s -> 967.6s] Isso, e lá no departamento comercial eu preciso ter um acesso também, que vai acabar
+[967.6s -> 972.6s] sendo um acesso de gestor, que é a pessoa que faz essa apuração, né?
+[972.6s -> 978.4s] Seria a pessoa que vai clicar para gerar o relatório com Jesus?
+[978.4s -> 983.6s] Isso, exatamente, que vai fazer essa conferência, até falando-se aqui, eu lembrei de um detalhe.
+[983.6s -> 992.7s] Lá na OME, ele tem um campo lá do recebimento da mensalidade, aí eu preciso bem que hoje
+[992.7s -> 997.5s] esse aqui está travado na OME, mas se você buscar pelo ELEVA, não teria esse problema.
+[997.8s -> 1004.4s] É a questão de identificar quem é o consultor, porque lá na OME eu tenho que informar o consultor
+[1004.4s -> 1011.4s] manualmente, ele não traz isso automático, então acontece de às vezes se criar um título na OME
+[1011.4s -> 1017.7s] e não ter o consultor vinculado, entendeu? Então eu precisaria fazer, se fosse buscar as
+[1017.7s -> 1022.9s] informações na OME, fazer uma validação antes e ver, olha, esses títulos aqui desse mês
+[1022.9s -> 1026.7s] está sem consultor, informa o consultor primeiro, sem isso eu não consigo prosseguir.
+[1027.8s -> 1032.4s] Coisa que se você for buscar no ELEVA, se tiver ausentes pontos, tiver tudo certo, então
+[1033.1s -> 1040.0s] se ir lá, não precisaria, porque lá obrigatoriamente eu já tenho a vinculação do consultor com a placa.
+[1040.0s -> 1053.0s] Pelo com o consultor, quando o OME puxa só as placas que estão cadastradas dentro da ELEVA,
+[1053.0s -> 1058.2s] ou seja, já tem essa integração via consultor identificado com o comprador.
+[1060.9s -> 1067.0s] Então é isso aí, eu acho que se você tiver alguma dúvida, estou aqui à disposição e eu
+[1067.0s -> 1075.7s] precisaria de uma proposta de valores e prazo para desenvolver essa ferramenta aí para nós.
+[1075.7s -> 1083.7s] Na prática, para mim, já tirar todas as minhas dúvidas mesmo na prática, porque aí eu já tenho
+[1083.7s -> 1090.2s] que ficar de perguntar pra você, e em seguida eu vou montar esse mocap do sistema que vou te passar
+[1090.2s -> 1093.4s] já com os valores. Beleza.
+[1093.4s -> 1098.6s] O tempo eu não gasto, mas do que 10 dias para fazer esse sistema completo.
+[1098.6s -> 1104.4s] Se eu só vim com o mesmo, a gente consegue fazer uma semana ali de prazo e já consigo
+[1104.4s -> 1108.6s] entregar um serviço bacana. Beleza, então. Fico no aguardo aqui.
+[1108.6s -> 1111.4s] Combinado. Qualquer coisa também pode me mandar mensagem.
+[1113.8s -> 1116.0s] Palo, obrigado Samuel, até mais.
+[1116.0s -> 1117.0s] Boa noite.
+[1117.0s -> 1118.0s] Boa noite.
