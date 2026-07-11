@@ -191,6 +191,9 @@ identificado** — outro ponto a confirmar com o cliente.
       `apuracoes_mensais`, não recalculada a cada carregamento do painel do Consultor. Ainda
       falta: rodar para os consultores "grandes" de verdade e confirmar o tempo/timeout no
       Vercel (pode precisar virar um job em background em vez de Server Action síncrona).
+- [x] Listagem de todos os consultores (`listarTodosConsultores` em `web/src/lib/ileva/api.ts`)
+      — usada no painel do Gestor; rápida (~245 consultores, 1-2 páginas, nada a ver com o
+      problema de escala por veículo acima)
 - [ ] Geração em lote (todos os consultores de uma vez) — hoje só gera um `cod_consultor` por vez
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
       (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
@@ -225,8 +228,12 @@ identificado** — outro ponto a confirmar com o cliente.
 - [x] Painel Comercial: formulário funcional para gerar a apuração de um consultor por vez (por
       `cod_consultor` + mês/ano) — falta a versão "gerar todos de uma vez" e uma tela de
       conferência antes de considerar fechado
-- [ ] Painel Gestor: ainda é só um placeholder — falta decidir o que ele mostra além do que o
-      Comercial já vê (visão financeira consolidada)
+- [x] Painel Gestor: visão consolidada funcional — lista todos os consultores ativos (206 hoje)
+      cruzando com as apurações já geradas no mês selecionado (seletor de mês/ano por GET),
+      cards de total líquido/adesão/recorrência geral e contagem de gerados vs. pendentes.
+      Testado com dados reais, carrega em ~1,6s. Ainda falta: gerar direto dessa tela (hoje só
+      mostra e aponta pro Comercial), e detalhar o que "financeiro consolidado" deve incluir
+      além do que já está aí (perguntar ao cliente se precisa de mais alguma coisa aqui)
 
 ### 6.8 Relatórios
 - [ ] PDF individual por consultor (resumo + lista de placas)

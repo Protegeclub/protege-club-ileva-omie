@@ -55,3 +55,24 @@ export async function listarBeneficios(params: Paginacao) {
     beneficios: { cod_beneficio: number; nome: string; calculo: string; valor: string }[]
   }>('/beneficio', { ...params })
 }
+
+// Percorre todas as páginas — hoje são ~245 consultores no total, então isso é uma chamada
+// rápida (1-2 páginas), bem diferente do problema de escala visto em listarTodosVeiculosDoConsultor
+// (web/src/lib/apuracao/mensal.ts), onde um único consultor pode ter centenas de veículos.
+export async function listarTodosConsultores(): Promise<Consultor[]> {
+  const tamanhoPagina = 200
+  let inicio = 0
+  const todos: Consultor[] = []
+
+  while (true) {
+    const { total_encontrados, consultores } = await listarConsultores({
+      inicio_paginacao: inicio,
+      quantidade_por_pagina: tamanhoPagina,
+    })
+    todos.push(...consultores)
+    inicio += tamanhoPagina
+    if (inicio >= total_encontrados || consultores.length === 0) break
+  }
+
+  return todos
+}
