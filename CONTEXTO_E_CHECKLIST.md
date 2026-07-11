@@ -101,8 +101,14 @@ identificado** — outro ponto a confirmar com o cliente.
 - ✅ Repositório no GitHub criado (conta do cliente, `Protegeclub/protege-club-ileva-omie`) e
   primeiro push feito em 11/07/2026.
 - ✅ Projeto Supabase criado e migration inicial aplicada (11/07/2026) — tabelas confirmadas.
-- ⏳ **Bloqueios restantes**: (1) criar o primeiro usuário (Gestor) no Supabase Auth + inserir o
-  perfil correspondente na tabela `perfis`, (2) autenticar Vercel para o primeiro deploy.
+- ✅ Primeiro usuário criado no Supabase Auth (`marketing@artha.srv.br`) e vinculado como
+  **Gestor** na tabela `perfis`. Fluxo de proxy/RBAC testado localmente (`/` sem sessão →
+  redireciona pra `/login`; `/gestor` sem sessão → redireciona pra `/login`) — confirmado
+  funcionando em 11/07/2026. Falta testar o login de fato (com sessão autenticada).
+- ✅ Vercel conectado ao repositório do GitHub (a importar assim que houver alguma tela real para
+  publicar).
+- ⏳ **Bloqueio restante**: nenhum bloqueio de infraestrutura — dá pra seguir direto para as
+  telas reais (seção 6.7) e a sincronização com o Ileva (seção 6.4).
 
 ## 6. Checklist do sistema
 
@@ -126,18 +132,19 @@ identificado** — outro ponto a confirmar com o cliente.
 - [x] Projeto Supabase criado, variáveis preenchidas em `.env` e `web/.env.local`, e migration
       `0001_init.sql` aplicada com sucesso (tabelas `perfis`, `apuracoes_mensais`,
       `auditoria_omie`, `plano_carreira_niveis`, `ileva_token_cache` confirmadas em 11/07/2026)
-- [ ] Deploy inicial publicado no Vercel (sem CLI autenticada neste ambiente — fazer via
-      dashboard ou `vercel login` manual)
+- [x] Vercel conectado ao repositório GitHub — falta o primeiro deploy real (aguardando telas)
 - [x] `.gitignore` revisado (raiz + `web/`, cobrindo `.env*`, `node_modules/`, `.next/`, `*.mp4`)
 
 ### 6.3 Autenticação e controle de acesso
-- [ ] Login (Supabase Auth) — página e Server Action já escritos
-      (`web/src/app/login/`), falta o projeto Supabase para testar de ponta a ponta
+- [ ] Login (Supabase Auth) — página e Server Action escritos, redirecionamentos testados; falta
+      testar o login em si com sessão real (precisa da senha do usuário de teste, que só o
+      Samuel tem)
+- [x] Usuário Gestor de teste criado (`marketing@artha.srv.br`) e vinculado em `perfis`
 - [ ] Perfil **Gestor** (acesso total) — rota `/gestor` escrita, dados reais pendentes
 - [ ] Perfil **Comercial** (consultores + apuração, sem financeiro) — rota `/comercial` escrita
 - [ ] Perfil **Consultor** (só os próprios dados) — rota `/consultor` escrita
-- [x] RBAC entre perfis via `web/src/proxy.ts` (bloqueia perfil acessando rota de outro) — testado
-      no build, falta testar com sessão real
+- [x] RBAC entre perfis via `web/src/proxy.ts` — testado localmente contra o Supabase real
+      (redireciona corretamente sem sessão)
 - [x] Regras de acesso no banco (RLS) — policies aplicadas via `0001_init.sql`; falta testar com
       um usuário/perfil real (nenhum usuário criado no Supabase Auth ainda)
 
