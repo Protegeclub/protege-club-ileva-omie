@@ -18,6 +18,13 @@ export async function listarConsultores(
   return ilevaGet('/consultor/listar', { ...params })
 }
 
+export async function buscarConsultor(params: {
+  cod_consultor?: number
+  cpfCnpj?: string
+}): Promise<{ consultor: Consultor }> {
+  return ilevaGet('/consultor/buscar', { ...params })
+}
+
 export async function listarVeiculos(
   params: Paginacao & {
     cod_consultor?: number

@@ -11,6 +11,12 @@ import type { Perfil } from '@/types/domain'
 // Isso é a primeira linha de defesa, não a única: cada Server Action/Route Handler que toca
 // dado sensível deve reconferir o perfil (RLS no Supabase + checagem explícita), porque o Next
 // avisa que mudanças de rota podem silenciosamente deixar de passar pelo proxy.
+// /definir-senha é onde cai o link de convite/redefinição de senha do Supabase. Nesse momento a
+// sessão só existe no fragmento da URL (#access_token=...), que o servidor nunca vê — só o
+// cliente no navegador consegue processar isso (ver src/app/definir-senha/page.tsx). Por isso
+// essa rota tem que passar direto pelo proxy mesmo sem sessão visível aqui.
+const ROTAS_PUBLICAS = ['/login', '/definir-senha']
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const { supabase, getResponse } = createSupabaseProxyClient(request)
@@ -18,7 +24,7 @@ export async function proxy(request: NextRequest) {
   const { data: userData } = await supabase.auth.getUser()
 
   if (!userData.user) {
-    if (pathname === '/login') return getResponse()
+    if (ROTAS_PUBLICAS.includes(pathname)) return getResponse()
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -29,6 +35,8 @@ export async function proxy(request: NextRequest) {
     url.pathname = '/'
     return NextResponse.redirect(url)
   }
+
+  if (pathname === '/definir-senha') return getResponse()
 
   const { data: perfilRow } = await supabase
     .from('perfis')
