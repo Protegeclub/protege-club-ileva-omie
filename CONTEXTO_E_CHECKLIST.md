@@ -98,9 +98,10 @@ identificado** — outro ponto a confirmar com o cliente.
 - ✅ **Scaffold inicial do sistema criado** (07/07/2026): Next.js 16 em `web/`, rotas por perfil,
   cliente de API do Ileva, esqueleto do cliente Omie, migrations do Supabase, RBAC via
   `proxy.ts`. Build e lint passando. Primeiro commit git feito na raiz do projeto.
-- ⏳ **Bloqueios para o próximo passo real**: precisa (1) criar o projeto Supabase e colar as
-  credenciais em `web/.env.local`, (2) criar o repositório no GitHub (sem `gh` CLI autenticada
-  aqui — fazer manualmente ou autenticar o CLI), (3) autenticar Vercel para o primeiro deploy.
+- ✅ Repositório no GitHub criado (conta do cliente, `Protegeclub/protege-club-ileva-omie`) e
+  primeiro push feito em 11/07/2026.
+- ⏳ **Bloqueios restantes**: (1) criar o projeto Supabase e colar as credenciais em
+  `web/.env.local`, (2) autenticar Vercel para o primeiro deploy.
 
 ## 6. Checklist do sistema
 
@@ -117,8 +118,8 @@ identificado** — outro ponto a confirmar com o cliente.
 - [ ] Confirmar onde o custo de instalação do rastreador (R$100) é lançado no Ileva
 
 ### 6.2 Setup do projeto
-- [ ] Repositório criado no **GitHub** (só existe local por enquanto — sem `gh`/`vercel` CLI
-      autenticados neste ambiente; criar o repo e rodar `git remote add` + `git push` manualmente)
+- [x] Repositório criado no **GitHub**: `Protegeclub/protege-club-ileva-omie` (conta do cliente),
+      remote `origin` configurado e branch `main` publicada
 - [x] Projeto Next.js iniciado em `web/` (Next 16, TypeScript, Tailwind, App Router) — build e
       lint passando
 - [ ] Projeto Supabase criado e variáveis preenchidas em `web/.env.local` (migrations já escritas
