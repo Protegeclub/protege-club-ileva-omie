@@ -108,6 +108,11 @@ identificado** — outro ponto a confirmar com o cliente.
   Supabase; painel do Consultor lê e mostra isso com drill-down. Testado de ponta a ponta em
   navegador headless com o consultor real `313` (adesão R$ 200 em maio, recorrência R$ 23 em
   julho e R$ 57,15 em junho/2026 — todos conferidos manualmente antes de confiar no resultado).
+- ✅ **Primeiro deploy em produção na Vercel** (11/07/2026):
+  `protege-club-ileva-omie.vercel.app`. Testado de ponta a ponta em produção (não só local) —
+  login dos dois usuários de teste, painel do Consultor com dados reais, e a geração de
+  apuração pelo Comercial batendo na API do Ileva a partir do servidor da Vercel (~2,8s para um
+  consultor pequeno). Variáveis de ambiente confirmadas corretas em produção.
 - ⏳ **Próximos focos**: painel do Gestor (ainda placeholder), geração em lote de todos os
   consultores, decidir onde entra o desconto de rastreador, e a Omie (assim que tivermos a
   chave de teste).
@@ -150,7 +155,8 @@ identificado** — outro ponto a confirmar com o cliente.
 - [x] Projeto Supabase criado, variáveis preenchidas em `.env` e `web/.env.local`, e migration
       `0001_init.sql` aplicada com sucesso (tabelas `perfis`, `apuracoes_mensais`,
       `auditoria_omie`, `plano_carreira_niveis`, `ileva_token_cache` confirmadas em 11/07/2026)
-- [x] Vercel conectado ao repositório GitHub — falta o primeiro deploy real (aguardando telas)
+- [x] Deploy em produção na Vercel: `protege-club-ileva-omie.vercel.app` — testado de ponta a
+      ponta (login, painel do Consultor, geração de apuração pelo Comercial) direto em produção
 - [x] `.gitignore` revisado (raiz + `web/`, cobrindo `.env*`, `node_modules/`, `.next/`, `*.mp4`)
 
 ### 6.3 Autenticação e controle de acesso
@@ -232,6 +238,7 @@ identificado** — outro ponto a confirmar com o cliente.
 - [ ] Ajustes finais de acordo com o feedback
 
 ### 6.10 Entrega e manutenção
-- [ ] Deploy em produção
+- [x] Deploy em produção — no ar, mas ainda com escopo parcial (falta Gestor, lote, Omie etc.);
+      não é a entrega final ao cliente
 - [ ] Repasse rápido de uso para Gestor/Comercial
 - [ ] Início do contrato de manutenção mensal (R$ 300/mês)
