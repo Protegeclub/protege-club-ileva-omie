@@ -72,6 +72,29 @@ export interface BoletoVeiculoDetalhe {
   lancamentos: LancamentoBoletoVeiculo[]
 }
 
+// Item retornado por GET /cobranca/listar-associado-veiculo — mais enxuto que BoletoDetalhe
+// (sem `lancamentos`; para o detalhe por benefício é preciso um GET /cobranca/buscar adicional).
+export interface BoletoResumoVeiculo {
+  cod_veiculo: number
+  placa: string
+  situacao_veiculo: string
+  valor: string
+}
+
+export interface BoletoResumo {
+  cod_cobranca: number
+  valor_boleto: string
+  valor_pagamento: string | null
+  referencia: string
+  dt_vencimento: string
+  dt_pagamento: string | null
+  situacao_boleto: SituacaoBoleto
+  tipo_boleto: string
+  nome_associado: string
+  cod_associado: number
+  veiculos: BoletoResumoVeiculo[]
+}
+
 export interface BoletoDetalhe {
   cod_cobranca: number
   valor: string

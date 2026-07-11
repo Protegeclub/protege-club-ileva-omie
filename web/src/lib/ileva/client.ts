@@ -44,9 +44,12 @@ async function getToken(): Promise<string> {
   return fetchToken()
 }
 
+// `params` aceita qualquer objeto simples de query params (cada endpoint em lib/ileva/api.ts
+// declara seu próprio shape) — por isso o tipo aqui é propositalmente frouxo, em vez de forçar
+// todo objeto concreto a ter um index signature.
 export async function ilevaGet<T>(
   path: string,
-  params: Record<string, string | number | undefined> = {}
+  params: Record<string, unknown> = {}
 ): Promise<T> {
   const token = await getToken()
   const url = new URL(`${env.ileva.baseUrl}${path}`)
