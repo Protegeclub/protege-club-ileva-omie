@@ -245,6 +245,9 @@ ver pasta `Telas Cosultores/`).
 - [x] **Inadimplentes**: boletos `Aberto` vencidos da carteira do consultor, com telefone do
       associado e valor estimado de recorrência a receber se pagar. É "estado atual" (usa a
       apuração mais recente já gerada, não filtra por mês/ano — igual ao Power BI de origem).
+      **Bug real corrigido (12/07/2026)**: mostrava só o boleto mais antigo em atraso por
+      veículo, escondendo atrasos empilhados. Agora lista todos — validado com caso real
+      (consultor 11, veículo 2740: 3 boletos em aberto, dez/2025 a mai/2026).
 - [x] **Total Equipe**: soma as adesões dos colegas da mesma equipe (`cod_equipe`) que também já
       tiveram apuração gerada no mesmo mês — quem não gerou ainda não entra na conta.
 - [ ] Cálculo do plano de carreira / premiação (bloqueado até o cliente definir as regras) —
