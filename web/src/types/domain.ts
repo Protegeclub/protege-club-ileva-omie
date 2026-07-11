@@ -36,6 +36,8 @@ export interface Veiculo {
   placa: string
   cod_associado: number
   associado: string
+  tel_celular?: string
+  tel_fixo?: string
   cod_consultor: number | null
   consultor_nome: string | null
   cod_consultor_regional: number | null
@@ -43,6 +45,7 @@ export interface Veiculo {
   valor_fipe: string
   valor_protegido: number | null
   possui_rastreador: 'Sim' | 'Não'
+  dt_contrato: string
   nome_plano: string
   situacao: string
   beneficios?: BeneficioVeiculo[]
@@ -112,8 +115,10 @@ export interface BoletoDetalhe {
 // outras variantes por regional/plano.
 export const COD_BENEFICIO_ASSISTENCIA_PROFISSIONAL = [65, 66, 110, 121] as const
 
-// Ponto pendente: ainda não identificamos onde o desconto de instalação do rastreador (R$100)
-// é lançado no Ileva. Ver seção 7 de docs/REQUISITOS.md.
+// Hipótese confirmada pelos prints do Power BI atual (pasta "Telas Cosultores"): o desconto de
+// instalação do rastreador é um valor fixo (R$100) por veículo com `possui_rastreador = "Sim"`
+// cujo `dt_contrato` cai dentro do mês/ano apurado — não é recorrente, só no mês da adesão.
+export const VALOR_DESCONTO_RASTREADOR = 100
 
 export interface ApuracaoConsultorMes {
   cod_consultor: number

@@ -1,18 +1,24 @@
-import { buscarCobranca, listarCobrancasPorVeiculo, listarVeiculos } from '@/lib/ileva/api'
-import { COD_BENEFICIO_ASSISTENCIA_PROFISSIONAL } from '@/types/domain'
+import { buscarCobranca, buscarConsultor, listarCobrancasPorVeiculo, listarVeiculos } from '@/lib/ileva/api'
+import { COD_BENEFICIO_ASSISTENCIA_PROFISSIONAL, VALOR_DESCONTO_RASTREADOR } from '@/types/domain'
 import type { Veiculo } from '@/types/domain'
 
 export interface AdesaoItem {
   cod_veiculo: number
   placa: string
   associado: string
+  consultorNome: string
   valor: number
   dt_pagamento: string | null
 }
 
+// `dt_pagamento` foi adicionado depois das primeiras gerações de teste — apurações antigas
+// salvas antes disso podem ter esse campo ausente. O relatório por intervalo de datas
+// (lib/relatorios) trata isso como "sem data conhecida" e avisa em vez de inventar uma.
 export interface RecorrenciaItem {
   cod_veiculo: number
   placa: string
+  associado: string
+  consultorNome: string
   valor: number
   cod_cobranca: number
   dt_pagamento: string | null
@@ -24,18 +30,43 @@ export interface VeiculoRastreadorItem {
   associado: string
 }
 
-// `dt_pagamento` foi adicionado depois das primeiras gerações de teste — apurações antigas
-// salvas antes disso podem ter esse campo ausente em `recorrencias`. O relatório por intervalo
-// de datas (lib/relatorios) trata isso como "sem data conhecida" e avisa em vez de inventar uma.
+// Hipótese confirmada pelos prints do Power BI atual: R$100 fixo por veículo com rastreador,
+// descontado no mês em que o contrato (`dt_contrato`) foi assinado — não é recorrente.
+export interface DescontoRastreadorItem {
+  cod_veiculo: number
+  placa: string
+  associado: string
+  consultorNome: string
+  dt_contrato: string
+  valor: number
+}
+
+export interface InadimplenteItem {
+  cod_veiculo: number
+  placa: string
+  associado: string
+  telefone: string
+  consultorNome: string
+  dt_vencimento: string
+  valorBoleto: number
+  valorRecorrenciaEstimado: number
+}
+
 export interface ApuracaoConsultorMesDetalhada {
   cod_consultor: number
+  nomeConsultor: string
+  codEquipe: number
   ano: number
   mes: number
   totalAdesao: number
   totalRecorrencia: number
+  totalDescontoRastreador: number
   adesoes: AdesaoItem[]
   recorrencias: RecorrenciaItem[]
   veiculosComRastreador: VeiculoRastreadorItem[]
+  descontosRastreador: DescontoRastreadorItem[]
+  inadimplentes: InadimplenteItem[]
+  totalRecorrenciaEstimadaInadimplentes: number
 }
 
 function intervaloMes(ano: number, mes: number) {
@@ -89,16 +120,24 @@ async function comConcorrenciaLimitada<T, R>(
   return resultados
 }
 
+function valorBeneficioAssistenciaProfissional(veiculo: Veiculo): number {
+  const beneficio = (veiculo.beneficios ?? []).find((b) =>
+    (COD_BENEFICIO_ASSISTENCIA_PROFISSIONAL as readonly number[]).includes(b.cod_beneficio)
+  )
+  return beneficio ? Number(beneficio.beneficio_valor) : 0
+}
+
 /**
- * Apura adesão e recorrência de um consultor num mês, direto na API do Ileva.
+ * Apura adesão, recorrência, desconto de rastreador e inadimplência de um consultor num mês,
+ * direto na API do Ileva.
  *
  * ATENÇÃO: para consultores com muitos veículos isso é lento (uma chamada por veículo, mais uma
  * por boleto de Fechamento pago) — por isso essa função é pensada para ser chamada por uma ação
  * explícita ("gerar apuração", ver src/app/comercial) que salva o resultado em
  * `apuracoes_mensais`, não para ser chamada a cada carregamento de tela do consultor.
  *
- * Ainda não calcula: desconto de instalação de rastreador (não identificamos onde é lançado no
- * Ileva — ver CONTEXTO_E_CHECKLIST.md) nem plano de carreira (regras não definidas pelo cliente).
+ * Ainda não calcula: premiação (individual/equipe) do plano de carreira — regras não definidas
+ * pelo cliente (ver CONTEXTO_E_CHECKLIST.md).
  */
 export async function apurarConsultorMes(
   codConsultor: number,
@@ -106,15 +145,58 @@ export async function apurarConsultorMes(
   mes: number
 ): Promise<ApuracaoConsultorMesDetalhada> {
   const { de, ate } = intervaloMes(ano, mes)
+  const hoje = new Date().toISOString().slice(0, 10)
 
-  const veiculos = await listarTodosVeiculosDoConsultor(codConsultor)
+  const [{ consultor }, veiculos] = await Promise.all([
+    buscarConsultor({ cod_consultor: codConsultor }),
+    listarTodosVeiculosDoConsultor(codConsultor),
+  ])
+  const nomeConsultor = consultor.nome
+  const codEquipe = consultor.cod_equipe
 
   const veiculosComRastreador: VeiculoRastreadorItem[] = veiculos
     .filter((v) => v.possui_rastreador === 'Sim')
     .map((v) => ({ cod_veiculo: v.cod_veiculo, placa: v.placa, associado: v.associado }))
 
+  const descontosRastreador: DescontoRastreadorItem[] = veiculos
+    .filter((v) => v.possui_rastreador === 'Sim' && v.dt_contrato >= de && v.dt_contrato <= ate)
+    .map((v) => ({
+      cod_veiculo: v.cod_veiculo,
+      placa: v.placa,
+      associado: v.associado,
+      consultorNome: nomeConsultor,
+      dt_contrato: v.dt_contrato,
+      valor: VALOR_DESCONTO_RASTREADOR,
+    }))
+
+  const inadimplentesBrutos = await comConcorrenciaLimitada(veiculos, 5, async (veiculo) => {
+    const { boletos } = await listarCobrancasPorVeiculo({
+      cod_veiculo: veiculo.cod_veiculo,
+      situacao_boleto: 'Aberto',
+      dt_vencimento_ate: hoje,
+      inicio_paginacao: 0,
+      quantidade_por_pagina: 10,
+    })
+    if (boletos.length === 0) return null
+    // Pega o vencimento mais antigo em aberto (o mais crítico) por veículo.
+    const maisAntigo = [...boletos].sort((a, b) => a.dt_vencimento.localeCompare(b.dt_vencimento))[0]
+    const item: InadimplenteItem = {
+      cod_veiculo: veiculo.cod_veiculo,
+      placa: veiculo.placa,
+      associado: veiculo.associado,
+      telefone: veiculo.tel_celular || veiculo.tel_fixo || '',
+      consultorNome: nomeConsultor,
+      dt_vencimento: maisAntigo.dt_vencimento,
+      valorBoleto: Number(maisAntigo.valor_boleto),
+      valorRecorrenciaEstimado: valorBeneficioAssistenciaProfissional(veiculo),
+    }
+    return item
+  })
+  const inadimplentes = inadimplentesBrutos.filter((i): i is InadimplenteItem => i !== null)
+
   const adesoes: AdesaoItem[] = []
   const recorrencias: RecorrenciaItem[] = []
+  const veiculoPorCodigo = new Map(veiculos.map((v) => [v.cod_veiculo, v]))
 
   await comConcorrenciaLimitada(veiculos, 5, async (veiculo) => {
     const { boletos } = await listarCobrancasPorVeiculo({
@@ -132,6 +214,7 @@ export async function apurarConsultorMes(
           cod_veiculo: veiculo.cod_veiculo,
           placa: veiculo.placa,
           associado: veiculo.associado,
+          consultorNome: nomeConsultor,
           valor: Number(boleto.valor_pagamento ?? boleto.valor_boleto),
           dt_pagamento: boleto.dt_pagamento,
         })
@@ -148,6 +231,8 @@ export async function apurarConsultorMes(
               recorrencias.push({
                 cod_veiculo: veiculoDetalhe.cod_veiculo,
                 placa: veiculoDetalhe.placa,
+                associado: veiculoPorCodigo.get(veiculoDetalhe.cod_veiculo)?.associado ?? '',
+                consultorNome: nomeConsultor,
                 valor: Number(lancamento.valor),
                 cod_cobranca: boleto.cod_cobranca,
                 dt_pagamento: boleto.dt_pagamento,
@@ -161,12 +246,21 @@ export async function apurarConsultorMes(
 
   return {
     cod_consultor: codConsultor,
+    nomeConsultor,
+    codEquipe,
     ano,
     mes,
     totalAdesao: adesoes.reduce((soma, item) => soma + item.valor, 0),
     totalRecorrencia: recorrencias.reduce((soma, item) => soma + item.valor, 0),
+    totalDescontoRastreador: descontosRastreador.reduce((soma, item) => soma + item.valor, 0),
     adesoes,
     recorrencias,
     veiculosComRastreador,
+    descontosRastreador,
+    inadimplentes,
+    totalRecorrenciaEstimadaInadimplentes: inadimplentes.reduce(
+      (soma, item) => soma + item.valorRecorrenciaEstimado,
+      0
+    ),
   }
 }
