@@ -180,6 +180,10 @@ identificado** — outro ponto a confirmar com o cliente.
 - [x] Autenticação validada (`/oauth/token`) — cliente em `web/src/lib/ileva/client.ts`, com
       cache de token em memória (⚠️ ver nota no código: precisa virar cache compartilhado —
       tabela `ileva_token_cache` já criada na migration — antes de rodar em produção serverless)
+- [x] **Bug real encontrado e corrigido**: como o token do Ileva é único por usuário, rodar um
+      script de teste em paralelo (ex.: `test-apuracao.mts`) invalidava o token que o servidor
+      dev estava usando, e a próxima chamada quebrava com 401 sem tentar de novo. `ilevaGet`
+      agora refaz login e tenta a chamada mais uma vez antes de desistir.
 - [x] Funções de leitura escritas e em uso real (`web/src/lib/ileva/api.ts`): consultores,
       veículos, boletos, benefícios
 - [x] Motor de apuração (`web/src/lib/apuracao/mensal.ts`): calcula adesão e recorrência de um
@@ -236,8 +240,17 @@ identificado** — outro ponto a confirmar com o cliente.
       além do que já está aí (perguntar ao cliente se precisa de mais alguma coisa aqui)
 
 ### 6.8 Relatórios
-- [ ] PDF individual por consultor (resumo + lista de placas)
-- [ ] PDF de totalização geral do mês
+- [x] PDF consolidado (todos os consultores) por intervalo de datas exato — botão no painel do
+      Gestor, gerado por `web/src/lib/relatorios/{consolidado,pdf}.ts` e servido por
+      `/api/relatorios/consolidado`. Testado com dados reais (23/07/2026 — recorrência de
+      09/07 aparecendo certinho num filtro 01/07 a 15/07).
+      **Limite importante**: o relatório só filtra dentro do que já foi apurado/gerado no
+      painel Comercial (a apuração continua sendo por mês inteiro) — se um mês nunca foi
+      gerado para um consultor, ele não aparece no relatório, e o PDF avisa isso
+      explicitamente em vez de fingir que está completo.
+- [ ] PDF individual por consultor (resumo + lista de placas) — ainda não feito
+- [ ] Geração assíncrona/em background do relatório para períodos muito grandes (hoje é síncrono
+      dentro da Route Handler; tende a ficar lento se o intervalo cobrir muitos meses/consultores)
 
 ### 6.9 Testes e validação
 - [ ] Testes com dados reais via API de teste (sem afetar produção)
