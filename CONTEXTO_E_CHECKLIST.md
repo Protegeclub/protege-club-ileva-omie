@@ -100,8 +100,9 @@ identificado** — outro ponto a confirmar com o cliente.
   `proxy.ts`. Build e lint passando. Primeiro commit git feito na raiz do projeto.
 - ✅ Repositório no GitHub criado (conta do cliente, `Protegeclub/protege-club-ileva-omie`) e
   primeiro push feito em 11/07/2026.
-- ⏳ **Bloqueios restantes**: (1) criar o projeto Supabase e colar as credenciais em
-  `web/.env.local`, (2) autenticar Vercel para o primeiro deploy.
+- ✅ Projeto Supabase criado e migration inicial aplicada (11/07/2026) — tabelas confirmadas.
+- ⏳ **Bloqueios restantes**: (1) criar o primeiro usuário (Gestor) no Supabase Auth + inserir o
+  perfil correspondente na tabela `perfis`, (2) autenticar Vercel para o primeiro deploy.
 
 ## 6. Checklist do sistema
 
@@ -122,8 +123,9 @@ identificado** — outro ponto a confirmar com o cliente.
       remote `origin` configurado e branch `main` publicada
 - [x] Projeto Next.js iniciado em `web/` (Next 16, TypeScript, Tailwind, App Router) — build e
       lint passando
-- [ ] Projeto Supabase criado e variáveis preenchidas em `web/.env.local` (migrations já escritas
-      em `web/supabase/migrations/0001_init.sql`, prontas para aplicar quando o projeto existir)
+- [x] Projeto Supabase criado, variáveis preenchidas em `.env` e `web/.env.local`, e migration
+      `0001_init.sql` aplicada com sucesso (tabelas `perfis`, `apuracoes_mensais`,
+      `auditoria_omie`, `plano_carreira_niveis`, `ileva_token_cache` confirmadas em 11/07/2026)
 - [ ] Deploy inicial publicado no Vercel (sem CLI autenticada neste ambiente — fazer via
       dashboard ou `vercel login` manual)
 - [x] `.gitignore` revisado (raiz + `web/`, cobrindo `.env*`, `node_modules/`, `.next/`, `*.mp4`)
@@ -136,8 +138,8 @@ identificado** — outro ponto a confirmar com o cliente.
 - [ ] Perfil **Consultor** (só os próprios dados) — rota `/consultor` escrita
 - [x] RBAC entre perfis via `web/src/proxy.ts` (bloqueia perfil acessando rota de outro) — testado
       no build, falta testar com sessão real
-- [ ] Regras de acesso no banco (RLS) — policies já na migration `0001_init.sql`, falta aplicar e
-      testar contra o projeto Supabase real
+- [x] Regras de acesso no banco (RLS) — policies aplicadas via `0001_init.sql`; falta testar com
+      um usuário/perfil real (nenhum usuário criado no Supabase Auth ainda)
 
 ### 6.4 Integração com Ileva
 - [x] Autenticação validada (`/oauth/token`) — cliente em `web/src/lib/ileva/client.ts`, com
