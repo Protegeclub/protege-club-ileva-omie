@@ -65,6 +65,10 @@ export default async function GestorDashboardPage({
   const totalRecorrenciaGeral = linhas.reduce((soma, l) => soma + (l.apuracao?.total_recorrencia ?? 0), 0)
   const geradosCount = linhas.filter((l) => l.apuracao).length
 
+  const ultimoDiaDoMes = new Date(ano, mes, 0).getDate()
+  const dataInicioPadrao = `${ano}-${String(mes).padStart(2, '0')}-01`
+  const dataFimPadrao = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDiaDoMes).padStart(2, '0')}`
+
   return (
     <div className="space-y-6">
       <form method="GET" className="flex items-end gap-3">
@@ -89,6 +93,52 @@ export default async function GestorDashboardPage({
         <button type="submit" className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800">
           Ver
         </button>
+      </form>
+
+      <form
+        method="GET"
+        action="/api/relatorios/consolidado"
+        target="_blank"
+        className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
+      >
+        <div>
+          <p className="text-sm font-medium text-slate-700">Relatório completo em PDF</p>
+          <p className="text-xs text-slate-400">Escolha o intervalo de datas exato do relatório.</p>
+        </div>
+        <div className="ml-auto flex items-end gap-3">
+          <div>
+            <label htmlFor="data_inicio" className="block text-xs font-medium text-slate-500">
+              Data inicial
+            </label>
+            <input
+              id="data_inicio"
+              name="data_inicio"
+              type="date"
+              defaultValue={dataInicioPadrao}
+              required
+              className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="data_fim" className="block text-xs font-medium text-slate-500">
+              Data final
+            </label>
+            <input
+              id="data_fim"
+              name="data_fim"
+              type="date"
+              defaultValue={dataFimPadrao}
+              required
+              className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
+          >
+            Baixar PDF
+          </button>
+        </div>
       </form>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

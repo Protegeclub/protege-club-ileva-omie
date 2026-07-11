@@ -49,7 +49,8 @@ async function getToken(): Promise<string> {
 // todo objeto concreto a ter um index signature.
 export async function ilevaGet<T>(
   path: string,
-  params: Record<string, unknown> = {}
+  params: Record<string, unknown> = {},
+  tentandoDeNovo = false
 ): Promise<T> {
   const token = await getToken()
   const url = new URL(`${env.ileva.baseUrl}${path}`)
@@ -61,6 +62,14 @@ export async function ilevaGet<T>(
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
   })
+
+  if (res.status === 401 && !tentandoDeNovo) {
+    // Token único por usuário (ver comentário acima do cache): se outro processo logou nesse
+    // meio tempo, nosso token em cache foi invalidado remotamente sem que a gente saiba. Busca
+    // um token novo uma vez e tenta de novo, em vez de falhar direto.
+    cachedToken = null
+    return ilevaGet<T>(path, params, true)
+  }
 
   if (!res.ok) {
     const body = await res.text()

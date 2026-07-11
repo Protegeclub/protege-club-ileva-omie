@@ -15,6 +15,7 @@ export interface RecorrenciaItem {
   placa: string
   valor: number
   cod_cobranca: number
+  dt_pagamento: string | null
 }
 
 export interface VeiculoRastreadorItem {
@@ -23,6 +24,9 @@ export interface VeiculoRastreadorItem {
   associado: string
 }
 
+// `dt_pagamento` foi adicionado depois das primeiras gerações de teste — apurações antigas
+// salvas antes disso podem ter esse campo ausente em `recorrencias`. O relatório por intervalo
+// de datas (lib/relatorios) trata isso como "sem data conhecida" e avisa em vez de inventar uma.
 export interface ApuracaoConsultorMesDetalhada {
   cod_consultor: number
   ano: number
@@ -146,6 +150,7 @@ export async function apurarConsultorMes(
                 placa: veiculoDetalhe.placa,
                 valor: Number(lancamento.valor),
                 cod_cobranca: boleto.cod_cobranca,
+                dt_pagamento: boleto.dt_pagamento,
               })
             }
           }
