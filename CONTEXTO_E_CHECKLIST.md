@@ -79,6 +79,16 @@ identificado** — outro ponto a confirmar com o cliente.
   Supabase (`web/supabase/migrations/0001_init.sql`). Nenhuma delas sozinha é suficiente; o Next
   avisa explicitamente que rotas podem mudar sem passar pelo proxy, então toda Server
   Action/Route Handler sensível deve reconferir o perfil.
+- **Apuração é gerada sob demanda, não calculada ao vivo**: um consultor real chegou a ter 871
+  veículos — calcular tudo a cada carregamento de tela não escala. O painel Comercial roda o
+  cálculo (`web/src/lib/apuracao/mensal.ts`) e salva o resultado em `apuracoes_mensais`; o painel
+  do Consultor só lê o que já foi salvo. Gerar de novo sobrescreve o mês (upsert por
+  `cod_consultor + ano + mes`).
+- **Scripts de dev** (`web/scripts/`): `run-migration.mjs` (aplica SQL direto no Postgres, sem
+  precisar do SQL Editor) e `test-apuracao.mts` (testa o motor de apuração sem subir o Next.js).
+  As dependências que eles usam (`pg`, `tsx`) são instaladas sob demanda
+  (`npm install --no-save pg` / `tsx`) e **não ficam no `package.json`** — isso é proposital,
+  para o `npm install` do Vercel não tentar baixar coisas desnecessárias no build de produção.
 
 ## 5. Status atual
 
@@ -93,6 +103,14 @@ identificado** — outro ponto a confirmar com o cliente.
   adotar o v2. Vale manter em mente que existe concorrência ativa disputando este cliente.
   A ideia de auditoria/log de geração de título (do v2) é boa prática e pode ser incorporada de
   qualquer forma, sem custo adicional, quando chegarmos na integração com a Omie (seção 6.5).
+- ✅ **Primeiras telas funcionais e validadas com dados reais** (11/07/2026): painel Comercial
+  gera a apuração (adesão + recorrência) de um consultor via API real do Ileva e salva no
+  Supabase; painel do Consultor lê e mostra isso com drill-down. Testado de ponta a ponta em
+  navegador headless com o consultor real `313` (adesão R$ 200 em maio, recorrência R$ 23 em
+  julho e R$ 57,15 em junho/2026 — todos conferidos manualmente antes de confiar no resultado).
+- ⏳ **Próximos focos**: painel do Gestor (ainda placeholder), geração em lote de todos os
+  consultores, decidir onde entra o desconto de rastreador, e a Omie (assim que tivermos a
+  chave de teste).
 - ⏳ Chave de teste da Omie ainda não obtida.
 - ⏳ Regras do plano de carreira ainda não detalhadas pelo cliente.
 - ✅ **Scaffold inicial do sistema criado** (07/07/2026): Next.js 16 em `web/`, rotas por perfil,
@@ -140,9 +158,13 @@ identificado** — outro ponto a confirmar com o cliente.
       testar o login em si com sessão real (precisa da senha do usuário de teste, que só o
       Samuel tem)
 - [x] Usuário Gestor de teste criado (`marketing@artha.srv.br`) e vinculado em `perfis`
+- [x] Usuário Consultor de teste criado (`consultor-teste@protegeclub.local`, vinculado ao
+      `cod_consultor 313` real do Ileva)
 - [ ] Perfil **Gestor** (acesso total) — rota `/gestor` escrita, dados reais pendentes
-- [ ] Perfil **Comercial** (consultores + apuração, sem financeiro) — rota `/comercial` escrita
-- [ ] Perfil **Consultor** (só os próprios dados) — rota `/consultor` escrita
+- [x] Perfil **Comercial** (gerar apuração) — funcional: formulário real, testado de ponta a
+      ponta via navegador headless (login → gerar → salvar no Supabase)
+- [x] Perfil **Consultor** (só os próprios dados) — funcional: lê a apuração gerada e mostra os
+      cards com drill-down, testado com dados reais (maio e julho/2026 do consultor 313)
 - [x] RBAC entre perfis via `web/src/proxy.ts` — testado localmente contra o Supabase real
       (redireciona corretamente sem sessão)
 - [x] Regras de acesso no banco (RLS) — policies aplicadas via `0001_init.sql`; falta testar com
@@ -152,12 +174,21 @@ identificado** — outro ponto a confirmar com o cliente.
 - [x] Autenticação validada (`/oauth/token`) — cliente em `web/src/lib/ileva/client.ts`, com
       cache de token em memória (⚠️ ver nota no código: precisa virar cache compartilhado —
       tabela `ileva_token_cache` já criada na migration — antes de rodar em produção serverless)
-- [x] Funções de leitura escritas (`web/src/lib/ileva/api.ts`): consultores, veículos, boletos,
-      benefícios — ainda não usadas em nenhuma tela real
-- [ ] Sincronização de fato (rotina que popula o Supabase a partir da API do Ileva)
+- [x] Funções de leitura escritas e em uso real (`web/src/lib/ileva/api.ts`): consultores,
+      veículos, boletos, benefícios
+- [x] Motor de apuração (`web/src/lib/apuracao/mensal.ts`): calcula adesão e recorrência de um
+      consultor num mês direto na API, com paginação (`inicio_paginacao` é obrigatório — a API
+      dá erro 400 sem isso) e concorrência limitada (5 por vez, para não sobrecarregar)
+- [ ] **Achado importante**: consultores variam MUITO em quantidade de veículos (de 0 a **871**
+      num caso real) — calcular ao vivo a cada acesso de tela não escala para os grandes. Por
+      isso a apuração é **gerada sob demanda** (painel Comercial) e salva em
+      `apuracoes_mensais`, não recalculada a cada carregamento do painel do Consultor. Ainda
+      falta: rodar para os consultores "grandes" de verdade e confirmar o tempo/timeout no
+      Vercel (pode precisar virar um job em background em vez de Server Action síncrona).
+- [ ] Geração em lote (todos os consultores de uma vez) — hoje só gera um `cod_consultor` por vez
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
-      (65 / 66 / 110 / 121)
-- [ ] Rotina periódica de atualização (cron/job) em vez de consultar a API a cada acesso de tela
+      (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
+- [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Comercial
 
 ### 6.5 Integração com Omie
 - [ ] Chave de teste (sandbox) obtida
@@ -172,17 +203,24 @@ identificado** — outro ponto a confirmar com o cliente.
 - [ ] Troca das credenciais de teste pelas de produção (só após validação completa)
 
 ### 6.6 Motor de apuração de comissão
-- [ ] Cálculo da adesão (com tratamento do caso dos ~1% que não retêm direto)
-- [ ] Cálculo da recorrência (Assistência Profissional), condicionado a boleto `Liquidado`
-- [ ] Dedução da instalação do rastreador
+- [x] Cálculo da adesão — validado com dado real (consultor 313, maio/2026: R$ 200,00)
+- [ ] Tratamento do caso dos ~1% de consultores que não retêm a adesão direto (ainda não
+      diferenciado — hoje todo boleto `tipo_boleto: "Adesão"` conta igual)
+- [x] Cálculo da recorrência (Assistência Profissional), condicionado a boleto `Liquidado` —
+      validado com dado real (consultor 313: R$ 23,00 em julho, R$ 57,15 em junho/2026)
+- [ ] Dedução da instalação do rastreador (bloqueado — não sabemos onde é lançado no Ileva)
 - [ ] Cálculo do plano de carreira (bloqueado até o cliente definir as regras)
-- [ ] Fechamento mensal consolidado por consultor
+- [x] Fechamento mensal consolidado por consultor — gravado em `apuracoes_mensais`, com upsert
+      por `(cod_consultor, ano, mes)` (gerar de novo sobrescreve o mês)
 
 ### 6.7 Telas
-- [ ] Painel do Consultor: adesões, recorrência, desconto de rastreador, premiação,
-      inadimplentes, com drill-down por card
-- [ ] Painel Comercial: gerar e conferir a apuração mensal de todos os consultores
-- [ ] Painel Gestor: tudo do Comercial + visão financeira consolidada
+- [x] Painel do Consultor: adesões e recorrência reais com drill-down (`<details>` expansível
+      por card); rastreador/premiação/inadimplentes ainda são placeholders explicando o motivo
+- [x] Painel Comercial: formulário funcional para gerar a apuração de um consultor por vez (por
+      `cod_consultor` + mês/ano) — falta a versão "gerar todos de uma vez" e uma tela de
+      conferência antes de considerar fechado
+- [ ] Painel Gestor: ainda é só um placeholder — falta decidir o que ele mostra além do que o
+      Comercial já vê (visão financeira consolidada)
 
 ### 6.8 Relatórios
 - [ ] PDF individual por consultor (resumo + lista de placas)
