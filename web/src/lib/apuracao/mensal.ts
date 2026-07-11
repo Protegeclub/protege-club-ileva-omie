@@ -169,30 +169,35 @@ export async function apurarConsultorMes(
       valor: VALOR_DESCONTO_RASTREADOR,
     }))
 
-  const inadimplentesBrutos = await comConcorrenciaLimitada(veiculos, 5, async (veiculo) => {
+  // Antes só pegava o vencimento mais antigo em aberto por veículo — se tivesse 3 mensalidades
+  // atrasadas empilhadas, mostrava só 1 e escondia as outras 2 (e o valor estimado de
+  // recorrência também ficava subestimado, já que cada mês em aberto é uma recorrência a mais
+  // que o consultor recuperaria se o associado pagasse). Agora lista todos.
+  const inadimplentesPorVeiculo = await comConcorrenciaLimitada(veiculos, 5, async (veiculo) => {
     const { boletos } = await listarCobrancasPorVeiculo({
       cod_veiculo: veiculo.cod_veiculo,
       situacao_boleto: 'Aberto',
       dt_vencimento_ate: hoje,
       inicio_paginacao: 0,
-      quantidade_por_pagina: 10,
+      quantidade_por_pagina: 30,
     })
-    if (boletos.length === 0) return null
-    // Pega o vencimento mais antigo em aberto (o mais crítico) por veículo.
-    const maisAntigo = [...boletos].sort((a, b) => a.dt_vencimento.localeCompare(b.dt_vencimento))[0]
-    const item: InadimplenteItem = {
-      cod_veiculo: veiculo.cod_veiculo,
-      placa: veiculo.placa,
-      associado: veiculo.associado,
-      telefone: veiculo.tel_celular || veiculo.tel_fixo || '',
-      consultorNome: nomeConsultor,
-      dt_vencimento: maisAntigo.dt_vencimento,
-      valorBoleto: Number(maisAntigo.valor_boleto),
-      valorRecorrenciaEstimado: valorBeneficioAssistenciaProfissional(veiculo),
-    }
-    return item
+    const valorRecorrenciaEstimado = valorBeneficioAssistenciaProfissional(veiculo)
+    return boletos.map(
+      (boleto): InadimplenteItem => ({
+        cod_veiculo: veiculo.cod_veiculo,
+        placa: veiculo.placa,
+        associado: veiculo.associado,
+        telefone: veiculo.tel_celular || veiculo.tel_fixo || '',
+        consultorNome: nomeConsultor,
+        dt_vencimento: boleto.dt_vencimento,
+        valorBoleto: Number(boleto.valor_boleto),
+        valorRecorrenciaEstimado,
+      })
+    )
   })
-  const inadimplentes = inadimplentesBrutos.filter((i): i is InadimplenteItem => i !== null)
+  const inadimplentes = inadimplentesPorVeiculo
+    .flat()
+    .sort((a, b) => a.dt_vencimento.localeCompare(b.dt_vencimento))
 
   const adesoes: AdesaoItem[] = []
   const recorrencias: RecorrenciaItem[] = []
