@@ -39,8 +39,11 @@ Todo consultor tem três fontes de ganho, apuradas mensalmente:
 
 **Dedução**: veículos acima de R$80mil recebem rastreador; o custo de instalação (R$100) é
 descontado do consultor. O corte de R$80mil já vem embutido no nome do plano no Ileva (ex.:
-"...Acima de 80 Mil"). **Onde exatamente o custo de R$100 é lançado no Ileva ainda não foi
-identificado** — outro ponto a confirmar com o cliente.
+"...Acima de 80 Mil"). ~~Onde exatamente o custo de R$100 é lançado no Ileva ainda não foi
+identificado~~ — **resolvido em 11/07/2026**: não é um lançamento específico no Ileva, é uma
+regra do nosso sistema — R$100 fixo por veículo com `possui_rastreador = Sim` cujo `dt_contrato`
+cai no mês apurado (confirmado batendo com os totais reais do Power BI que o cliente usa hoje,
+ver pasta `Telas Cosultores/`).
 
 ## 3. Documentos do projeto (onde está cada detalhe)
 
@@ -54,7 +57,8 @@ identificado** — outro ponto a confirmar com o cliente.
 | `docs/transcricoes/` | Transcrição bruta dos vídeos da reunião com o cliente e do tutorial de configuração da API Ileva. |
 | `.env` / `.env.example` | Credenciais (não versionado) e template das variáveis necessárias. |
 | `web/` | Código do sistema (Next.js 16 + Supabase). `web/.env.local` é a cópia usada em runtime pelo app (também não versionada). |
-| `web/supabase/migrations/0001_init.sql` | Schema inicial do banco (perfis, apurações, auditoria Omie, cache de token Ileva) — ainda não aplicado a um projeto real. |
+| `web/supabase/migrations/` | Schema do banco (perfis, apurações, auditoria Omie, cache de token Ileva, `cod_equipe`). |
+| `Telas Cosultores/` | Prints do Power BI atual (Adesões, Recorrência, Desconto de Rastreadores, Inadimplentes) — referência exata das colunas/layout que o painel do Consultor precisa reproduzir. |
 
 ## 4. Decisões técnicas já tomadas
 
@@ -175,6 +179,20 @@ identificado** — outro ponto a confirmar com o cliente.
       (redireciona corretamente sem sessão)
 - [x] Regras de acesso no banco (RLS) — policies aplicadas via `0001_init.sql`; falta testar com
       um usuário/perfil real (nenhum usuário criado no Supabase Auth ainda)
+- [x] **Bug real encontrado e corrigido no proxy.ts**: rotas `/api/*` estavam sendo redirecionadas
+      pela checagem de perfil por prefixo (pensada pra páginas `/gestor`, `/comercial`,
+      `/consultor`, não pra endpoints) — um Consultor batendo em `/api/relatorios/consultor`
+      caía de volta no `/consultor` antes da rota rodar. `/api/*` agora passa direto (cada Route
+      Handler já reconfirma o perfil sozinho).
+- [x] **Convite de acesso para os 206 consultores reais**: `/gestor/acessos` lista quem já tem
+      acesso (linha em `perfis`) e quem não tem, com botão "Convidar" por linha —
+      `supabase.auth.admin.inviteUserByEmail` cria o usuário (e-mail já cadastrado no Ileva) e
+      manda um link pra o próprio consultor definir a senha em `/definir-senha`; ninguém, nem o
+      Gestor, fica sabendo senha de ninguém. **Não testei o envio de e-mail de verdade ainda**
+      (evitar mandar convite pra consultor real sem avisar — decisão do Samuel). Cogitamos
+      alternativa "senha = últimos 5 dígitos do CPF" (é assim que o sistema anterior faz), mas o
+      Ileva não devolve CPF nos endpoints de consultor que temos acesso — fica bloqueado até
+      surgir uma fonte pro CPF.
 
 ### 6.4 Integração com Ileva
 - [x] Autenticação validada (`/oauth/token`) — cliente em `web/src/lib/ileva/client.ts`, com
@@ -221,14 +239,27 @@ identificado** — outro ponto a confirmar com o cliente.
       diferenciado — hoje todo boleto `tipo_boleto: "Adesão"` conta igual)
 - [x] Cálculo da recorrência (Assistência Profissional), condicionado a boleto `Liquidado` —
       validado com dado real (consultor 313: R$ 23,00 em julho, R$ 57,15 em junho/2026)
-- [ ] Dedução da instalação do rastreador (bloqueado — não sabemos onde é lançado no Ileva)
-- [ ] Cálculo do plano de carreira (bloqueado até o cliente definir as regras)
+- [x] **Dedução da instalação do rastreador — resolvido**: R$100 fixo por veículo com
+      `possui_rastreador = Sim` cujo `dt_contrato` cai no mês apurado. Validado com dado real
+      (consultor 313, maio/2026: R$100,00 batendo com o Power BI atual).
+- [x] **Inadimplentes**: boletos `Aberto` vencidos da carteira do consultor, com telefone do
+      associado e valor estimado de recorrência a receber se pagar. É "estado atual" (usa a
+      apuração mais recente já gerada, não filtra por mês/ano — igual ao Power BI de origem).
+- [x] **Total Equipe**: soma as adesões dos colegas da mesma equipe (`cod_equipe`) que também já
+      tiveram apuração gerada no mesmo mês — quem não gerou ainda não entra na conta.
+- [ ] Cálculo do plano de carreira / premiação (bloqueado até o cliente definir as regras) —
+      confirmamos com um exemplo real do Power BI (19 adesões → R$1.150 premiação individual)
+      que existe uma fórmula, só falta o cliente detalhar as faixas.
 - [x] Fechamento mensal consolidado por consultor — gravado em `apuracoes_mensais`, com upsert
       por `(cod_consultor, ano, mes)` (gerar de novo sobrescreve o mês)
 
 ### 6.7 Telas
-- [x] Painel do Consultor: adesões e recorrência reais com drill-down (`<details>` expansível
-      por card); rastreador/premiação/inadimplentes ainda são placeholders explicando o motivo
+- [x] **Painel do Consultor reestruturado igual ao Power BI atual** (11/07/2026, baseado nos
+      prints da pasta `Telas Cosultores/`): sidebar com ano/mês/toggle de equipe/sair
+      compartilhada entre 5 telas, dashboard com "Total a receber" + 4 botões de navegação +
+      cards, e as 4 telas de detalhe (adesões, recorrência, rastreadores, inadimplentes) com as
+      mesmas colunas do sistema de origem. Só premiação (individual/líder de equipe) continua
+      como placeholder — bloqueado pelas regras do plano de carreira.
 - [x] Painel Comercial: formulário funcional para gerar a apuração de um consultor por vez (por
       `cod_consultor` + mês/ano) — falta a versão "gerar todos de uma vez" e uma tela de
       conferência antes de considerar fechado
@@ -238,6 +269,7 @@ identificado** — outro ponto a confirmar com o cliente.
       Testado com dados reais, carrega em ~1,6s. Ainda falta: gerar direto dessa tela (hoje só
       mostra e aponta pro Comercial), e detalhar o que "financeiro consolidado" deve incluir
       além do que já está aí (perguntar ao cliente se precisa de mais alguma coisa aqui)
+- [x] `/gestor/acessos`: gestão de convites de acesso dos consultores (ver seção 6.3)
 
 ### 6.8 Relatórios
 - [x] PDF consolidado (todos os consultores) por intervalo de datas exato — botão no painel do
@@ -248,7 +280,11 @@ identificado** — outro ponto a confirmar com o cliente.
       painel Comercial (a apuração continua sendo por mês inteiro) — se um mês nunca foi
       gerado para um consultor, ele não aparece no relatório, e o PDF avisa isso
       explicitamente em vez de fingir que está completo.
-- [ ] PDF individual por consultor (resumo + lista de placas) — ainda não feito
+- [x] **PDF de cada uma das 5 telas do Consultor** (dashboard + adesões + recorrência +
+      rastreadores + inadimplentes) — `/api/relatorios/consultor?tipo=...`, usa o mesmo helper
+      de tabela reutilizável (`lib/relatorios/pdf-utils.ts`). Esse helper trunca com reticências
+      (`ellipsis: true`) em vez de deixar o texto quebrar linha e desalinhar a tabela — bug real
+      visto (nome de consultor longo sobrepondo o total) e corrigido durante o teste.
 - [ ] Geração assíncrona/em background do relatório para períodos muito grandes (hoje é síncrono
       dentro da Route Handler; tende a ficar lento se o intervalo cobrir muitos meses/consultores)
 
