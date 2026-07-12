@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { gerarApuracaoUmConsultor, revalidarPaineisAposLote } from './actions'
+import { useEffect, useRef, useState } from 'react'
+import { consultarStatusPeriodo, revalidarPaineisAposLote, solicitarApuracao, type StatusJob } from './actions'
 
 interface ConsultorLote {
   cod_consultor: number
@@ -9,76 +9,82 @@ interface ConsultorLote {
   equipe: string
 }
 
-type StatusConsultor = 'pendente' | 'gerando' | 'ok' | 'erro'
-
-interface ResultadoConsultor {
-  status: StatusConsultor
-  mensagem?: string
-  totalLiquido?: number
-}
-
 const hoje = new Date()
-
-// Concorrência limitada no client (não uma Server Action só rodando todo mundo) — ver comentário
-// em web/src/app/comercial/actions.ts sobre por quê. 3 de cada vez é o mesmo patamar usado
-// internamente por consultor (ver comConcorrenciaLimitada em lib/apuracao/mensal.ts).
-const CONCORRENCIA = 3
+const INTERVALO_POLLING_MS = 4000
+// Só dispara os pedidos (inserir + acionar a tarefa) em paralelo — é rápido, não é o cálculo em
+// si. O cálculo de verdade roda no Trigger.dev com concorrência 1 (ver
+// web/src/trigger/gerar-apuracao.ts), então o "acompanhar" é só consulta de status.
+const CONCORRENCIA_DISPARO = 10
 
 export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] }) {
   const [mes, setMes] = useState(hoje.getMonth() + 1)
   const [ano, setAno] = useState(hoje.getFullYear())
-  const [rodando, setRodando] = useState(false)
-  const [resultados, setResultados] = useState<Record<number, ResultadoConsultor>>({})
-  const canceladoRef = useRef(false)
+  const [acompanhando, setAcompanhando] = useState(false)
+  const [statusPorConsultor, setStatusPorConsultor] = useState<Record<number, StatusJob>>({})
+  const pararPollingRef = useRef(false)
 
-  const total = Object.keys(resultados).length
-  const concluidos = Object.values(resultados).filter((r) => r.status === 'ok' || r.status === 'erro').length
-  const okCount = Object.values(resultados).filter((r) => r.status === 'ok').length
-  const falhas = consultores.filter((c) => resultados[c.cod_consultor]?.status === 'erro')
+  const total = Object.keys(statusPorConsultor).length
+  const concluidos = Object.values(statusPorConsultor).filter(
+    (s) => s.status === 'concluido' || s.status === 'erro'
+  ).length
+  const okCount = Object.values(statusPorConsultor).filter((s) => s.status === 'concluido').length
+  const falhas = consultores.filter((c) => statusPorConsultor[c.cod_consultor]?.status === 'erro')
 
-  async function rodarLista(lista: ConsultorLote[]) {
-    if (lista.length === 0) return
-    setRodando(true)
-    canceladoRef.current = false
+  useEffect(() => {
+    return () => {
+      pararPollingRef.current = true
+    }
+  }, [])
 
-    setResultados((prev) => {
-      const novo = { ...prev }
-      for (const c of lista) novo[c.cod_consultor] = { status: 'pendente' }
-      return novo
-    })
+  async function acompanharAtePronto() {
+    while (!pararPollingRef.current) {
+      const statusAtual = await consultarStatusPeriodo(ano, mes)
+      const porConsultor: Record<number, StatusJob> = {}
+      for (const s of statusAtual) porConsultor[s.cod_consultor] = s
+      setStatusPorConsultor((prev) => ({ ...prev, ...porConsultor }))
 
-    const fila = [...lista]
+      const codsDaLista = new Set(consultores.map((c) => c.cod_consultor))
+      const relevantes = statusAtual.filter((s) => codsDaLista.has(s.cod_consultor))
+      const todosProntos =
+        relevantes.length > 0 && relevantes.every((s) => s.status === 'concluido' || s.status === 'erro')
 
-    async function processarProximo(): Promise<void> {
-      if (canceladoRef.current) return
-      const consultor = fila.shift()
-      if (!consultor) return
-
-      setResultados((prev) => ({ ...prev, [consultor.cod_consultor]: { status: 'gerando' } }))
-
-      const resultado = await gerarApuracaoUmConsultor(consultor.cod_consultor, ano, mes)
-
-      setResultados((prev) => ({
-        ...prev,
-        [consultor.cod_consultor]: resultado.ok
-          ? { status: 'ok', totalLiquido: resultado.totalLiquido }
-          : { status: 'erro', mensagem: resultado.erro ?? 'Erro desconhecido.' },
-      }))
-
-      await processarProximo()
+      if (todosProntos || pararPollingRef.current) break
+      await new Promise((r) => setTimeout(r, INTERVALO_POLLING_MS))
     }
 
-    const trabalhadores = Math.min(CONCORRENCIA, lista.length)
-    await Promise.all(Array.from({ length: trabalhadores }, () => processarProximo()))
-
-    setRodando(false)
-    if (!canceladoRef.current) {
+    setAcompanhando(false)
+    if (!pararPollingRef.current) {
       await revalidarPaineisAposLote()
     }
   }
 
-  function cancelar() {
-    canceladoRef.current = true
+  async function dispararLista(lista: ConsultorLote[]) {
+    if (lista.length === 0) return
+    pararPollingRef.current = false
+    setAcompanhando(true)
+
+    setStatusPorConsultor((prev) => {
+      const novo = { ...prev }
+      for (const c of lista) novo[c.cod_consultor] = { cod_consultor: c.cod_consultor, status: 'pendente', erro_mensagem: null }
+      return novo
+    })
+
+    const fila = [...lista]
+    async function dispararProximo(): Promise<void> {
+      const consultor = fila.shift()
+      if (!consultor) return
+      await solicitarApuracao(consultor.cod_consultor, ano, mes)
+      await dispararProximo()
+    }
+    const disparadores = Math.min(CONCORRENCIA_DISPARO, lista.length)
+    await Promise.all(Array.from({ length: disparadores }, () => dispararProximo()))
+
+    acompanharAtePronto()
+  }
+
+  function pararDeAcompanhar() {
+    pararPollingRef.current = true
+    setAcompanhando(false)
   }
 
   return (
@@ -94,7 +100,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
             min={1}
             max={12}
             value={mes}
-            disabled={rodando}
+            disabled={acompanhando}
             onChange={(e) => setMes(Number(e.target.value))}
             className="mt-1 w-24 rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50"
           />
@@ -107,31 +113,31 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
             id="lote-ano"
             type="number"
             value={ano}
-            disabled={rodando}
+            disabled={acompanhando}
             onChange={(e) => setAno(Number(e.target.value))}
             className="mt-1 w-28 rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50"
           />
         </div>
 
-        {!rodando ? (
+        {!acompanhando ? (
           <button
-            onClick={() => rodarLista(consultores)}
+            onClick={() => dispararLista(consultores)}
             className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
           >
             Gerar apuração de todos ({consultores.length} consultores)
           </button>
         ) : (
           <button
-            onClick={cancelar}
-            className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+            onClick={pararDeAcompanhar}
+            className="rounded-md border border-slate-400 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            Cancelar
+            Parar de acompanhar (continua rodando em segundo plano)
           </button>
         )}
 
-        {!rodando && falhas.length > 0 && (
+        {!acompanhando && falhas.length > 0 && (
           <button
-            onClick={() => rodarLista(falhas)}
+            onClick={() => dispararLista(falhas)}
             className="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
           >
             Tentar novamente os {falhas.length} que falharam
@@ -142,9 +148,14 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
       {total > 0 && (
         <div className="text-sm text-slate-600">
           {concluidos} / {total} concluído(s) — {okCount} ok, {falhas.length} com erro
-          {rodando ? ' · rodando, não feche esta aba...' : ''}
+          {acompanhando ? ' · processando em segundo plano...' : ''}
         </div>
       )}
+
+      <p className="text-xs text-slate-400">
+        A geração roda em segundo plano (Trigger.dev), um consultor por vez — pode fechar esta aba
+        que o processamento continua normalmente. Volte aqui depois pra ver o resultado.
+      </p>
 
       {total > 0 && (
         <div className="max-h-96 overflow-y-auto rounded-md border border-slate-100">
@@ -158,7 +169,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
             </thead>
             <tbody>
               {consultores
-                .filter((c) => resultados[c.cod_consultor])
+                .filter((c) => statusPorConsultor[c.cod_consultor])
                 .map((c) => (
                   <tr key={c.cod_consultor} className="border-t border-slate-100">
                     <td className="px-3 py-1.5">
@@ -166,7 +177,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
                     </td>
                     <td className="px-3 py-1.5 text-slate-500">{c.equipe}</td>
                     <td className="px-3 py-1.5">
-                      <StatusBadge resultado={resultados[c.cod_consultor]} />
+                      <StatusBadge status={statusPorConsultor[c.cod_consultor]} />
                     </td>
                   </tr>
                 ))}
@@ -178,15 +189,9 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
   )
 }
 
-function StatusBadge({ resultado }: { resultado: ResultadoConsultor }) {
-  if (resultado.status === 'pendente') return <span className="text-slate-400">Pendente</span>
-  if (resultado.status === 'gerando') return <span className="text-amber-600">Gerando...</span>
-  if (resultado.status === 'ok') {
-    return (
-      <span className="text-emerald-700">
-        OK — R$ {resultado.totalLiquido?.toFixed(2)}
-      </span>
-    )
-  }
-  return <span className="text-red-600">Erro: {resultado.mensagem}</span>
+function StatusBadge({ status }: { status: StatusJob }) {
+  if (status.status === 'pendente') return <span className="text-slate-400">Na fila</span>
+  if (status.status === 'processando') return <span className="text-amber-600">Gerando...</span>
+  if (status.status === 'concluido') return <span className="text-emerald-700">OK</span>
+  return <span className="text-red-600">Erro: {status.erro_mensagem}</span>
 }
