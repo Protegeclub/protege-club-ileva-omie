@@ -207,17 +207,31 @@ ver pasta `Telas Cosultores/`).
       script de teste em paralelo (ex.: `test-apuracao.mts`) invalidava o token que o servidor
       dev estava usando, e a próxima chamada quebrava com 401 sem tentar de novo. `ilevaGet`
       agora refaz login e tenta a chamada mais uma vez antes de desistir.
+- [x] **Segundo bug real, mais sério, encontrado no teste de stress de 12/07/2026 e corrigido**:
+      o retry acima não bastava sob concorrência real — com vários consultores/veículos em
+      paralelo, múltiplas chamadas podiam tentar logar ao mesmo tempo assim que o token
+      precisava renovar, e cada login novo invalidava o token que outra chamada tinha acabado de
+      conseguir (só existe 1 token ativo por usuário no Ileva), numa cascata que não se
+      recuperava sozinha (45 consultores seguidos falharam com 401 num teste real). Corrigido com
+      um mutex (`loginEmAndamento` em `web/src/lib/ileva/client.ts`): chamadas concorrentes que
+      precisam de token novo agora esperam o mesmo login em vez de cada uma logar por conta
+      própria. **Nota**: isso resolve a concorrência dentro de um processo só; o risco entre
+      instâncias serverless diferentes (cada uma com sua própria memória) continua existindo e
+      é o motivo de já termos criado a tabela `ileva_token_cache` — ainda não usada de fato,
+      ver linha abaixo.
 - [x] Funções de leitura escritas e em uso real (`web/src/lib/ileva/api.ts`): consultores,
       veículos, boletos, benefícios
 - [x] Motor de apuração (`web/src/lib/apuracao/mensal.ts`): calcula adesão e recorrência de um
       consultor num mês direto na API, com paginação (`inicio_paginacao` é obrigatório — a API
       dá erro 400 sem isso) e concorrência limitada (5 por vez, para não sobrecarregar)
-- [ ] **Achado importante**: consultores variam MUITO em quantidade de veículos (de 0 a **871**
-      num caso real) — calcular ao vivo a cada acesso de tela não escala para os grandes. Por
-      isso a apuração é **gerada sob demanda** (painel Comercial) e salva em
-      `apuracoes_mensais`, não recalculada a cada carregamento do painel do Consultor. Ainda
-      falta: rodar para os consultores "grandes" de verdade e confirmar o tempo/timeout no
-      Vercel (pode precisar virar um job em background em vez de Server Action síncrona).
+- [x] **Achado importante — agora medido de verdade (12/07/2026)**: consultores variam MUITO em
+      quantidade de veículos (de 0 a **871** num caso real) — calcular ao vivo a cada acesso de
+      tela não escala para os grandes. Por isso a apuração é **gerada sob demanda** (painel
+      Comercial) e salva em `apuracoes_mensais`, não recalculada a cada carregamento do painel do
+      Consultor. O teste de stress completo (seção 6.7) confirmou o pior caso: alguns consultores
+      levam **até 31 minutos** pra gerar — inviável dentro do timeout de qualquer função
+      serverless da Vercel. Precisa virar job em background (ou solução equivalente) antes de
+      confiar 100% nisso em produção — ver detalhes e opções na seção 6.7.
 - [x] Listagem de todos os consultores (`listarTodosConsultores` em `web/src/lib/ileva/api.ts`)
       — usada no painel do Gestor; rápida (~245 consultores, 1-2 páginas, nada a ver com o
       problema de escala por veículo acima)
@@ -237,9 +251,41 @@ ver pasta `Telas Cosultores/`).
       Testado com Playwright real: rodou parcialmente (~4 consultores reais, mês fictício 2099/12
       pra não sujar dado real), confirmado que os dados foram salvos certinho no Supabase, que
       "Cancelar" realmente para de iniciar novos (só os já em voo terminam), e os dados de teste
-      foram apagados depois. **Ainda falta**: rodar o lote completo de verdade contra os 206
-      consultores reais pra medir o tempo total e achar os casos grandes/lentos de fato (só
-      testamos uma fatia pequena até agora).
+      foram apagados depois.
+- [x] **Teste de stress real completo (12/07/2026): 206/206 consultores ativos, 06/2026** — rodado
+      de verdade (não é mais estimativa). Dois achados importantes, um deles crítico:
+      1. **Bug crítico de concorrência no token do Ileva, encontrado e corrigido.** Na primeira
+         rodada completa, a partir do consultor #162 os **45 consultores seguintes falharam em
+         cascata** com 401 "Token inválido ou expirado". Causa raiz: `getToken()`/`fetchToken()`
+         em `web/src/lib/ileva/client.ts` não tinha proteção contra chamadas concorrentes — como
+         um consultor já dispara até 5 chamadas em paralelo internamente
+         (`comConcorrenciaLimitada`) e o lote roda 3 consultores ao mesmo tempo, dava pra ter ~15
+         chamadas concorrentes num processo só; assim que o token precisava renovar, várias
+         chamadas tentavam logar ao mesmo tempo, e cada login novo invalidava o token que outra
+         chamada tinha acabado de conseguir (o Ileva só permite 1 token ativo por usuário) — uma
+         cascata que nunca se recuperava sozinha. **Corrigido** com um mutex (`loginEmAndamento`):
+         chamadas concorrentes que precisam de token novo agora esperam o mesmo login em vez de
+         cada uma logar por conta própria. Reprocessados os 45 que falharam depois do fix: **45/45
+         ok, zero erro**.
+      2. **Achado do "consultor de 871 veículos" confirmado na prática — e é pior do que
+         parecia.** Tempo de geração por consultor varia de ~0,3s a **31 minutos**. Outliers reais
+         medidos: `#19 Marcos Aurélio Vieira Cabral` — **1886s (~31,4 min)**; `#9 Sanderlan Martins
+         Gomes` — 925s (~15,4 min); `#8 Protegeclub` — 887s (~14,8 min); `#6 Rodrigo Cabral Mota`
+         — 792s (~13,2 min); `#110 Mirian Alves Aparecida Barros` — 501s (~8,3 min); mais uns 5-6
+         consultores na faixa de 1 a 4 minutos. **Isso derruba de vez a viabilidade do modelo atual
+         (Server Action síncrona por consultor) em produção na Vercel**: mesmo o timeout mais
+         generoso disponível (Fluid Compute, até 800s) não cobre os piores casos. Localmente não
+         trava graças à arquitetura "um consultor por chamada, fila no client" (só aquela linha
+         demora, o resto do lote segue), mas em produção cada chamada desse tipo estouraria o
+         timeout da função serverless e falharia sozinha — o usuário conseguiria gerar ~195-200
+         consultores normalmente e teria que tratar os ~5-6 grandes à parte.
+      **Conclusão prática**: geração em lote funciona e está íntegra (206/206 gerados, dado real
+      confirmado no Supabase), mas os poucos consultores "gigantes" precisam de uma solução
+      diferente antes de confiar nisso 100% em produção — candidatos: (a) aumentar
+      `maxDuration` da rota/action (cobre só os casos médios, não os de 800s+); (b) job assíncrono
+      de verdade (fila + worker, ou trigger + polling de status) para esses casos específicos;
+      (c) pré-identificar consultores "grandes" (por contagem de veículos) e gerá-los à parte, sob
+      demanda, fora do fluxo síncrono do lote. Ainda não decidido — próxima conversa com o Samuel.
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
       (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Comercial

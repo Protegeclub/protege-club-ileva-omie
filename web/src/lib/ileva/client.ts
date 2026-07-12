@@ -11,30 +11,49 @@ import { env } from '@/lib/env'
 // lock para evitar corrida. Ver item correspondente em CONTEXTO_E_CHECKLIST.md (seção 6.4).
 let cachedToken: { value: string; expiresAt: number } | null = null
 
+// Login em andamento, compartilhado entre chamadas concorrentes — sem isso, um lote com vários
+// consultores em paralelo (ou vários veículos de um consultor, via comConcorrenciaLimitada) podia
+// disparar N logins simultâneos assim que o token expirasse/invalidasse. Como o Ileva só permite
+// UM token ativo por usuário, cada login concorrente invalidava o token que outra chamada acabara
+// de conseguir, numa cascata que nunca se recuperava (visto de verdade num teste de carga real:
+// 45 consultores seguidos falhando com 401 até o fim do lote). Agora todo mundo que precisa de um
+// token novo ao mesmo tempo espera o MESMO login, em vez de cada um logar por conta própria.
+let loginEmAndamento: Promise<string> | null = null
+
 async function fetchToken(): Promise<string> {
-  const res = await fetch(`${env.ileva.baseUrl}/oauth/token`, {
-    method: 'POST',
-    headers: {
-      app_key: env.ileva.appKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      username: env.ileva.username,
-      password: env.ileva.password,
-    }),
-    cache: 'no-store',
-  })
+  if (loginEmAndamento) return loginEmAndamento
 
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Falha ao autenticar na API do Ileva (${res.status}): ${body}`)
+  loginEmAndamento = (async () => {
+    const res = await fetch(`${env.ileva.baseUrl}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        app_key: env.ileva.appKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: env.ileva.username,
+        password: env.ileva.password,
+      }),
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(`Falha ao autenticar na API do Ileva (${res.status}): ${body}`)
+    }
+
+    const data = (await res.json()) as { access_token: string; expires_in: string }
+    const expiresInMs = Number(data.expires_in) * 1000
+    // Renova 60s antes de expirar para evitar corrida com uma chamada em andamento.
+    cachedToken = { value: data.access_token, expiresAt: Date.now() + expiresInMs - 60_000 }
+    return cachedToken.value
+  })()
+
+  try {
+    return await loginEmAndamento
+  } finally {
+    loginEmAndamento = null
   }
-
-  const data = (await res.json()) as { access_token: string; expires_in: string }
-  const expiresInMs = Number(data.expires_in) * 1000
-  // Renova 60s antes de expirar para evitar corrida com uma chamada em andamento.
-  cachedToken = { value: data.access_token, expiresAt: Date.now() + expiresInMs - 60_000 }
-  return cachedToken.value
 }
 
 async function getToken(): Promise<string> {
