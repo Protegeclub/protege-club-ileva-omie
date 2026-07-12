@@ -73,6 +73,8 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 
 - **Hospedagem**: Vercel (front-end/back-end), com possibilidade futura de migrar para VPS se o
   projeto crescer.
+- **Processamento em segundo plano**: Trigger.dev (projeto "ProtegeClub"), pra geração de
+  apuração que não cabe no timeout de função serverless da Vercel — ver seção 6.4/6.7.
 - **Banco de dados**: Supabase (ainda não criado — variáveis já reservadas no `.env`).
 - **Fonte de verdade dos dados operacionais**: Ileva (vínculo consultor↔veículo, recorrência,
   adesão). A Omie é usada como destino financeiro (criação do título a pagar), não como fonte de
@@ -295,13 +297,36 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       de verdade (fila + worker, ou trigger + polling de status) para esses casos específicos;
       (c) pré-identificar consultores "grandes" (por contagem de veículos) e gerá-los à parte, sob
       demanda, fora do fluxo síncrono do lote.
-      **Decisão adiada (12/07/2026)**: Samuel prefere levar essa escolha pro cliente antes de
-      implementar qualquer uma das opções acima — trocar de hospedagem foi descartado (não ataca
-      a causa raiz, que é a chamada síncrona presa esperando o processamento, não a capacidade do
-      host). Recomendação registrada pra quando essa conversa acontecer: começar pela opção (c)
-      (tratar os ~5-6 grandes manualmente via script pontual, custo zero) e só migrar pra (b)
-      (job assíncrono de verdade) se isso virar dor de cabeça recorrente — dado o contrato de
-      manutenção enxuto (R$300/mês) desse projeto.
+      **Decisão tomada (12/07/2026)**: Samuel optou direto pela opção (b) — job assíncrono de
+      verdade — em vez de esperar a conversa com o cliente. Trocar de hospedagem foi descartado
+      antes disso (não ataca a causa raiz, que é a chamada síncrona presa esperando o
+      processamento, não a capacidade do host).
+- [x] **Geração de apuração migrada para o Trigger.dev (12/07/2026)** — resolve de vez o problema
+      dos consultores "gigantes". Arquitetura:
+      - Nova tabela `apuracao_jobs` (`0004_apuracao_jobs.sql`) rastreia status
+        (pendente/processando/concluido/erro) por `cod_consultor+ano+mes`, separada de
+        `apuracoes_mensais` pra não confundir "gerado com zero" com "ainda não gerado".
+      - `web/src/trigger/gerar-apuracao.ts`: a tarefa roda a mesma lógica de sempre
+        (`gerarESalvarApuracao`, sem reescrever nada do cálculo) na infraestrutura do
+        Trigger.dev, fora da Vercel — sem limite de tempo de função serverless.
+        `queue: { concurrencyLimit: 1 }` de propósito: o token do Ileva só permite 1 sessão
+        ativa por usuário, e cada execução roda em processo isolado — rodar mais de uma ao
+        mesmo tempo reintroduziria a cascata de 401 (seção 6.4), só que entre processos
+        diferentes do Trigger.dev em vez de dentro de um único processo Node.
+      - `comercial/actions.ts`: `solicitarApuracao` só dispara (grava "pendente" + aciona a
+        tarefa) e retorna na hora; `consultarStatusPeriodo` é consultada em loop pelo client.
+      - `GerarApuracaoForm` e `GerarLoteForm` viraram "disparar e acompanhar por status" em vez
+        de "esperar a resposta de uma chamada só" — fechar a aba não interrompe o
+        processamento, que continua rodando no Trigger.dev de qualquer forma.
+      - **Testado de ponta a ponta com sucesso**: consultor 11 (26,8s) e consultor **19 — o pior
+        caso medido, 871 veículos — completou em 18min21s rodando pelo Trigger.dev**, sem cair,
+        confirmado tanto na tabela `apuracoes_mensais` quanto no painel de Runs do Trigger.dev.
+      - **Pendente pra funcionar em produção**: falta configurar as credenciais no ambiente
+        "Production" do Trigger.dev (as 6 variáveis Ileva/Supabase) e a chave
+        `TRIGGER_SECRET_KEY` de produção na Vercel — hoje só está validado em desenvolvimento
+        local. Depois disso, rodar `npx trigger.dev deploy`.
+      - Plano gratuito do Trigger.dev cobre bem o volume mensal (~206 execuções), sem custo
+        adicional pro contrato de manutenção.
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
       (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Comercial
