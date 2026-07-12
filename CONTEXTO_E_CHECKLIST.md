@@ -45,6 +45,15 @@ regra do nosso sistema — R$100 fixo por veículo com `possui_rastreador = Sim`
 cai no mês apurado (confirmado batendo com os totais reais do Power BI que o cliente usa hoje,
 ver pasta `Telas Cosultores/`).
 
+**Pergunta em aberto pro cliente (achada em 12/07/2026, dado real do teste de stress)**: líquido
+= adesão + recorrência − desconto de rastreador, sem piso em zero — então dá pra um consultor
+fechar o mês com **líquido negativo** se vender veículo(s) com rastreador mas não tiver
+adesão/recorrência suficiente no mesmo mês pra cobrir o desconto (casos reais: consultor #69
+Laura Vitoria, -R$100 em 06/2026; consultor #80 André Gouveia, -R$90 em 06/2026). Ainda não
+decidido com o cliente o que deveria acontecer nesse caso: (1) mostrar negativo mesmo (é o que o
+sistema faz hoje), (2) zerar (a associação absorve o prejuízo daquele mês), ou (3) carregar o
+saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
+
 ## 3. Documentos do projeto (onde está cada detalhe)
 
 | Arquivo | Conteúdo |
