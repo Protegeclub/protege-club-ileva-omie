@@ -169,7 +169,12 @@ ver pasta `Telas Cosultores/`).
       Samuel tem)
 - [x] Usuário Gestor de teste criado (`marketing@artha.srv.br`) e vinculado em `perfis`
 - [x] Usuário Consultor de teste criado (`consultor-teste@protegeclub.local`, vinculado ao
-      `cod_consultor 313` real do Ileva)
+      `cod_consultor 11` real do Ileva — trocado do 313 original em 12/07/2026 pra testar o caso
+      de vários boletos em atraso por veículo)
+- [x] Usuários **Comercial** e **Gestor** de teste criados (12/07/2026):
+      `comercial-teste@protegeclub.local` / `Comercial123!` e
+      `gestor-teste@protegeclub.local` / `Gestor123!` — pra não depender da senha real do Samuel
+      pra testar esses dois perfis
 - [ ] Perfil **Gestor** (acesso total) — rota `/gestor` escrita, dados reais pendentes
 - [x] Perfil **Comercial** (gerar apuração) — funcional: formulário real, testado de ponta a
       ponta via navegador headless (login → gerar → salvar no Supabase)
@@ -272,6 +277,16 @@ ver pasta `Telas Cosultores/`).
       Testado com dados reais, carrega em ~1,6s. Ainda falta: gerar direto dessa tela (hoje só
       mostra e aponta pro Comercial), e detalhar o que "financeiro consolidado" deve incluir
       além do que já está aí (perguntar ao cliente se precisa de mais alguma coisa aqui)
+- [x] **Gestor: busca por nome/código + filtro por equipe + drill-down por consultor**
+      (12/07/2026) — campo de busca (`q`, casa nome ou `cod_consultor` exato) e select de
+      equipe na mesma tela `/gestor`; nome do consultor virou link pra
+      `/gestor/consultor/[cod]`, que replica as 5 telas do painel do Consultor (dashboard +
+      adesões + recorrência + rastreadores + inadimplentes) só que pro Gestor ver de **qualquer**
+      consultor — `web/src/app/gestor/consultor/[cod]/dados.ts` usa o cliente admin direto (sem
+      passar pelo `perfis` de quem está logado, diferente de `consultor/dados.ts`), já que a
+      autorização de qualquer coisa embaixo de `/gestor` é do próprio Gestor. Testado com
+      Playwright real (login como `gestor-teste@protegeclub.local`) navegando pelas 4 sub-telas
+      do consultor 11 e conferindo os valores.
 - [x] `/gestor/acessos`: gestão de convites de acesso dos consultores (ver seção 6.3)
 
 ### 6.8 Relatórios
@@ -290,6 +305,15 @@ ver pasta `Telas Cosultores/`).
       visto (nome de consultor longo sobrepondo o total) e corrigido durante o teste.
 - [ ] Geração assíncrona/em background do relatório para períodos muito grandes (hoje é síncrono
       dentro da Route Handler; tende a ficar lento se o intervalo cobrir muitos meses/consultores)
+- [x] **PDF em lote "todos os consultores" (12/07/2026)** — botão "Baixar PDF de todos" no
+      painel Gestor (`/api/relatorios/gestor/todos`, gerado por
+      `web/src/lib/relatorios/todos-consultores.ts`). Diferente do PDF consolidado (seção 6.8
+      acima, que é uma tabela-resumo por intervalo de datas): este é a apuração detalhada de UM
+      mês/ano específico, com uma **seção separada por consultor** (não uma linha de tabela),
+      respeitando os mesmos filtros de busca/equipe já aplicados na tela. Quem não tem apuração
+      gerada nesse mês entra numa lista à parte no fim do PDF, não é omitido silenciosamente.
+      Testado com dados reais: PDF de todos (7 páginas/consultores) e filtrado por equipe
+      (subconjunto menor) — ambos gerados corretamente.
 
 ### 6.9 Testes e validação
 - [ ] Testes com dados reais via API de teste (sem afetar produção)

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { listarTodosConsultores } from '@/lib/ileva/api'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { Consultor } from '@/types/domain'
@@ -23,12 +24,15 @@ const NOMES_MESES = [
 export default async function GestorDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ano?: string; mes?: string }>
+  searchParams: Promise<{ ano?: string; mes?: string; equipe?: string; q?: string }>
 }) {
   const params = await searchParams
   const hoje = new Date()
   const ano = Number(params.ano) || hoje.getFullYear()
   const mes = Number(params.mes) || hoje.getMonth() + 1
+  const equipeFiltro = (params.equipe ?? '').trim()
+  const busca = (params.q ?? '').trim()
+  const buscaLower = busca.toLowerCase()
 
   // Visão consolidada: cruza o cadastro de consultores do Ileva (~245 hoje, chamada rápida —
   // diferente do problema de escala por veículo, ver lib/apuracao/mensal.ts) com o que já foi
@@ -46,8 +50,19 @@ export default async function GestorDashboardPage({
   const apuracoes = (apuracoesResult.data ?? []) as ApuracaoResumo[]
   const apuracaoPorConsultor = new Map(apuracoes.map((a) => [a.cod_consultor, a]))
 
+  const equipesDisponiveis = Array.from(new Set(consultores.map((c) => c.equipe).filter(Boolean))).sort(
+    (a, b) => a.localeCompare(b)
+  )
+
   const linhas = consultores
     .filter((c) => c.situacao === 'Ativo')
+    .filter((c) => !equipeFiltro || c.equipe === equipeFiltro)
+    .filter(
+      (c) =>
+        !buscaLower ||
+        c.nome.toLowerCase().includes(buscaLower) ||
+        String(c.cod_consultor) === buscaLower
+    )
     .map((consultor: Consultor) => ({
       consultor,
       apuracao: apuracaoPorConsultor.get(consultor.cod_consultor) ?? null,
@@ -69,9 +84,17 @@ export default async function GestorDashboardPage({
   const dataInicioPadrao = `${ano}-${String(mes).padStart(2, '0')}-01`
   const dataFimPadrao = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDiaDoMes).padStart(2, '0')}`
 
+  const qsAtual = `ano=${ano}&mes=${mes}`
+  const qsFiltrosPdfTodos = new URLSearchParams({
+    ano: String(ano),
+    mes: String(mes),
+    ...(equipeFiltro ? { equipe: equipeFiltro } : {}),
+    ...(busca ? { q: busca } : {}),
+  }).toString()
+
   return (
     <div className="space-y-6">
-      <form method="GET" className="flex items-end gap-3">
+      <form method="GET" className="flex flex-wrap items-end gap-3">
         <div>
           <label htmlFor="mes" className="block text-xs font-medium text-slate-500">Mês</label>
           <select id="mes" name="mes" defaultValue={mes} className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm">
@@ -90,10 +113,62 @@ export default async function GestorDashboardPage({
             className="mt-1 w-24 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
           />
         </div>
+        <div>
+          <label htmlFor="equipe" className="block text-xs font-medium text-slate-500">Equipe</label>
+          <select
+            id="equipe"
+            name="equipe"
+            defaultValue={equipeFiltro}
+            className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          >
+            <option value="">Todas as equipes</option>
+            {equipesDisponiveis.map((eq) => (
+              <option key={eq} value={eq}>{eq}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="q" className="block text-xs font-medium text-slate-500">Buscar consultor</label>
+          <input
+            id="q"
+            name="q"
+            type="text"
+            placeholder="Nome ou código"
+            defaultValue={busca}
+            className="mt-1 w-48 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          />
+        </div>
         <button type="submit" className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800">
           Ver
         </button>
+        {(equipeFiltro || busca) && (
+          <Link
+            href={`/gestor?${qsAtual}`}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            Limpar filtros
+          </Link>
+        )}
       </form>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
+        <div>
+          <p className="text-sm font-medium text-slate-700">Apuração detalhada de todos os consultores (PDF)</p>
+          <p className="text-xs text-slate-400">
+            Baixa uma seção separada por consultor para {NOMES_MESES[mes - 1]}/{ano}
+            {equipeFiltro ? `, equipe "${equipeFiltro}"` : ''}
+            {busca ? `, filtrado por "${busca}"` : ''} — respeita os filtros acima ({linhas.length} consultor(es)).
+          </p>
+        </div>
+        <a
+          href={`/api/relatorios/gestor/todos?${qsFiltrosPdfTodos}`}
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
+        >
+          Baixar PDF de todos
+        </a>
+      </div>
 
       <form
         method="GET"
@@ -102,7 +177,7 @@ export default async function GestorDashboardPage({
         className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
       >
         <div>
-          <p className="text-sm font-medium text-slate-700">Relatório completo em PDF</p>
+          <p className="text-sm font-medium text-slate-700">Relatório resumido por período (PDF)</p>
           <p className="text-xs text-slate-400">Escolha o intervalo de datas exato do relatório.</p>
         </div>
         <div className="ml-auto flex items-end gap-3">
@@ -149,7 +224,7 @@ export default async function GestorDashboardPage({
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
               <th className="px-4 py-2 font-medium">Consultor</th>
@@ -159,13 +234,20 @@ export default async function GestorDashboardPage({
               <th className="px-4 py-2 font-medium">Desconto rastreador</th>
               <th className="px-4 py-2 font-medium">Líquido</th>
               <th className="px-4 py-2 font-medium">Status</th>
+              <th className="px-4 py-2 font-medium">Ações</th>
             </tr>
           </thead>
           <tbody>
             {linhas.map(({ consultor, apuracao }) => (
               <tr key={consultor.cod_consultor} className="border-t border-slate-100">
                 <td className="px-4 py-2 text-slate-800">
-                  {consultor.nome} <span className="text-slate-400">#{consultor.cod_consultor}</span>
+                  <Link
+                    href={`/gestor/consultor/${consultor.cod_consultor}?${qsAtual}`}
+                    className="hover:underline"
+                  >
+                    {consultor.nome}
+                  </Link>{' '}
+                  <span className="text-slate-400">#{consultor.cod_consultor}</span>
                 </td>
                 <td className="px-4 py-2 text-slate-500">{consultor.equipe}</td>
                 {apuracao ? (
@@ -179,15 +261,40 @@ export default async function GestorDashboardPage({
                         Gerado
                       </span>
                     </td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-3">
+                        <Link
+                          href={`/gestor/consultor/${consultor.cod_consultor}?${qsAtual}`}
+                          className="text-xs font-medium text-slate-600 hover:underline"
+                        >
+                          Ver detalhes
+                        </Link>
+                        <a
+                          href={`/api/relatorios/consultor?tipo=dashboard&cod_consultor=${consultor.cod_consultor}&${qsAtual}&equipe=0`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-medium text-emerald-700 hover:underline"
+                        >
+                          PDF individual
+                        </a>
+                      </div>
+                    </td>
                   </>
                 ) : (
-                  <td colSpan={5} className="px-4 py-2 text-slate-400">
+                  <td colSpan={6} className="px-4 py-2 text-slate-400">
                     Apuração ainda não gerada para {NOMES_MESES[mes - 1]}/{ano} — gerar no painel
                     Comercial
                   </td>
                 )}
               </tr>
             ))}
+            {linhas.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
+                  Nenhum consultor encontrado com os filtros atuais.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
