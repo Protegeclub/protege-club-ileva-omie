@@ -1,18 +1,38 @@
+import { listarTodosConsultores } from '@/lib/ileva/api'
 import { GerarApuracaoForm } from './gerar-apuracao-form'
+import { GerarLoteForm } from './gerar-lote-form'
 
-// MVP: gera a apuração de um consultor por vez, por código. Uma tela para gerar em lote (todos
-// os consultores de uma vez) fica para depois de validar esse fluxo com o cliente — consultores
-// com muitos veículos demoram bastante (ver nota em src/lib/apuracao/mensal.ts).
-export default function ComercialDashboardPage() {
+export default async function ComercialDashboardPage() {
+  const consultores = (await listarTodosConsultores())
+    .filter((c) => c.situacao === 'Ativo')
+    .map((c) => ({ cod_consultor: c.cod_consultor, nome: c.nome, equipe: c.equipe }))
+    .sort((a, b) => a.nome.localeCompare(b.nome))
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h2 className="text-base font-semibold text-slate-900">Gerar apuração mensal</h2>
         <p className="text-sm text-slate-500">
           Busca os dados no Ileva e calcula adesão + recorrência do consultor no mês informado.
         </p>
+        <div className="mt-4">
+          <GerarApuracaoForm />
+        </div>
       </div>
-      <GerarApuracaoForm />
+
+      <div>
+        <h2 className="text-base font-semibold text-slate-900">
+          Gerar em lote (todos os consultores ativos)
+        </h2>
+        <p className="text-sm text-slate-500">
+          Gera a apuração dos {consultores.length} consultores ativos de uma vez, um por um (3 em
+          paralelo). Pode demorar vários minutos — não feche esta aba enquanto estiver rodando.
+          Quem falhar pode ser tentado de novo sem repetir o lote inteiro.
+        </p>
+        <div className="mt-4">
+          <GerarLoteForm consultores={consultores} />
+        </div>
+      </div>
     </div>
   )
 }

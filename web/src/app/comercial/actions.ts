@@ -1,8 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { apurarConsultorMes } from '@/lib/apuracao/mensal'
-import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { gerarESalvarApuracao } from '@/lib/apuracao/gerar'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 export interface GerarApuracaoEstado {
@@ -11,10 +10,9 @@ export interface GerarApuracaoEstado {
   resumo?: { totalAdesao: number; totalRecorrencia: number }
 }
 
-export async function gerarApuracao(
-  _estadoAnterior: GerarApuracaoEstado,
-  formData: FormData
-): Promise<GerarApuracaoEstado> {
+type Autorizacao = { userId: string } | { erro: string }
+
+async function autorizarComercialOuGestor(): Promise<Autorizacao> {
   const supabase = await createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) {
@@ -33,6 +31,16 @@ export async function gerarApuracao(
     return { erro: 'Sem permissão para gerar apuração.' }
   }
 
+  return { userId: userData.user.id }
+}
+
+export async function gerarApuracao(
+  _estadoAnterior: GerarApuracaoEstado,
+  formData: FormData
+): Promise<GerarApuracaoEstado> {
+  const auth = await autorizarComercialOuGestor()
+  if ('erro' in auth) return { erro: auth.erro }
+
   const codConsultor = Number(formData.get('cod_consultor'))
   const ano = Number(formData.get('ano'))
   const mes = Number(formData.get('mes'))
@@ -42,47 +50,9 @@ export async function gerarApuracao(
   }
 
   try {
-    const resultado = await apurarConsultorMes(codConsultor, ano, mes)
-
-    // Premiação (individual/equipe) segue de fora: as regras do plano de carreira ainda não
-    // foram definidas pelo cliente (ver CONTEXTO_E_CHECKLIST.md, seção 6.1). Gravamos 0 em vez
-    // de inventar uma fórmula.
-    const totalLiquido =
-      resultado.totalAdesao + resultado.totalRecorrencia - resultado.totalDescontoRastreador
-
-    const admin = createSupabaseAdminClient()
-    const { error } = await admin.from('apuracoes_mensais').upsert(
-      {
-        cod_consultor: codConsultor,
-        cod_equipe: resultado.codEquipe,
-        ano,
-        mes,
-        total_adesao: resultado.totalAdesao,
-        total_recorrencia: resultado.totalRecorrencia,
-        total_desconto_rastreador: resultado.totalDescontoRastreador,
-        total_premiacao_individual: 0,
-        total_premiacao_equipe: 0,
-        total_liquido: totalLiquido,
-        gerado_por: userData.user.id,
-        gerado_em: new Date().toISOString(),
-        detalhe: {
-          nomeConsultor: resultado.nomeConsultor,
-          adesoes: resultado.adesoes,
-          recorrencias: resultado.recorrencias,
-          veiculosComRastreador: resultado.veiculosComRastreador,
-          descontosRastreador: resultado.descontosRastreador,
-          inadimplentes: resultado.inadimplentes,
-          totalRecorrenciaEstimadaInadimplentes: resultado.totalRecorrenciaEstimadaInadimplentes,
-        },
-      },
-      { onConflict: 'cod_consultor,ano,mes' }
-    )
-
-    if (error) {
-      return { erro: `Erro ao salvar no banco: ${error.message}` }
-    }
-
+    const resultado = await gerarESalvarApuracao(auth.userId, codConsultor, ano, mes)
     revalidatePath('/consultor')
+    revalidatePath('/gestor')
 
     return {
       sucesso: true,
@@ -91,4 +61,41 @@ export async function gerarApuracao(
   } catch (e) {
     return { erro: e instanceof Error ? e.message : 'Erro desconhecido ao gerar apuração.' }
   }
+}
+
+export interface ResultadoGeracaoLote {
+  ok: boolean
+  nomeConsultor?: string
+  totalLiquido?: number
+  erro?: string
+}
+
+// Chamada diretamente (não como form action) pelo GerarLoteForm no client, um consultor por
+// chamada — de propósito, em vez de uma Server Action só rodando os ~206 consultores ativos numa
+// invocação síncrona. Nunca testamos o tempo dos consultores grandes (um caso real chegou a 871
+// veículos, ver CONTEXTO_E_CHECKLIST.md 6.4) e uma função serverless tem timeout; rodando um de
+// cada vez, o client controla a fila/concorrência e um consultor lento não derruba o lote inteiro
+// — só aquela linha fica marcada como erro/timeout, o resto continua.
+export async function gerarApuracaoUmConsultor(
+  codConsultor: number,
+  ano: number,
+  mes: number
+): Promise<ResultadoGeracaoLote> {
+  const auth = await autorizarComercialOuGestor()
+  if ('erro' in auth) return { ok: false, erro: auth.erro }
+
+  try {
+    const resultado = await gerarESalvarApuracao(auth.userId, codConsultor, ano, mes)
+    return { ok: true, nomeConsultor: resultado.nomeConsultor, totalLiquido: resultado.totalLiquido }
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : 'Erro desconhecido.' }
+  }
+}
+
+// Chamada uma vez pelo client ao final do lote — as páginas /consultor e /gestor já renderizam
+// dinamicamente (dependem de cookie de sessão/searchParams), então isso é mais reforço do que
+// estritamente necessário, mas evita qualquer dúvida sobre cache stale depois de um lote grande.
+export async function revalidarPaineisAposLote() {
+  revalidatePath('/consultor')
+  revalidatePath('/gestor')
 }

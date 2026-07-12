@@ -221,7 +221,25 @@ ver pasta `Telas Cosultores/`).
 - [x] Listagem de todos os consultores (`listarTodosConsultores` em `web/src/lib/ileva/api.ts`)
       — usada no painel do Gestor; rápida (~245 consultores, 1-2 páginas, nada a ver com o
       problema de escala por veículo acima)
-- [ ] Geração em lote (todos os consultores de uma vez) — hoje só gera um `cod_consultor` por vez
+- [x] **Geração em lote no painel Comercial (12/07/2026)**: botão "Gerar apuração de todos" gera
+      os ~206 consultores ativos de um mês de uma vez. **Decisão de arquitetura**: não é uma
+      Server Action só rodando os 206 numa invocação síncrona (arriscado — nunca medimos o tempo
+      de um consultor grande tipo o caso de 871 veículos, e uma função serverless tem timeout).
+      Em vez disso, `gerarApuracaoUmConsultor` (`comercial/actions.ts`) é chamada um consultor por
+      vez, **pelo client** (`gerar-lote-form.tsx`), numa fila com concorrência limitada a 3 (mesmo
+      patamar usado internamente por consultor em `comConcorrenciaLimitada`). Isso significa que
+      um consultor grande/lento só atrasa aquela linha (fica "erro" se estourar algum limite) sem
+      travar o lote inteiro. UI mostra progresso linha a linha (pendente/gerando/ok/erro), permite
+      cancelar a qualquer momento (só impede novas chamadas — as já em voo terminam normalmente) e
+      tem botão "Tentar novamente os que falharam" (reprocessa só a lista de erro, não o lote
+      inteiro). Lógica de cálculo+upsert foi extraída pra `web/src/lib/apuracao/gerar.ts`
+      (compartilhada entre a geração individual e a em lote, evita duplicar a regra de negócio).
+      Testado com Playwright real: rodou parcialmente (~4 consultores reais, mês fictício 2099/12
+      pra não sujar dado real), confirmado que os dados foram salvos certinho no Supabase, que
+      "Cancelar" realmente para de iniciar novos (só os já em voo terminam), e os dados de teste
+      foram apagados depois. **Ainda falta**: rodar o lote completo de verdade contra os 206
+      consultores reais pra medir o tempo total e achar os casos grandes/lentos de fato (só
+      testamos uma fatia pequena até agora).
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
       (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Comercial
@@ -269,8 +287,8 @@ ver pasta `Telas Cosultores/`).
       mesmas colunas do sistema de origem. Só premiação (individual/líder de equipe) continua
       como placeholder — bloqueado pelas regras do plano de carreira.
 - [x] Painel Comercial: formulário funcional para gerar a apuração de um consultor por vez (por
-      `cod_consultor` + mês/ano) — falta a versão "gerar todos de uma vez" e uma tela de
-      conferência antes de considerar fechado
+      `cod_consultor` + mês/ano), **mais a geração em lote de todos os ativos** (ver seção 6.4) —
+      falta uma tela de conferência antes de considerar fechado
 - [x] Painel Gestor: visão consolidada funcional — lista todos os consultores ativos (206 hoje)
       cruzando com as apurações já geradas no mês selecionado (seletor de mês/ano por GET),
       cards de total líquido/adesão/recorrência geral e contagem de gerados vs. pendentes.
