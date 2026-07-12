@@ -342,6 +342,21 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
         login como `comercial-teste`): apuração gerada em 27s, salva certinho no Supabase.
       - Plano gratuito do Trigger.dev cobre bem o volume mensal (~206 execuções), sem custo
         adicional pro contrato de manutenção.
+      - **Terceiro bug real, encontrado logo depois (12/07/2026)**: a integração Vercel↔
+        Trigger.dev vem com "Atomic deployments" e "Auto promotion" ligados por padrão — isso faz
+        a Vercel só promover um deploy pra produção depois que o build automático do Trigger.dev
+        (disparado por ela mesma a cada push) terminar com sucesso. Como fazemos o deploy da
+        tarefa manualmente pelo CLI (por causa do bug do caminho com espaço/acento, ver acima),
+        esse build automático da integração ficava tentando e falhando (referenciava um
+        deployment inexistente, "Not Found"), **travando os deploys do site na Vercel** — dois
+        commits seguidos ficaram em "Checks Failed" sem ir pro ar. Corrigido desligando os
+        toggles **"Atomic deployments"** e **"Auto promotion"** na tela de configuração da
+        integração (Trigger.dev → Organization Settings → Integrations → Vercel → Configure).
+        Deploys voltaram a promover normalmente, confirmado com um redeploy real. **Consequência
+        prática pro fluxo de trabalho**: sempre que o código dentro de `web/src/trigger/` mudar,
+        o deploy da tarefa pro Trigger.dev precisa ser feito manualmente
+        (`npx trigger.dev deploy --env prod`, de uma pasta sem espaço/acento no caminho) — não é
+        mais automático a partir do push.
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
       (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Comercial
