@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Sistema pensado só pra modo claro (sem variantes dark: em nenhuma tela) — por isso, ao
+   contrário do template padrão do Next.js, NÃO seguimos o prefers-color-scheme do usuário.
+   Antes disso, quem usava o navegador/SO em modo escuro via o texto das tabelas quase invisível
+   (herdava --foreground claro, pensado pra fundo escuro, sobre os fundos brancos/slate-50 fixos
+   que usamos em toda a UI). */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,13 +15,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
