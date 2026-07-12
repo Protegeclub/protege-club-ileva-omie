@@ -321,10 +321,25 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       - **Testado de ponta a ponta com sucesso**: consultor 11 (26,8s) e consultor **19 — o pior
         caso medido, 871 veículos — completou em 18min21s rodando pelo Trigger.dev**, sem cair,
         confirmado tanto na tabela `apuracoes_mensais` quanto no painel de Runs do Trigger.dev.
-      - **Pendente pra funcionar em produção**: falta configurar as credenciais no ambiente
-        "Production" do Trigger.dev (as 6 variáveis Ileva/Supabase) e a chave
-        `TRIGGER_SECRET_KEY` de produção na Vercel — hoje só está validado em desenvolvimento
-        local. Depois disso, rodar `npx trigger.dev deploy`.
+      - **Configurado e validado em produção de verdade (12/07/2026)**: integração Vercel↔
+        Trigger.dev instalada (`vercel.com/marketplace/trigger`), as 6 variáveis Ileva/Supabase
+        cadastradas manualmente no ambiente Production do Trigger.dev (a sincronização automática
+        da integração só trouxe variáveis de uma integração nativa Supabase↔Vercel diferente,
+        com nomes genéricos que não servem pro nosso código — teve que ser manual), e
+        `TRIGGER_SECRET_KEY` de produção adicionada nas variáveis de ambiente da Vercel (também
+        manual — a sincronização automática não levou essa chave sozinha).
+      - **Dois bugs reais encontrados e corrigidos só em produção** (o Free Plan roda em
+        containers Linux diferentes do ambiente local):
+        1. Deploy do Trigger.dev falhava com `Cannot find module '.../trigger.config.mjs'`
+           (caminho virando URL codificada) por causa do caminho do projeto ter espaços e acento
+           (`Área de Trabalho`) — contornado copiando o projeto pra uma pasta temporária sem
+           caracteres especiais só pra rodar `npx trigger.dev deploy` de lá.
+        2. Task falhava com `Node.js detected but native WebSocket not found` — o cliente admin
+           do Supabase inicializa o Realtime no `createClient()` mesmo sem usarmos realtime, e o
+           runtime padrão `"node"` do Trigger.dev não tem WebSocket nativo. Trocado pra
+           `runtime: "node-22"` em `trigger.config.ts`.
+      - **Confirmado rodando na URL real de produção** (`protege-club-ileva-omie.vercel.app`,
+        login como `comercial-teste`): apuração gerada em 27s, salva certinho no Supabase.
       - Plano gratuito do Trigger.dev cobre bem o volume mensal (~206 execuções), sem custo
         adicional pro contrato de manutenção.
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
