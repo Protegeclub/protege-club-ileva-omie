@@ -78,7 +78,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Também exclui arquivos estáticos de public/ (ex.: a logo em .png) — sem isso, o próprio
+  // otimizador de imagem do Next busca esses arquivos sem cookie de sessão, cai no proxy e é
+  // redirecionado pra /login, fazendo a imagem "quebrar" silenciosamente (bug real visto ao
+  // adicionar a logo: a requisição virava um redirect em vez do arquivo).
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/webhooks).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/webhooks|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico)$).*)',
   ],
 }

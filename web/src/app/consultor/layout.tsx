@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { LogoTitulo } from '@/lib/ui/logo-titulo'
 import { FiltrosSidebar } from './filtros-sidebar'
 
 export default function ConsultorLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +11,7 @@ export default function ConsultorLayout({ children }: { children: React.ReactNod
       </Suspense>
       <div className="flex-1">
         <header className="border-b border-slate-200 bg-white px-6 py-4">
-          <h1 className="text-sm font-medium text-slate-500">Painel do Consultor</h1>
+          <LogoTitulo titulo="Painel do Consultor" />
         </header>
         <main className="p-6">{children}</main>
       </div>
