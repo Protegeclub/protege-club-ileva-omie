@@ -285,7 +285,14 @@ ver pasta `Telas Cosultores/`).
       `maxDuration` da rota/action (cobre só os casos médios, não os de 800s+); (b) job assíncrono
       de verdade (fila + worker, ou trigger + polling de status) para esses casos específicos;
       (c) pré-identificar consultores "grandes" (por contagem de veículos) e gerá-los à parte, sob
-      demanda, fora do fluxo síncrono do lote. Ainda não decidido — próxima conversa com o Samuel.
+      demanda, fora do fluxo síncrono do lote.
+      **Decisão adiada (12/07/2026)**: Samuel prefere levar essa escolha pro cliente antes de
+      implementar qualquer uma das opções acima — trocar de hospedagem foi descartado (não ataca
+      a causa raiz, que é a chamada síncrona presa esperando o processamento, não a capacidade do
+      host). Recomendação registrada pra quando essa conversa acontecer: começar pela opção (c)
+      (tratar os ~5-6 grandes manualmente via script pontual, custo zero) e só migrar pra (b)
+      (job assíncrono de verdade) se isso virar dor de cabeça recorrente — dado o contrato de
+      manutenção enxuto (R$300/mês) desse projeto.
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
       (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Comercial
