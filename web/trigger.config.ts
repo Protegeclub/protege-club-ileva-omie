@@ -2,7 +2,11 @@ import { defineConfig } from "@trigger.dev/sdk/v3";
 
 export default defineConfig({
   project: "proj_jhbuaxkhsfkxyyhnlzlq",
-  runtime: "node",
+  // "node" (padrão do init) não tem WebSocket nativo, e o cliente admin do Supabase
+  // (@supabase/supabase-js) tenta inicializar o Realtime no createClient() mesmo sem usarmos
+  // realtime — quebra com "Node.js detected but native WebSocket not found" (visto de verdade
+  // rodando em produção). node-22 resolve.
+  runtime: "node-22",
   logLevel: "log",
   // The max compute seconds a task is allowed to run. If the task run exceeds this duration, it will be stopped.
   // You can override this on an individual task.
