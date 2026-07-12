@@ -21,8 +21,8 @@ function responderPdf(pdf: Buffer, nomeArquivo: string) {
 }
 
 // Serve o PDF de qualquer uma das 5 telas do consultor (dashboard + 4 detalhes). O próprio
-// consultor só pode baixar o seu; Gestor/Comercial podem baixar de qualquer um (mesma regra de
-// acesso do resto do sistema).
+// consultor só pode baixar o seu; o Gestor pode baixar de qualquer um (mesma regra de acesso do
+// resto do sistema).
 export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const tipo = searchParams.get('tipo')
   const codConsultor = Number(searchParams.get('cod_consultor'))
-  const podeVerOutros = perfilRow.perfil === 'gestor' || perfilRow.perfil === 'comercial'
+  const podeVerOutros = perfilRow.perfil === 'gestor'
 
   if (!codConsultor || (!podeVerOutros && perfilRow.cod_consultor !== codConsultor)) {
     return NextResponse.json({ erro: 'Sem permissão para ver dados deste consultor.' }, { status: 403 })

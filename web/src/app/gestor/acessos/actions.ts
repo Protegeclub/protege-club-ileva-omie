@@ -24,7 +24,7 @@ async function confirmarGestor() {
     .single()
 
   if (perfilRow?.perfil !== 'gestor') {
-    throw new Error('Só o Gestor pode convidar consultores.')
+    throw new Error('Só o Gestor pode convidar novos acessos.')
   }
 }
 
@@ -85,6 +85,52 @@ export async function convidarConsultor(
     nome,
     perfil: 'consultor',
     cod_consultor: codConsultor,
+  })
+
+  if (erroPerfil) {
+    return { erro: `Convite enviado, mas falhou ao salvar o perfil: ${erroPerfil.message}` }
+  }
+
+  revalidatePath('/gestor/acessos')
+  return { sucesso: true, emailConvidado: email }
+}
+
+// Convida mais um Gestor (ex.: outro sócio/responsável) — diferente do convite de consultor,
+// não existe um `cod_consultor` do Ileva pra buscar nome/e-mail, então quem convida digita os
+// dois campos direto no formulário.
+export async function convidarGestor(
+  _estadoAnterior: ConvidarEstado,
+  formData: FormData
+): Promise<ConvidarEstado> {
+  try {
+    await confirmarGestor()
+  } catch (e) {
+    return { erro: e instanceof Error ? e.message : 'Sem permissão.' }
+  }
+
+  const nome = String(formData.get('nome') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim()
+
+  if (!nome || !email) {
+    return { erro: 'Preencha nome e e-mail.' }
+  }
+
+  const admin = createSupabaseAdminClient()
+  const origin = (await headers()).get('origin') ?? undefined
+
+  const { data: convite, error: erroConvite } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: origin ? `${origin}/definir-senha` : undefined,
+  })
+
+  if (erroConvite || !convite.user) {
+    return { erro: `Falha ao convidar (${email}): ${erroConvite?.message ?? 'erro desconhecido'}` }
+  }
+
+  const { error: erroPerfil } = await admin.from('perfis').insert({
+    user_id: convite.user.id,
+    nome,
+    perfil: 'gestor',
+    cod_consultor: null,
   })
 
   if (erroPerfil) {

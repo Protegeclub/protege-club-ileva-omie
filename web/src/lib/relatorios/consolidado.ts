@@ -37,7 +37,7 @@ export interface RelatorioConsolidado {
 
 // A apuração é gerada e guardada por mês inteiro (ver lib/apuracao/mensal.ts) — o relatório por
 // intervalo de datas não recalcula nada na hora, só relê e filtra o que já foi apurado. Por
-// isso: (1) um mês que nunca foi gerado no painel Comercial simplesmente não aparece aqui, e
+// isso: (1) um mês que nunca foi gerado no painel Gestor simplesmente não aparece aqui, e
 // (2) o intervalo só é preciso dentro de meses já apurados.
 function mesesNoIntervalo(dataInicio: string, dataFim: string): { ano: number; mes: number }[] {
   const inicio = new Date(`${dataInicio}T00:00:00`)

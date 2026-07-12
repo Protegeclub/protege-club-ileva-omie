@@ -49,8 +49,11 @@ export default async function GestorInadimplentesPage({
 
       {!linha ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
-          Nenhuma apuração gerada ainda para este consultor — peça ao Comercial para gerar ao
-          menos uma vez.
+          Nenhuma apuração gerada ainda para este consultor —{' '}
+          <Link href="/gestor/gerar" className="underline hover:text-slate-600">
+            gere agora
+          </Link>
+          .
         </div>
       ) : (
         <>

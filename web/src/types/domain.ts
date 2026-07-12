@@ -1,7 +1,12 @@
 // Tipos de domínio compartilhados. Refletem os campos confirmados em
 // docs/api-ileva/ENDPOINTS.md (raiz do projeto) contra a API real do Ileva.
 
-export type Perfil = 'gestor' | 'comercial' | 'consultor'
+// Só existem 2 perfis de acesso: Gestor (acesso total, inclusive gerar apuração) e Consultor (só
+// os próprios dados). O perfil "comercial" existiu no início do projeto mas foi absorvido pelo
+// Gestor (12/07/2026) — o enum `perfil_tipo` no Supabase ainda tecnicamente aceita o valor
+// "comercial" (Postgres não tem DROP VALUE fácil pra enum), mas nenhum código escreve ou espera
+// esse valor mais.
+export type Perfil = 'gestor' | 'consultor'
 
 export interface Consultor {
   cod_consultor: number

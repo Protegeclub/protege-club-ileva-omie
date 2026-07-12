@@ -115,7 +115,8 @@ export function GerarApuracaoForm() {
       ) : null}
       {status?.status === 'concluido' ? (
         <p className="text-sm text-emerald-700">
-          Apuração gerada com sucesso — veja o resultado no painel do Consultor ou do Gestor.
+          Apuração gerada com sucesso — veja o resultado na tabela acima ou no painel do
+          Consultor.
         </p>
       ) : null}
       {acompanhando ? (

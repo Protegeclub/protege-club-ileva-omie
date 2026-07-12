@@ -8,7 +8,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 type Autorizacao = { userId: string } | { erro: string }
 
-async function autorizarComercialOuGestor(): Promise<Autorizacao> {
+async function autorizarGestor(): Promise<Autorizacao> {
   const supabase = await createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) {
@@ -23,7 +23,7 @@ async function autorizarComercialOuGestor(): Promise<Autorizacao> {
     .eq('user_id', userData.user.id)
     .single()
 
-  if (!perfilRow || (perfilRow.perfil !== 'gestor' && perfilRow.perfil !== 'comercial')) {
+  if (perfilRow?.perfil !== 'gestor') {
     return { erro: 'Sem permissão para gerar apuração.' }
   }
 
@@ -45,7 +45,7 @@ export async function solicitarApuracao(
   ano: number,
   mes: number
 ): Promise<{ ok: boolean; erro?: string }> {
-  const auth = await autorizarComercialOuGestor()
+  const auth = await autorizarGestor()
   if ('erro' in auth) return { ok: false, erro: auth.erro }
 
   if (!codConsultor || !ano || !mes) {
@@ -104,7 +104,7 @@ export async function solicitarApuracao(
 // Consultada em loop pelo client (GerarApuracaoForm e GerarLoteForm) pra saber o andamento sem
 // precisar esperar uma chamada só terminar.
 export async function consultarStatusPeriodo(ano: number, mes: number): Promise<StatusJob[]> {
-  const auth = await autorizarComercialOuGestor()
+  const auth = await autorizarGestor()
   if ('erro' in auth) return []
 
   const admin = createSupabaseAdminClient()

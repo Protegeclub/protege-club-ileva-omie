@@ -12,8 +12,11 @@ export default function GestorLayout({ children }: { children: React.ReactNode }
             <Link href="/gestor" className="text-slate-600 hover:text-slate-900">
               Apuração
             </Link>
+            <Link href="/gestor/gerar" className="text-slate-600 hover:text-slate-900">
+              Gerar apuração
+            </Link>
             <Link href="/gestor/acessos" className="text-slate-600 hover:text-slate-900">
-              Acesso dos consultores
+              Acessos
             </Link>
           </nav>
           <BotaoSair />

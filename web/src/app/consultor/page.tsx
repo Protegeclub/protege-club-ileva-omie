@@ -20,7 +20,7 @@ export default async function ConsultorDashboardPage({
   if (!linhaPropria) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
-        Apuração ainda não gerada para este período. Peça ao Comercial/Gestor para gerar.
+        Apuração ainda não gerada para este período. Peça ao Gestor para gerar.
       </div>
     )
   }

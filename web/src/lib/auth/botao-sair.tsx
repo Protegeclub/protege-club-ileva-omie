@@ -1,7 +1,7 @@
 import { sair } from './actions'
 
 // Server Component simples — não precisa de 'use client' nem onClick, um <form> pode chamar uma
-// Server Action direto no `action`. Usado nos 3 layouts (gestor, comercial, consultor).
+// Server Action direto no `action`. Usado nos 2 layouts (gestor, consultor).
 export function BotaoSair({ className }: { className?: string }) {
   return (
     <form action={sair}>

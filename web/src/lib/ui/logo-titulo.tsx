@@ -1,7 +1,7 @@
 import Image from 'next/image'
 
-// Usado no header dos 3 painéis (Gestor, Comercial, Consultor) — logo + título juntos no canto
-// esquerdo, no lugar do <h1> solto que existia antes.
+// Usado no header dos 2 painéis (Gestor, Consultor) — logo + título juntos no canto esquerdo,
+// no lugar do <h1> solto que existia antes.
 export function LogoTitulo({ titulo }: { titulo: string }) {
   return (
     <div className="flex items-center gap-2.5">

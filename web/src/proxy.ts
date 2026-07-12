@@ -64,7 +64,7 @@ export async function proxy(request: NextRequest) {
   // Rotas de API fazem a própria checagem de permissão dentro de cada Route Handler (ex.:
   // /api/relatorios/consultor deixa o próprio consultor baixar o dele, mas bloquearia outro
   // cod_consultor). A restrição de prefixo por perfil abaixo é pensada pra páginas
-  // (/gestor, /comercial, /consultor), não pra endpoints — sem essa exceção, um Consultor
+  // (/gestor, /consultor), não pra endpoints — sem essa exceção, um Consultor
   // batendo em /api/relatorios/* seria redirecionado antes de a rota rodar.
   if (pathname.startsWith('/api/')) return getResponse()
 

@@ -182,24 +182,41 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 - [x] Usuário Consultor de teste criado (`consultor-teste@protegeclub.local`, vinculado ao
       `cod_consultor 11` real do Ileva — trocado do 313 original em 12/07/2026 pra testar o caso
       de vários boletos em atraso por veículo)
-- [x] Usuários **Comercial** e **Gestor** de teste criados (12/07/2026):
-      `comercial-teste@protegeclub.local` / `Comercial123!` e
-      `gestor-teste@protegeclub.local` / `Gestor123!` — pra não depender da senha real do Samuel
-      pra testar esses dois perfis
-- [ ] Perfil **Gestor** (acesso total) — rota `/gestor` escrita, dados reais pendentes
-- [x] Perfil **Comercial** (gerar apuração) — funcional: formulário real, testado de ponta a
-      ponta via navegador headless (login → gerar → salvar no Supabase)
-- [x] Perfil **Consultor** (só os próprios dados) — funcional: lê a apuração gerada e mostra os
-      cards com drill-down, testado com dados reais (maio e julho/2026 do consultor 313)
+- [x] Usuários de teste criados (12/07/2026): `gestor-teste@protegeclub.local` / `Gestor123!` e
+      `comercial-teste@protegeclub.local` / `Comercial123!` (esse último foi reatribuído de
+      `comercial` pra `gestor` na unificação abaixo — o e-mail e a senha continuam os mesmos, só
+      virou uma segunda conta de Gestor de teste).
+- [x] **Unificação Comercial → Gestor (12/07/2026)**: só existem 2 perfis agora — **Gestor**
+      (acesso total, inclusive gerar apuração) e **Consultor** (só os próprios dados). O perfil
+      "Comercial" foi absorvido pelo Gestor a pedido do Samuel, pra ter um único acesso
+      administrativo em vez de dois. O que mudou:
+      - `web/src/app/comercial/` foi apagado inteiro; a geração individual e em lote (que morava
+        lá) virou `web/src/app/gestor/gerar/` — nova aba "Gerar apuração" no menu do Gestor.
+      - `Perfil` (tipo TS) e `roles.ts` não têm mais `'comercial'`. O enum `perfil_tipo` do
+        Postgres ainda tecnicamente aceita o valor (Postgres não tem `DROP VALUE` fácil pra
+        enum), mas nenhum código escreve ou espera esse valor mais — decisão consciente de não
+        arriscar uma migração de enum pra um ganho baixo.
+      - Todas as checagens de autorização que aceitavam `perfil === 'gestor' || perfil ===
+        'comercial'` viraram só `perfil === 'gestor'`.
+      - **Agora dá pra ter vários Gestores** (mais de um responsável com acesso total) — era um
+        pedido explícito. `/gestor/acessos` (renomeada de "Acesso dos consultores" pra só
+        "Acessos") ganhou uma seção nova "Gestores com acesso" com a lista de quem já tem e um
+        formulário pra convidar mais um (nome + e-mail, sem precisar de `cod_consultor` do Ileva
+        — diferente do convite de consultor). Mesmo mecanismo de convite por e-mail
+        (`inviteUserByEmail`), ninguém fica sabendo senha de ninguém.
+      - Testado de ponta a ponta: a conta reatribuída loga como Gestor de verdade, `/comercial`
+        agora dá 404, o link "Gerar apuração" aparece no menu, a geração individual funciona
+        (disparo real pelo Trigger.dev, confirmado concluído no Supabase), e o Consultor continua
+        sem conseguir acessar `/gestor`.
 - [x] RBAC entre perfis via `web/src/proxy.ts` — testado localmente contra o Supabase real
       (redireciona corretamente sem sessão)
 - [x] Regras de acesso no banco (RLS) — policies aplicadas via `0001_init.sql`; falta testar com
       um usuário/perfil real (nenhum usuário criado no Supabase Auth ainda)
 - [x] **Bug real encontrado e corrigido no proxy.ts**: rotas `/api/*` estavam sendo redirecionadas
-      pela checagem de perfil por prefixo (pensada pra páginas `/gestor`, `/comercial`,
-      `/consultor`, não pra endpoints) — um Consultor batendo em `/api/relatorios/consultor`
-      caía de volta no `/consultor` antes da rota rodar. `/api/*` agora passa direto (cada Route
-      Handler já reconfirma o perfil sozinho).
+      pela checagem de perfil por prefixo (pensada pra páginas `/gestor`, `/consultor`, não pra
+      endpoints) — um Consultor batendo em `/api/relatorios/consultor` caía de volta no
+      `/consultor` antes da rota rodar. `/api/*` agora passa direto (cada Route Handler já
+      reconfirma o perfil sozinho).
 - [x] **Convite de acesso para os 206 consultores reais**: `/gestor/acessos` lista quem já tem
       acesso (linha em `perfis`) e quem não tem, com botão "Convidar" por linha —
       `supabase.auth.admin.inviteUserByEmail` cria o usuário (e-mail já cadastrado no Ileva) e
@@ -403,15 +420,16 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       cards, e as 4 telas de detalhe (adesões, recorrência, rastreadores, inadimplentes) com as
       mesmas colunas do sistema de origem. Só premiação (individual/líder de equipe) continua
       como placeholder — bloqueado pelas regras do plano de carreira.
-- [x] Painel Comercial: formulário funcional para gerar a apuração de um consultor por vez (por
+- [x] **Painel Gestor: "Gerar apuração" (`/gestor/gerar`, ex-painel Comercial, unificado em
+      12/07/2026)**: formulário funcional para gerar a apuração de um consultor por vez (por
       `cod_consultor` + mês/ano), **mais a geração em lote de todos os ativos** (ver seção 6.4) —
       falta uma tela de conferência antes de considerar fechado
 - [x] Painel Gestor: visão consolidada funcional — lista todos os consultores ativos (206 hoje)
       cruzando com as apurações já geradas no mês selecionado (seletor de mês/ano por GET),
       cards de total líquido/adesão/recorrência geral e contagem de gerados vs. pendentes.
-      Testado com dados reais, carrega em ~1,6s. Ainda falta: gerar direto dessa tela (hoje só
-      mostra e aponta pro Comercial), e detalhar o que "financeiro consolidado" deve incluir
-      além do que já está aí (perguntar ao cliente se precisa de mais alguma coisa aqui)
+      Testado com dados reais, carrega em ~1,6s. Ainda falta: detalhar o que "financeiro
+      consolidado" deve incluir além do que já está aí (perguntar ao cliente se precisa de mais
+      alguma coisa aqui)
 - [x] **Gestor: busca por nome/código + filtro por equipe + drill-down por consultor**
       (12/07/2026) — campo de busca (`q`, casa nome ou `cod_consultor` exato) e select de
       equipe na mesma tela `/gestor`; nome do consultor virou link pra

@@ -61,7 +61,7 @@ export default async function InadimplentesPage() {
 
       {!linha ? (
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
-          Nenhuma apuração gerada ainda — peça ao Comercial/Gestor para gerar ao menos uma vez.
+          Nenhuma apuração gerada ainda — peça ao Gestor para gerar ao menos uma vez.
         </div>
       ) : (
         <>

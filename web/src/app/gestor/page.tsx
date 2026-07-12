@@ -282,8 +282,10 @@ export default async function GestorDashboardPage({
                   </>
                 ) : (
                   <td colSpan={6} className="px-4 py-2 text-slate-400">
-                    Apuração ainda não gerada para {NOMES_MESES[mes - 1]}/{ano} — gerar no painel
-                    Comercial
+                    Apuração ainda não gerada para {NOMES_MESES[mes - 1]}/{ano} —{' '}
+                    <Link href="/gestor/gerar" className="underline hover:text-slate-600">
+                      gerar agora
+                    </Link>
                   </td>
                 )}
               </tr>

@@ -133,7 +133,7 @@ function valorBeneficioAssistenciaProfissional(veiculo: Veiculo): number {
  *
  * ATENÇÃO: para consultores com muitos veículos isso é lento (uma chamada por veículo, mais uma
  * por boleto de Fechamento pago) — por isso essa função é pensada para ser chamada por uma ação
- * explícita ("gerar apuração", ver src/app/comercial) que salva o resultado em
+ * explícita ("gerar apuração", ver src/app/gestor/gerar) que salva o resultado em
  * `apuracoes_mensais`, não para ser chamada a cada carregamento de tela do consultor.
  *
  * Ainda não calcula: premiação (individual/equipe) do plano de carreira — regras não definidas

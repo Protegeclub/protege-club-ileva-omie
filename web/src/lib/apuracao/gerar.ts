@@ -9,9 +9,10 @@ export interface ResumoGeracao {
   totalLiquido: number
 }
 
-// Núcleo compartilhado entre a geração individual e a geração em lote (painel Comercial) — mesma
-// regra de negócio (calcular + salvar em apuracoes_mensais), um único lugar pra manter em vez de
-// duplicar entre as duas Server Actions em web/src/app/comercial/actions.ts.
+// Núcleo compartilhado entre a geração individual e a geração em lote (painel Gestor → Gerar
+// apuração) — mesma regra de negócio (calcular + salvar em apuracoes_mensais), um único lugar
+// pra manter em vez de duplicar entre as duas Server Actions em
+// web/src/app/gestor/gerar/actions.ts.
 export async function gerarESalvarApuracao(
   geradoPorUserId: string,
   codConsultor: number,

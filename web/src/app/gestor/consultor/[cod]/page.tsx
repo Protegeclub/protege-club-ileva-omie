@@ -28,7 +28,11 @@ export default async function GestorConsultorDetalhePage({
           {nomeConsultor} <span className="text-slate-400">#{codConsultor}</span>
         </p>
         <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
-          Apuração ainda não gerada para este período. Gere no painel Comercial.
+          Apuração ainda não gerada para este período.{' '}
+          <Link href="/gestor/gerar" className="underline hover:text-slate-600">
+            Gerar agora
+          </Link>
+          .
         </div>
       </div>
     )
