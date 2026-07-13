@@ -1,7 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { consultarStatusPeriodo, revalidarPaineisAposLote, solicitarApuracao, type StatusJob } from './actions'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { consultarStatusPeriodo, revalidarPaineisAposLote, solicitarApuracaoLote, type StatusJob } from './actions'
+import { BarraProgresso } from './barra-progresso'
+import { IconeCamadas, IconeCheckCircle, IconeRelogio, IconeSpinner, IconeXCircle } from './icones'
+import { formatarDuracao, useCronometro } from './usar-cronometro'
 
 interface ConsultorLote {
   cod_consultor: number
@@ -9,26 +12,38 @@ interface ConsultorLote {
   equipe: string
 }
 
+type Filtro = 'todos' | 'pendente' | 'processando' | 'concluido' | 'erro'
+
 const hoje = new Date()
-const INTERVALO_POLLING_MS = 4000
-// Só dispara os pedidos (inserir + acionar a tarefa) em paralelo — é rápido, não é o cálculo em
-// si. O cálculo de verdade roda no Trigger.dev com concorrência 1 (ver
-// web/src/trigger/gerar-apuracao.ts), então o "acompanhar" é só consulta de status.
-const CONCORRENCIA_DISPARO = 10
+const INTERVALO_POLLING_MS = 3000
 
 export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] }) {
   const [mes, setMes] = useState(hoje.getMonth() + 1)
   const [ano, setAno] = useState(hoje.getFullYear())
   const [acompanhando, setAcompanhando] = useState(false)
   const [statusPorConsultor, setStatusPorConsultor] = useState<Record<number, StatusJob>>({})
+  const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [erroDisparo, setErroDisparo] = useState<string | null>(null)
   const pararPollingRef = useRef(false)
+  const segundos = useCronometro(acompanhando)
 
   const total = Object.keys(statusPorConsultor).length
-  const concluidos = Object.values(statusPorConsultor).filter(
-    (s) => s.status === 'concluido' || s.status === 'erro'
-  ).length
   const okCount = Object.values(statusPorConsultor).filter((s) => s.status === 'concluido').length
+  const erroCount = Object.values(statusPorConsultor).filter((s) => s.status === 'erro').length
+  const processandoCount = Object.values(statusPorConsultor).filter((s) => s.status === 'processando').length
+  const pendenteCount = Object.values(statusPorConsultor).filter((s) => s.status === 'pendente').length
+  const concluidos = okCount + erroCount
+  const pct = total > 0 ? Math.round((concluidos / total) * 100) : 0
   const falhas = consultores.filter((c) => statusPorConsultor[c.cod_consultor]?.status === 'erro')
+
+  const linhasVisiveis = useMemo(() => {
+    return consultores.filter((c) => {
+      const s = statusPorConsultor[c.cod_consultor]
+      if (!s) return false
+      if (filtro === 'todos') return true
+      return s.status === filtro
+    })
+  }, [consultores, statusPorConsultor, filtro])
 
   useEffect(() => {
     return () => {
@@ -62,6 +77,8 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
     if (lista.length === 0) return
     pararPollingRef.current = false
     setAcompanhando(true)
+    setFiltro('todos')
+    setErroDisparo(null)
 
     setStatusPorConsultor((prev) => {
       const novo = { ...prev }
@@ -69,15 +86,17 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
       return novo
     })
 
-    const fila = [...lista]
-    async function dispararProximo(): Promise<void> {
-      const consultor = fila.shift()
-      if (!consultor) return
-      await solicitarApuracao(consultor.cod_consultor, ano, mes)
-      await dispararProximo()
+    const resultado = await solicitarApuracaoLote(
+      lista.map((c) => ({ codConsultor: c.cod_consultor })),
+      ano,
+      mes
+    )
+
+    if (!resultado.ok) {
+      setErroDisparo(resultado.erro ?? 'Erro desconhecido ao disparar o lote.')
+      setAcompanhando(false)
+      return
     }
-    const disparadores = Math.min(CONCORRENCIA_DISPARO, lista.length)
-    await Promise.all(Array.from({ length: disparadores }, () => dispararProximo()))
 
     acompanharAtePronto()
   }
@@ -88,110 +107,218 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label htmlFor="lote-mes" className="block text-sm font-medium text-slate-700">
-            Mês
-          </label>
-          <input
-            id="lote-mes"
-            type="number"
-            min={1}
-            max={12}
-            value={mes}
-            disabled={acompanhando}
-            onChange={(e) => setMes(Number(e.target.value))}
-            className="mt-1 w-24 rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50"
-          />
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+          <IconeCamadas className="h-5 w-5" />
         </div>
         <div>
-          <label htmlFor="lote-ano" className="block text-sm font-medium text-slate-700">
-            Ano
-          </label>
-          <input
-            id="lote-ano"
-            type="number"
-            value={ano}
-            disabled={acompanhando}
-            onChange={(e) => setAno(Number(e.target.value))}
-            className="mt-1 w-28 rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50"
-          />
+          <h2 className="text-sm font-semibold text-slate-900">Gerar em lote</h2>
+          <p className="text-xs text-slate-500">
+            Todos os {consultores.length} consultores ativos, um por vez.
+          </p>
         </div>
-
-        {!acompanhando ? (
-          <button
-            onClick={() => dispararLista(consultores)}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            Gerar apuração de todos ({consultores.length} consultores)
-          </button>
-        ) : (
-          <button
-            onClick={pararDeAcompanhar}
-            className="rounded-md border border-slate-400 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Parar de acompanhar (continua rodando em segundo plano)
-          </button>
-        )}
-
-        {!acompanhando && falhas.length > 0 && (
-          <button
-            onClick={() => dispararLista(falhas)}
-            className="rounded-md border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
-          >
-            Tentar novamente os {falhas.length} que falharam
-          </button>
-        )}
       </div>
 
-      {total > 0 && (
-        <div className="text-sm text-slate-600">
-          {concluidos} / {total} concluído(s) — {okCount} ok, {falhas.length} com erro
-          {acompanhando ? ' · processando em segundo plano...' : ''}
+      <div className="space-y-5 px-6 py-5">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="lote-mes" className="block text-xs font-medium text-slate-500">
+              Mês
+            </label>
+            <input
+              id="lote-mes"
+              type="number"
+              min={1}
+              max={12}
+              value={mes}
+              disabled={acompanhando}
+              onChange={(e) => setMes(Number(e.target.value))}
+              className="mt-1 w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-50"
+            />
+          </div>
+          <div>
+            <label htmlFor="lote-ano" className="block text-xs font-medium text-slate-500">
+              Ano
+            </label>
+            <input
+              id="lote-ano"
+              type="number"
+              value={ano}
+              disabled={acompanhando}
+              onChange={(e) => setAno(Number(e.target.value))}
+              className="mt-1 w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-50"
+            />
+          </div>
+
+          {!acompanhando ? (
+            <button
+              onClick={() => dispararLista(consultores)}
+              className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+            >
+              Gerar apuração de todos ({consultores.length})
+            </button>
+          ) : (
+            <button
+              onClick={pararDeAcompanhar}
+              className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Parar de acompanhar
+            </button>
+          )}
+
+          {!acompanhando && falhas.length > 0 && (
+            <button
+              onClick={() => dispararLista(falhas)}
+              className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100"
+            >
+              Tentar novamente os {falhas.length} que falharam
+            </button>
+          )}
         </div>
-      )}
 
-      <p className="text-xs text-slate-400">
-        A geração roda em segundo plano (Trigger.dev), um consultor por vez — pode fechar esta aba
-        que o processamento continua normalmente. Volte aqui depois pra ver o resultado.
-      </p>
+        {erroDisparo ? (
+          <div className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <IconeXCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{erroDisparo}</span>
+          </div>
+        ) : null}
 
-      {total > 0 && (
-        <div className="max-h-96 overflow-y-auto rounded-md border border-slate-100">
-          <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 bg-slate-50 text-slate-500">
-              <tr>
-                <th className="px-3 py-1.5 font-medium">Consultor</th>
-                <th className="px-3 py-1.5 font-medium">Equipe</th>
-                <th className="px-3 py-1.5 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {consultores
-                .filter((c) => statusPorConsultor[c.cod_consultor])
-                .map((c) => (
-                  <tr key={c.cod_consultor} className="border-t border-slate-100">
-                    <td className="px-3 py-1.5">
-                      {c.nome} <span className="text-slate-400">#{c.cod_consultor}</span>
-                    </td>
-                    <td className="px-3 py-1.5 text-slate-500">{c.equipe}</td>
-                    <td className="px-3 py-1.5">
-                      <StatusBadge status={statusPorConsultor[c.cod_consultor]} />
-                    </td>
+        {total > 0 && (
+          <div className="space-y-3 rounded-lg bg-slate-50 p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-semibold tabular-nums text-slate-900">{pct}%</span>
+                <span className="text-sm text-slate-500">
+                  {concluidos} de {total} processados
+                </span>
+              </div>
+              {acompanhando && (
+                <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                  <IconeSpinner className="h-3.5 w-3.5" />
+                  rodando há {formatarDuracao(segundos)}
+                </span>
+              )}
+            </div>
+
+            <BarraProgresso total={total} ok={okCount} erro={erroCount} emAndamento={acompanhando} />
+
+            <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" /> {okCount} ok
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-red-400" /> {erroCount} erro
+              </span>
+              {processandoCount > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-amber-400" /> {processandoCount} gerando
+                </span>
+              )}
+              {pendenteCount > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-slate-300" /> {pendenteCount} na fila
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <p className="text-xs text-slate-400">
+          A geração roda em segundo plano (Trigger.dev), um consultor por vez — pode fechar esta
+          aba que o processamento continua normalmente. Volte aqui depois pra ver o resultado.
+        </p>
+
+        {total > 0 && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  ['todos', `Todos (${total})`],
+                  ['concluido', `OK (${okCount})`],
+                  ['erro', `Erro (${erroCount})`],
+                  ['processando', `Gerando (${processandoCount})`],
+                  ['pendente', `Na fila (${pendenteCount})`],
+                ] as [Filtro, string][]
+              ).map(([valor, rotulo]) => (
+                <button
+                  key={valor}
+                  onClick={() => setFiltro(valor)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    filtro === valor
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {rotulo}
+                </button>
+              ))}
+            </div>
+
+            <div className="max-h-96 overflow-y-auto rounded-lg border border-slate-100">
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Consultor</th>
+                    <th className="px-3 py-2 font-medium">Equipe</th>
+                    <th className="px-3 py-2 font-medium">Status</th>
                   </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                </thead>
+                <tbody>
+                  {linhasVisiveis.map((c) => (
+                    <tr key={c.cod_consultor} className="border-t border-slate-100">
+                      <td className="px-3 py-2">
+                        {c.nome} <span className="text-slate-400">#{c.cod_consultor}</span>
+                      </td>
+                      <td className="px-3 py-2 text-slate-500">{c.equipe}</td>
+                      <td className="px-3 py-2">
+                        <StatusBadge status={statusPorConsultor[c.cod_consultor]} />
+                      </td>
+                    </tr>
+                  ))}
+                  {linhasVisiveis.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-3 py-6 text-center text-slate-400">
+                        Nenhum consultor nesse status.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
 function StatusBadge({ status }: { status: StatusJob }) {
-  if (status.status === 'pendente') return <span className="text-slate-400">Na fila</span>
-  if (status.status === 'processando') return <span className="text-amber-600">Gerando...</span>
-  if (status.status === 'concluido') return <span className="text-emerald-700">OK</span>
-  return <span className="text-red-600">Erro: {status.erro_mensagem}</span>
+  if (status.status === 'pendente') {
+    return (
+      <span className="inline-flex items-center gap-1 text-slate-400">
+        <IconeRelogio className="h-3.5 w-3.5" /> Na fila
+      </span>
+    )
+  }
+  if (status.status === 'processando') {
+    return (
+      <span className="inline-flex items-center gap-1 text-amber-600">
+        <IconeSpinner className="h-3.5 w-3.5" /> Gerando...
+      </span>
+    )
+  }
+  if (status.status === 'concluido') {
+    return (
+      <span className="inline-flex items-center gap-1 text-emerald-700">
+        <IconeCheckCircle className="h-3.5 w-3.5" /> OK
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-red-600" title={status.erro_mensagem ?? undefined}>
+      <IconeXCircle className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate">Erro: {status.erro_mensagem}</span>
+    </span>
+  )
 }

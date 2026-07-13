@@ -330,8 +330,9 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
         ativa por usuário, e cada execução roda em processo isolado — rodar mais de uma ao
         mesmo tempo reintroduziria a cascata de 401 (seção 6.4), só que entre processos
         diferentes do Trigger.dev em vez de dentro de um único processo Node.
-      - `comercial/actions.ts`: `solicitarApuracao` só dispara (grava "pendente" + aciona a
-        tarefa) e retorna na hora; `consultarStatusPeriodo` é consultada em loop pelo client.
+      - `gestor/gerar/actions.ts` (movido do extinto painel Comercial, ver seção 6.3):
+        `solicitarApuracao` só dispara (grava "pendente" + aciona a tarefa) e retorna na hora;
+        `consultarStatusPeriodo` é consultada em loop pelo client.
       - `GerarApuracaoForm` e `GerarLoteForm` viraram "disparar e acompanhar por status" em vez
         de "esperar a resposta de uma chamada só" — fechar a aba não interrompe o
         processamento, que continua rodando no Trigger.dev de qualquer forma.
@@ -374,9 +375,30 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
         o deploy da tarefa pro Trigger.dev precisa ser feito manualmente
         (`npx trigger.dev deploy --env prod`, de uma pasta sem espaço/acento no caminho) — não é
         mais automático a partir do push.
+      - **Redesenho visual + quarto bug real (13/07/2026)**: a pedido do Samuel, a tela
+        `/gestor/gerar` ganhou visual novo (ícones, cards, barra de progresso segmentada
+        verde/vermelho em tempo real, cronômetro, filtro por status) — ver
+        `web/src/app/gestor/gerar/{barra-progresso,icones,usar-cronometro}.tsx`. No processo,
+        achado um bug real de robustez: o disparo do lote (~205 consultores) rodava no
+        **client**, um por vez, numa fila JS — fechar a aba **antes de terminar de enfileirar
+        todo mundo** deixava quem ainda não tinha sido disparado sem rodar nunca, contradizendo a
+        promessa de "pode fechar essa aba". `tasks.batchTrigger` pareceria a solução (1 chamada
+        só), mas foi testado e descartado: os runs não aparecem no worker local (`trigger.dev
+        dev`) nem depois de mais de 1 minuto — não confiável o bastante pra validar. Corrigido
+        movendo o laço de disparo inteiro pra **dentro da Server Action** (`solicitarApuracaoLote`
+        em `gestor/gerar/actions.ts`), com concorrência limitada (4) e retentativa — imune a
+        fechar a aba, já que roda inteiro no servidor numa execução só.
+      - **Achado real sobre limite de fila do Trigger.dev**: durante os testes repetidos (vários
+        meses fictícios disparados em sequência sem esperar o anterior esvaziar), a API passou a
+        recusar novos disparos com `"queue size limit... maximum size is 500"`. Isso é um limite
+        real do ambiente (plano gratuito), não um bug do nosso código — só aconteceu por empilhar
+        vários lotes de teste de ~205 itens um em cima do outro. Em uso real (~206 consultores,
+        uma vez por mês, com o mês anterior já esvaziado há tempo), fica bem abaixo do limite.
+        **Cuidado pra não repetir em teste**: não clicar "Gerar apuração de todos" várias vezes
+        seguidas sem esperar o lote anterior esvaziar.
 - [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
       (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
-- [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Comercial
+- [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Gestor
 
 ### 6.5 Integração com Omie
 - [ ] Chave de teste (sandbox) obtida

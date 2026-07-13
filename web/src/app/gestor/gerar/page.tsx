@@ -10,34 +10,20 @@ export default async function GestorGerarPage() {
     .sort((a, b) => a.nome.localeCompare(b.nome))
 
   return (
-    <div className="space-y-8">
-      <Link href="/gestor" className="text-xs text-slate-400 hover:underline">
-        ← Voltar para a apuração
-      </Link>
-
+    <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">Gerar apuração mensal</h2>
+        <Link href="/gestor" className="text-xs text-slate-400 hover:underline">
+          ← Voltar para a apuração
+        </Link>
+        <h1 className="mt-1 text-lg font-semibold text-slate-900">Gerar apuração</h1>
         <p className="text-sm text-slate-500">
-          Busca os dados no Ileva e calcula adesão + recorrência do consultor no mês informado.
+          Calcula a comissão de um consultor (ou de todos) direto na API do Ileva e salva o
+          resultado. Roda em segundo plano — pode fechar a aba a qualquer momento.
         </p>
-        <div className="mt-4">
-          <GerarApuracaoForm />
-        </div>
       </div>
 
-      <div>
-        <h2 className="text-base font-semibold text-slate-900">
-          Gerar em lote (todos os consultores ativos)
-        </h2>
-        <p className="text-sm text-slate-500">
-          Gera a apuração dos {consultores.length} consultores ativos de uma vez, um por um.
-          Pode demorar vários minutos — não feche esta aba enquanto estiver rodando. Quem falhar
-          pode ser tentado de novo sem repetir o lote inteiro.
-        </p>
-        <div className="mt-4">
-          <GerarLoteForm consultores={consultores} />
-        </div>
-      </div>
+      <GerarApuracaoForm />
+      <GerarLoteForm consultores={consultores} />
     </div>
   )
 }
