@@ -472,6 +472,13 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 - [ ] Testes com dados reais via API de teste (sem afetar produção)
 - [ ] Validação prática com o cliente (comparar com o fechamento manual de um mês já apurado)
 - [ ] Ajustes finais de acordo com o feedback
+- [x] **Descartada (12/07/2026)**: usar o Power BI antigo do cliente como fonte de validação
+      cruzada ao vivo. O Samuel confirmou que o Power BI tem dados incompletos e o cliente já
+      parou de usá-lo — é justamente o motivo de estarem construindo este sistema. Os prints da
+      pasta `Telas Cosultores/` continuam válidos como referência de **layout/colunas** (já
+      usados pra isso), mas não devem ser tratados como fonte de números corretos pra comparar.
+      A validação real continua sendo a de cima: fechamento manual de um mês já apurado,
+      diretamente com o cliente.
 
 ### 6.10 Entrega e manutenção
 - [x] Deploy em produção — no ar, mas ainda com escopo parcial (falta Gestor, lote, Omie etc.);
