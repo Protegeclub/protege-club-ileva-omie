@@ -228,6 +228,13 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       surgir uma fonte pro CPF.
 
 ### 6.4 Integração com Ileva
+- [x] **Migração de API do Ileva (comunicado oficial recebido em 13/07/2026)**: o Ileva anunciou
+      a descontinuação da API antiga (`api-integracao.ileva.com.br`, prazo 20/09/2026) em favor
+      de uma nova (`api.ileva.com.br`, obrigatória). **Conferido e confirmado: já estávamos na
+      API nova desde o início do projeto** (`ILEVA_API_BASE_URL=https://api.ileva.com.br` no
+      `.env`/`.env.local`, e a documentação em `docs/api-ileva/` sempre referenciou esse domínio)
+      — nenhuma migração necessária da nossa parte. Testado ao vivo em 13/07/2026: autenticação
+      (`/oauth/token`) respondendo normalmente, token emitido com sucesso.
 - [x] Autenticação validada (`/oauth/token`) — cliente em `web/src/lib/ileva/client.ts`, com
       cache de token em memória (⚠️ ver nota no código: precisa virar cache compartilhado —
       tabela `ileva_token_cache` já criada na migration — antes de rodar em produção serverless)
