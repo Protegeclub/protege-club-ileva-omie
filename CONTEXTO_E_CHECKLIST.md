@@ -30,6 +30,23 @@ Todo consultor tem três fontes de ganho, apuradas mensalmente:
 1. **Adesão** — taxa cobrada na venda inicial, fica 100% com o consultor (~99% retêm direto do
    associado; ~1% manda pra associação, que repassa depois — caso especial, ainda sem tratamento
    definido).
+   **⚠️ PERGUNTA CRÍTICA EM ABERTO (achada em 13/07/2026, reportada pelo Samuel comparando com o
+   Ileva ao vivo)**: hoje contamos adesão só quando o boleto é **pago** (`Liquidado` +
+   `dt_pagamento` no mês), igual à recorrência. Mas o painel "Consultores com Mais Ativações" do
+   próprio Ileva mostrou 31 ativações pro consultor #19 em 06/2026, enquanto nosso sistema
+   mostrava 12. Investigado a fundo (874 veículos, todos os boletos de Adesão da carteira
+   puxados direto da API):
+     - 12 = boleto Adesão **pago** com data de pagamento em junho (nosso critério atual)
+     - 18 = boleto Adesão (qualquer situação) com data de **vencimento** em junho
+     - 29 = veículo com **contrato** (`dt_contrato`) iniciado em junho (mais perto do 31 do
+       Ileva, mas ainda não bate exato — diferença de 2 não explicada, investigar depois)
+   Casos reais que explicam a diferença: veículo com contrato em 08/06 mas adesão só paga em
+   13/07 (conta como "ativação de junho" pro Ileva, "adesão de julho" pra nós); veículos com
+   contrato em junho cujo boleto de adesão foi **cancelado** (ativou o veículo, nunca gerou
+   comissão); veículo com boleto de adesão ainda **em aberto** (não pago).
+   **Não decidido ainda — precisa confirmar com o cliente**: a comissão de adesão é do mês do
+   **contrato** (venda) ou do mês do **pagamento** do boleto? Isso muda o resultado de verdade,
+   não é só um jeito diferente de mostrar o mesmo número.
 2. **Recorrência ("Assistência Profissional")** — embutida na mensalidade, só é devida depois que
    o boleto do associado é pago. No Ileva, isso é o benefício `cod_beneficio 65` (existem
    variantes 66/110/121). Confirmado com dados reais.
