@@ -2,6 +2,7 @@ import type {
   AdesaoItem,
   DescontoRastreadorItem,
   InadimplenteItem,
+  PlacaAtivadaItem,
   RecorrenciaItem,
 } from '@/lib/apuracao/mensal'
 import { criarDocumento, desenharCabecalho, desenharTabela, formatarMoeda, rodape } from './pdf-utils'
@@ -153,6 +154,42 @@ export async function gerarPdfRastreadores(
     ],
     itens,
     { linhaTotal: { rotulo: 'Total', valor: formatarMoeda(total) } }
+  )
+
+  rodape(doc)
+  doc.end()
+  return fim
+}
+
+export async function gerarPdfPlacasAtivadas(
+  nomeConsultor: string,
+  ano: number,
+  mes: number,
+  itens: PlacaAtivadaItem[]
+): Promise<Buffer> {
+  const { doc, fim } = criarDocumento()
+  desenharCabecalho(doc, 'Placas Ativadas', [nomeConsultor, periodo(ano, mes)])
+
+  doc
+    .fontSize(9)
+    .fillColor('#7A7A7A')
+    .text(
+      'Veículos cujo contrato começou no período — visão operacional (igual ao painel ' +
+        '"Ativações" do Ileva), diferente da comissão de adesão (que só conta quando o boleto é ' +
+        'efetivamente pago).'
+    )
+  doc.moveDown(0.6)
+
+  desenharTabela(
+    doc,
+    [
+      { titulo: 'Data Contrato', largura: 70, valor: (i: PlacaAtivadaItem) => i.dt_contrato },
+      { titulo: 'Associado', largura: 200, valor: (i: PlacaAtivadaItem) => i.associado },
+      { titulo: 'Placa', largura: 70, valor: (i: PlacaAtivadaItem) => i.placa },
+      { titulo: 'Consultor', largura: 175, valor: (i: PlacaAtivadaItem) => i.consultorNome },
+    ],
+    itens,
+    { linhaTotal: { rotulo: 'Total de placas ativadas', valor: String(itens.length) } }
   )
 
   rodape(doc)

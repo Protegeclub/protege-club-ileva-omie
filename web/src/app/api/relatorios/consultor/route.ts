@@ -5,6 +5,7 @@ import {
   gerarPdfAdesoes,
   gerarPdfDashboard,
   gerarPdfInadimplentes,
+  gerarPdfPlacasAtivadas,
   gerarPdfRastreadores,
   gerarPdfRecorrencia,
 } from '@/lib/relatorios/consultor'
@@ -141,6 +142,12 @@ export async function GET(request: NextRequest) {
       const itens = linhasEquipe.flatMap((l) => l.detalhe?.descontosRastreador ?? [])
       const pdf = await gerarPdfRastreadores(nomeConsultor, ano, mes, itens)
       return responderPdf(pdf, `rastreadores-${codConsultor}-${ano}-${mes}`)
+    }
+
+    if (tipo === 'placas-ativadas') {
+      const itens = linhasEquipe.flatMap((l) => l.detalhe?.placasAtivadas ?? [])
+      const pdf = await gerarPdfPlacasAtivadas(nomeConsultor, ano, mes, itens)
+      return responderPdf(pdf, `placas-ativadas-${codConsultor}-${ano}-${mes}`)
     }
 
     return NextResponse.json({ erro: 'Tipo de relatório desconhecido.' }, { status: 400 })

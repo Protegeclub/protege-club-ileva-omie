@@ -48,6 +48,7 @@ export async function gerarESalvarApuracao(
         recorrencias: resultado.recorrencias,
         veiculosComRastreador: resultado.veiculosComRastreador,
         descontosRastreador: resultado.descontosRastreador,
+        placasAtivadas: resultado.placasAtivadas,
         inadimplentes: resultado.inadimplentes,
         totalRecorrenciaEstimadaInadimplentes: resultado.totalRecorrenciaEstimadaInadimplentes,
       },

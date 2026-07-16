@@ -41,6 +41,19 @@ export interface DescontoRastreadorItem {
   valor: number
 }
 
+// Veículo cujo contrato (dt_contrato) começou no mês apurado — métrica operacional de "ativação"
+// (o painel "Consultores com Mais Ativações" do próprio Ileva), diferente da adesão financeira
+// (que só conta quando o boleto é pago, ver AdesaoItem acima — confirmado com o cliente em
+// 13/07/2026 que a comissão é mesmo pelo pagamento, não pela ativação; esta aba existe só como
+// visão operacional complementar, não entra em nenhum total de comissão).
+export interface PlacaAtivadaItem {
+  cod_veiculo: number
+  placa: string
+  associado: string
+  consultorNome: string
+  dt_contrato: string
+}
+
 export interface InadimplenteItem {
   cod_veiculo: number
   placa: string
@@ -65,6 +78,7 @@ export interface ApuracaoConsultorMesDetalhada {
   recorrencias: RecorrenciaItem[]
   veiculosComRastreador: VeiculoRastreadorItem[]
   descontosRastreador: DescontoRastreadorItem[]
+  placasAtivadas: PlacaAtivadaItem[]
   inadimplentes: InadimplenteItem[]
   totalRecorrenciaEstimadaInadimplentes: number
 }
@@ -169,6 +183,18 @@ export async function apurarConsultorMes(
       valor: VALOR_DESCONTO_RASTREADOR,
     }))
 
+  // Não precisa de chamada extra à API — já temos todos os veículos do consultor em memória.
+  const placasAtivadas: PlacaAtivadaItem[] = veiculos
+    .filter((v) => v.dt_contrato >= de && v.dt_contrato <= ate)
+    .map((v) => ({
+      cod_veiculo: v.cod_veiculo,
+      placa: v.placa,
+      associado: v.associado,
+      consultorNome: nomeConsultor,
+      dt_contrato: v.dt_contrato,
+    }))
+    .sort((a, b) => a.dt_contrato.localeCompare(b.dt_contrato))
+
   // Antes só pegava o vencimento mais antigo em aberto por veículo — se tivesse 3 mensalidades
   // atrasadas empilhadas, mostrava só 1 e escondia as outras 2 (e o valor estimado de
   // recorrência também ficava subestimado, já que cada mês em aberto é uma recorrência a mais
@@ -262,6 +288,7 @@ export async function apurarConsultorMes(
     recorrencias,
     veiculosComRastreador,
     descontosRastreador,
+    placasAtivadas,
     inadimplentes,
     totalRecorrenciaEstimadaInadimplentes: inadimplentes.reduce(
       (soma, item) => soma + item.valorRecorrenciaEstimado,

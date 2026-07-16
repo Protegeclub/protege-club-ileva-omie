@@ -457,10 +457,22 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 ### 6.7 Telas
 - [x] **Painel do Consultor reestruturado igual ao Power BI atual** (11/07/2026, baseado nos
       prints da pasta `Telas Cosultores/`): sidebar com ano/mês/toggle de equipe/sair
-      compartilhada entre 5 telas, dashboard com "Total a receber" + 4 botões de navegação +
-      cards, e as 4 telas de detalhe (adesões, recorrência, rastreadores, inadimplentes) com as
+      compartilhada entre as telas, dashboard com "Total a receber" + botões de navegação +
+      cards, e as telas de detalhe (adesões, recorrência, rastreadores, inadimplentes) com as
       mesmas colunas do sistema de origem. Só premiação (individual/líder de equipe) continua
       como placeholder — bloqueado pelas regras do plano de carreira.
+- [x] **Nova aba "Placas Ativadas" (14/07/2026)** — a pedido do Samuel, depois do achado real de
+      13/07 (consultor #19 mostrava 31 "ativações" no Ileva vs. 12 adesões no nosso sistema,
+      cliente confirmou que comissão é pelo pagamento, não pela ativação — ver seção 2). Essa aba
+      existe pra dar visibilidade à métrica **operacional** (veículos com `dt_contrato` no mês),
+      complementando a visão financeira de Adesões — deixa claro no texto da tela que **não entra
+      em nenhum total de comissão**. Implementada nos dois painéis (Consultor e
+      `/gestor/consultor/[cod]`, espelhadas como as outras 4 abas), sem chamada extra à API (os
+      veículos já são buscados durante a apuração) — `PlacaAtivadaItem` em
+      `lib/apuracao/mensal.ts`, persistido em `detalhe.placasAtivadas`, com PDF próprio
+      (`tipo=placas-ativadas`). **Meses já gerados antes de 14/07/2026 precisam ser gerados de
+      novo pra essa aba aparecer preenchida** (o campo não existia no `detalhe` antes disso).
+      Testado de ponta a ponta com dado real (consultor 11, julho/2026).
 - [x] **Painel Gestor: "Gerar apuração" (`/gestor/gerar`, ex-painel Comercial, unificado em
       12/07/2026)**: formulário funcional para gerar a apuração de um consultor por vez (por
       `cod_consultor` + mês/ano), **mais a geração em lote de todos os ativos** (ver seção 6.4) —

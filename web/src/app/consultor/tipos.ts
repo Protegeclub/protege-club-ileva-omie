@@ -2,17 +2,19 @@ import type {
   AdesaoItem,
   DescontoRastreadorItem,
   InadimplenteItem,
+  PlacaAtivadaItem,
   RecorrenciaItem,
   VeiculoRastreadorItem,
 } from '@/lib/apuracao/mensal'
 
-// Formato de `apuracoes_mensais.detalhe` (JSONB) gravado por web/src/app/comercial/actions.ts.
+// Formato de `apuracoes_mensais.detalhe` (JSONB) gravado por web/src/app/gestor/gerar/actions.ts.
 export interface ApuracaoDetalhe {
   nomeConsultor?: string
   adesoes?: AdesaoItem[]
   recorrencias?: RecorrenciaItem[]
   veiculosComRastreador?: VeiculoRastreadorItem[]
   descontosRastreador?: DescontoRastreadorItem[]
+  placasAtivadas?: PlacaAtivadaItem[]
   inadimplentes?: InadimplenteItem[]
   totalRecorrenciaEstimadaInadimplentes?: number
 }

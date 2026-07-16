@@ -39,6 +39,7 @@ export default async function GestorConsultorDetalhePage({
   }
 
   const totalAdesoes = linhaPropria.detalhe?.adesoes?.length ?? 0
+  const totalPlacasAtivadas = linhaPropria.detalhe?.placasAtivadas?.length ?? 0
   const totalEquipe = linhasEquipe
     .filter((l) => l.cod_equipe === linhaPropria.cod_equipe)
     .reduce((soma, l) => soma + (l.detalhe?.adesoes?.length ?? 0), 0) - totalAdesoes
@@ -63,18 +64,27 @@ export default async function GestorConsultorDetalhePage({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <BotaoTela href={`/gestor/consultor/${codConsultor}/adesoes?${qs}`} label="Visualizar Adesões" />
         <BotaoTela href={`/gestor/consultor/${codConsultor}/recorrencia?${qs}`} label="Visualizar Recorrência" />
         <BotaoTela
           href={`/gestor/consultor/${codConsultor}/rastreadores?${qs}`}
           label="Visualizar descontos de rastreadores"
         />
+        <BotaoTela
+          href={`/gestor/consultor/${codConsultor}/placas-ativadas?${qs}`}
+          label="Visualizar Placas Ativadas"
+        />
         <BotaoTela href={`/gestor/consultor/${codConsultor}/inadimplentes`} label="Visualizar Inadimplentes" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card titulo="Total de Adesões" valor={String(totalAdesoes)} />
+        <Card
+          titulo="Placas Ativadas"
+          valor={String(totalPlacasAtivadas)}
+          nota="Contratos iniciados no período (visão operacional, não é comissão)"
+        />
         <Card titulo="Total - Equipe" valor={String(Math.max(totalEquipe, 0))} />
         <Card
           titulo="Premiação Individual"
