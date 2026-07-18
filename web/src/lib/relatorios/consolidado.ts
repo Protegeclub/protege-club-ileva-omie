@@ -13,6 +13,7 @@ interface ApuracaoRow {
 export interface LinhaRelatorio {
   cod_consultor: number
   nomeConsultor: string
+  equipe: string
   totalAdesao: number
   totalRecorrencia: number
   totalLiquido: number
@@ -28,6 +29,7 @@ export interface MesConsiderado {
 export interface RelatorioConsolidado {
   dataInicio: string
   dataFim: string
+  equipeFiltro: string | null
   linhas: LinhaRelatorio[]
   totalAdesaoGeral: number
   totalRecorrenciaGeral: number
@@ -58,7 +60,8 @@ function dataDentroDoIntervalo(data: string | null | undefined, inicio: string, 
 
 export async function montarRelatorioConsolidado(
   dataInicio: string,
-  dataFim: string
+  dataFim: string,
+  equipeFiltro?: string
 ): Promise<RelatorioConsolidado> {
   const meses = mesesNoIntervalo(dataInicio, dataFim)
   if (meses.length === 0) {
@@ -83,6 +86,9 @@ export async function montarRelatorioConsolidado(
   const apuracoes = resultadosPorMes.flatMap((r) => (r.data ?? []) as ApuracaoRow[])
   const nomesPorConsultor = new Map<number, string>(
     consultores.map((c: Consultor) => [c.cod_consultor, c.nome])
+  )
+  const equipePorConsultor = new Map<number, string>(
+    consultores.map((c: Consultor) => [c.cod_consultor, c.equipe || '—'])
   )
 
   const totaisPorConsultor = new Map<number, LinhaRelatorio>()
@@ -109,6 +115,7 @@ export async function montarRelatorioConsolidado(
     const acumulado: LinhaRelatorio = totaisPorConsultor.get(row.cod_consultor) ?? {
       cod_consultor: row.cod_consultor,
       nomeConsultor: nomesPorConsultor.get(row.cod_consultor) ?? `Consultor #${row.cod_consultor}`,
+      equipe: equipePorConsultor.get(row.cod_consultor) ?? '—',
       totalAdesao: 0,
       totalRecorrencia: 0,
       totalLiquido: 0,
@@ -121,9 +128,10 @@ export async function montarRelatorioConsolidado(
     totaisPorConsultor.set(row.cod_consultor, acumulado)
   }
 
-  const linhas = Array.from(totaisPorConsultor.values()).sort(
-    (a, b) => b.totalLiquido - a.totalLiquido
-  )
+  const equipeFiltroLimpa = (equipeFiltro ?? '').trim()
+  const linhas = Array.from(totaisPorConsultor.values())
+    .filter((l) => !equipeFiltroLimpa || l.equipe === equipeFiltroLimpa)
+    .sort((a, b) => b.totalLiquido - a.totalLiquido)
 
   const codConsultoresAtivos = new Set(
     consultores.filter((c) => c.situacao === 'Ativo').map((c) => c.cod_consultor)
@@ -142,6 +150,7 @@ export async function montarRelatorioConsolidado(
   return {
     dataInicio,
     dataFim,
+    equipeFiltro: equipeFiltroLimpa || null,
     linhas,
     totalAdesaoGeral: linhas.reduce((soma, l) => soma + l.totalAdesao, 0),
     totalRecorrenciaGeral: linhas.reduce((soma, l) => soma + l.totalRecorrencia, 0),

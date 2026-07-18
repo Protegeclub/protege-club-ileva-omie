@@ -43,6 +43,9 @@ export async function gerarPdfConsolidado(relatorio: RelatorioConsolidado): Prom
       `Período: ${formatarDataBr(relatorio.dataInicio)} a ${formatarDataBr(relatorio.dataFim)}`,
       { align: 'center' }
     )
+  if (relatorio.equipeFiltro) {
+    doc.text(`Equipe: ${relatorio.equipeFiltro}`, { align: 'center' })
+  }
   doc.moveDown(1.2)
   doc
     .strokeColor(azul)
@@ -98,29 +101,55 @@ export async function gerarPdfConsolidado(relatorio: RelatorioConsolidado): Prom
     doc.y = y + 20
   }
 
-  cabecalhoTabela()
-  doc.font('Helvetica').fontSize(9.5).fillColor('#222222')
-
-  relatorio.linhas.forEach((linha, i) => {
-    if (doc.y > doc.page.height - 80) {
-      doc.addPage()
-      cabecalhoTabela()
-      doc.font('Helvetica').fontSize(9.5).fillColor('#222222')
-    }
-    const y = doc.y
-    if (i % 2 === 1) {
-      doc.rect(40, y - 2, larguraPagina - 40, 16).fill('#EAF1F8')
-      doc.fillColor('#222222')
-    }
-    doc.text(linha.nomeConsultor, colX.nome + 4, y, { width: colX.adesao - colX.nome - 8 })
-    doc.text(formatarMoeda(linha.totalAdesao), colX.adesao, y, { width: larguraColunaValor, align: 'right' })
-    doc.text(formatarMoeda(linha.totalRecorrencia), colX.recorrencia, y, { width: larguraColunaValor, align: 'right' })
-    doc.text(formatarMoeda(linha.totalLiquido), colX.liquido, y, { width: larguraColunaValor, align: 'right' })
-    doc.y = y + 16
-  })
-
   if (relatorio.linhas.length === 0) {
-    doc.fillColor('#7A7A7A').text('Nenhum lançamento encontrado neste intervalo.', 40, doc.y + 4)
+    doc.fillColor('#7A7A7A').fontSize(10).text('Nenhum lançamento encontrado neste intervalo.', 40, doc.y + 4)
+  }
+
+  // Agrupado por equipe (cada equipe em sua seção, com subtotal) — quando `equipeFiltro` já veio
+  // preenchido (relatório de uma única equipe) isso resulta em uma seção só, sem custo extra.
+  const porEquipe = new Map<string, typeof relatorio.linhas>()
+  for (const linha of relatorio.linhas) {
+    const chave = linha.equipe || '—'
+    if (!porEquipe.has(chave)) porEquipe.set(chave, [])
+    porEquipe.get(chave)!.push(linha)
+  }
+  const equipesOrdenadas = Array.from(porEquipe.keys()).sort((a, b) => a.localeCompare(b))
+
+  for (const equipe of equipesOrdenadas) {
+    const linhasEquipe = porEquipe.get(equipe)!
+    const totalEquipe = linhasEquipe.reduce((s, l) => s + l.totalLiquido, 0)
+
+    if (doc.y > doc.page.height - 110) doc.addPage()
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(azul).text(`Equipe: ${equipe}`, 40, doc.y)
+    doc
+      .fontSize(9)
+      .font('Helvetica')
+      .fillColor(cinza)
+      .text(`${linhasEquipe.length} consultor(es) — total líquido: ${formatarMoeda(totalEquipe)}`)
+    doc.moveDown(0.3)
+
+    cabecalhoTabela()
+    doc.font('Helvetica').fontSize(9.5).fillColor('#222222')
+
+    linhasEquipe.forEach((linha, i) => {
+      if (doc.y > doc.page.height - 80) {
+        doc.addPage()
+        cabecalhoTabela()
+        doc.font('Helvetica').fontSize(9.5).fillColor('#222222')
+      }
+      const y = doc.y
+      if (i % 2 === 1) {
+        doc.rect(40, y - 2, larguraPagina - 40, 16).fill('#EAF1F8')
+        doc.fillColor('#222222')
+      }
+      doc.text(linha.nomeConsultor, colX.nome + 4, y, { width: colX.adesao - colX.nome - 8 })
+      doc.text(formatarMoeda(linha.totalAdesao), colX.adesao, y, { width: larguraColunaValor, align: 'right' })
+      doc.text(formatarMoeda(linha.totalRecorrencia), colX.recorrencia, y, { width: larguraColunaValor, align: 'right' })
+      doc.text(formatarMoeda(linha.totalLiquido), colX.liquido, y, { width: larguraColunaValor, align: 'right' })
+      doc.y = y + 16
+    })
+
+    doc.moveDown(0.7)
   }
 
   doc.moveDown(1.5)

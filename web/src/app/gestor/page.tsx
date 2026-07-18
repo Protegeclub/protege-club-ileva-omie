@@ -21,10 +21,21 @@ const NOMES_MESES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
 
+type LinhaGestor = { consultor: Consultor; apuracao: ApuracaoResumo | null }
+
+const COMPARADORES: Record<string, (a: LinhaGestor, b: LinhaGestor) => number> = {
+  nome: (a, b) => a.consultor.nome.localeCompare(b.consultor.nome),
+  equipe: (a, b) => (a.consultor.equipe || '').localeCompare(b.consultor.equipe || ''),
+  adesao: (a, b) => (a.apuracao?.total_adesao ?? 0) - (b.apuracao?.total_adesao ?? 0),
+  recorrencia: (a, b) => (a.apuracao?.total_recorrencia ?? 0) - (b.apuracao?.total_recorrencia ?? 0),
+  desconto: (a, b) => (a.apuracao?.total_desconto_rastreador ?? 0) - (b.apuracao?.total_desconto_rastreador ?? 0),
+  liquido: (a, b) => (a.apuracao?.total_liquido ?? 0) - (b.apuracao?.total_liquido ?? 0),
+}
+
 export default async function GestorDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ano?: string; mes?: string; equipe?: string; q?: string }>
+  searchParams: Promise<{ ano?: string; mes?: string; equipe?: string; q?: string; sort?: string; dir?: string }>
 }) {
   const params = await searchParams
   const hoje = new Date()
@@ -33,6 +44,8 @@ export default async function GestorDashboardPage({
   const equipeFiltro = (params.equipe ?? '').trim()
   const busca = (params.q ?? '').trim()
   const buscaLower = busca.toLowerCase()
+  const sortCampo = (params.sort ?? '').trim()
+  const sortDir: 'asc' | 'desc' = params.dir === 'asc' ? 'asc' : 'desc'
 
   // Visão consolidada: cruza o cadastro de consultores do Ileva (~245 hoje, chamada rápida —
   // diferente do problema de escala por veículo, ver lib/apuracao/mensal.ts) com o que já foi
@@ -68,7 +81,12 @@ export default async function GestorDashboardPage({
       apuracao: apuracaoPorConsultor.get(consultor.cod_consultor) ?? null,
     }))
     .sort((a, b) => {
-      // Gerados primeiro (maior valor líquido primeiro), depois os pendentes por nome.
+      if (sortCampo && COMPARADORES[sortCampo]) {
+        const resultado = COMPARADORES[sortCampo](a, b)
+        return sortDir === 'asc' ? resultado : -resultado
+      }
+      // Padrão (sem coluna clicada): gerados primeiro (maior valor líquido primeiro), depois os
+      // pendentes por nome.
       if (a.apuracao && !b.apuracao) return -1
       if (!a.apuracao && b.apuracao) return 1
       if (a.apuracao && b.apuracao) return b.apuracao.total_liquido - a.apuracao.total_liquido
@@ -85,12 +103,40 @@ export default async function GestorDashboardPage({
   const dataFimPadrao = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDiaDoMes).padStart(2, '0')}`
 
   const qsAtual = `ano=${ano}&mes=${mes}`
-  const qsFiltrosPdfTodos = new URLSearchParams({
+  const qsFiltros = new URLSearchParams({
     ano: String(ano),
     mes: String(mes),
     ...(equipeFiltro ? { equipe: equipeFiltro } : {}),
     ...(busca ? { q: busca } : {}),
   }).toString()
+
+  function linkOrdenacao(campo: string, direcaoPadrao: 'asc' | 'desc' = 'desc') {
+    const novaDirecao = sortCampo === campo ? (sortDir === 'asc' ? 'desc' : 'asc') : direcaoPadrao
+    return `/gestor?${qsFiltros}&sort=${campo}&dir=${novaDirecao}`
+  }
+
+  function indicadorOrdenacao(campo: string) {
+    if (sortCampo !== campo) return null
+    return sortDir === 'asc' ? '▲' : '▼'
+  }
+
+  function ThOrdenavel({
+    campo,
+    label,
+    direcaoPadrao = 'desc',
+  }: {
+    campo: string
+    label: string
+    direcaoPadrao?: 'asc' | 'desc'
+  }) {
+    return (
+      <th className="px-4 py-2 font-medium">
+        <Link href={linkOrdenacao(campo, direcaoPadrao)} className="flex items-center gap-1 hover:text-slate-800">
+          {label} <span className="text-slate-400">{indicadorOrdenacao(campo)}</span>
+        </Link>
+      </th>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -141,7 +187,7 @@ export default async function GestorDashboardPage({
         <button type="submit" className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800">
           Ver
         </button>
-        {(equipeFiltro || busca) && (
+        {(equipeFiltro || busca || sortCampo) && (
           <Link
             href={`/gestor?${qsAtual}`}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
@@ -155,13 +201,15 @@ export default async function GestorDashboardPage({
         <div>
           <p className="text-sm font-medium text-slate-700">Apuração detalhada de todos os consultores (PDF)</p>
           <p className="text-xs text-slate-400">
-            Baixa uma seção separada por consultor para {NOMES_MESES[mes - 1]}/{ano}
-            {equipeFiltro ? `, equipe "${equipeFiltro}"` : ''}
+            Baixa uma seção separada por consultor para {NOMES_MESES[mes - 1]}/{ano}, organizada por
+            equipe
+            {equipeFiltro ? ` (só "${equipeFiltro}", pelo filtro de Equipe acima)` : ' (todas as equipes)'}
             {busca ? `, filtrado por "${busca}"` : ''} — respeita os filtros acima ({linhas.length} consultor(es)).
+            Pra baixar só uma equipe, selecione-a no filtro "Equipe" acima antes de baixar.
           </p>
         </div>
         <a
-          href={`/api/relatorios/gestor/todos?${qsFiltrosPdfTodos}`}
+          href={`/api/relatorios/gestor/todos?${qsFiltros}`}
           target="_blank"
           rel="noreferrer"
           className="ml-auto rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
@@ -178,9 +226,28 @@ export default async function GestorDashboardPage({
       >
         <div>
           <p className="text-sm font-medium text-slate-700">Relatório resumido por período (PDF)</p>
-          <p className="text-xs text-slate-400">Escolha o intervalo de datas exato do relatório.</p>
+          <p className="text-xs text-slate-400">
+            Escolha o intervalo de datas e, opcionalmente, uma equipe. Sem equipe selecionada, o
+            PDF sai organizado com uma seção separada por equipe.
+          </p>
         </div>
         <div className="ml-auto flex items-end gap-3">
+          <div>
+            <label htmlFor="equipe_consolidado" className="block text-xs font-medium text-slate-500">
+              Equipe
+            </label>
+            <select
+              id="equipe_consolidado"
+              name="equipe"
+              defaultValue=""
+              className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            >
+              <option value="">Todas as equipes (separadas no PDF)</option>
+              {equipesDisponiveis.map((eq) => (
+                <option key={eq} value={eq}>{eq}</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label htmlFor="data_inicio" className="block text-xs font-medium text-slate-500">
               Data inicial
@@ -227,12 +294,12 @@ export default async function GestorDashboardPage({
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="px-4 py-2 font-medium">Consultor</th>
-              <th className="px-4 py-2 font-medium">Equipe</th>
-              <th className="px-4 py-2 font-medium">Adesão</th>
-              <th className="px-4 py-2 font-medium">Recorrência</th>
-              <th className="px-4 py-2 font-medium">Desconto rastreador</th>
-              <th className="px-4 py-2 font-medium">Líquido</th>
+              <ThOrdenavel campo="nome" label="Consultor" direcaoPadrao="asc" />
+              <ThOrdenavel campo="equipe" label="Equipe" direcaoPadrao="asc" />
+              <ThOrdenavel campo="adesao" label="Adesão" />
+              <ThOrdenavel campo="recorrencia" label="Recorrência" />
+              <ThOrdenavel campo="desconto" label="Desconto rastreador" />
+              <ThOrdenavel campo="liquido" label="Líquido" />
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Ações</th>
             </tr>

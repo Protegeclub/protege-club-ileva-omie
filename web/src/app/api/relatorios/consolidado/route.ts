@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const dataInicio = searchParams.get('data_inicio')
   const dataFim = searchParams.get('data_fim')
+  const equipe = (searchParams.get('equipe') ?? '').trim()
 
   if (!dataInicio || !dataFim) {
     return NextResponse.json(
@@ -36,13 +37,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const relatorio = await montarRelatorioConsolidado(dataInicio, dataFim)
+    const relatorio = await montarRelatorioConsolidado(dataInicio, dataFim, equipe)
     const pdf = await gerarPdfConsolidado(relatorio)
 
+    const sufixoEquipe = equipe ? `-${equipe.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : ''
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="relatorio-consolidado-${dataInicio}-a-${dataFim}.pdf"`,
+        'Content-Disposition': `attachment; filename="relatorio-consolidado-${dataInicio}-a-${dataFim}${sufixoEquipe}.pdf"`,
       },
     })
   } catch (e) {

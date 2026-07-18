@@ -19,7 +19,9 @@ export interface ItemTodosConsultores {
 
 // Um PDF só, mas com uma seção separada por consultor (não uma tabela única resumida como
 // gerarPdfConsolidado) — pensado pra imprimir/arquivar a apuração detalhada de todos de uma vez,
-// mantendo cada consultor claramente distinto no documento.
+// mantendo cada consultor claramente distinto no documento. Os consultores gerados são agrupados
+// por equipe (com subtotal por equipe) — se o chamador já filtrou para uma equipe só, isso vira
+// naturalmente uma seção única.
 export async function gerarPdfTodosConsultores(
   ano: number,
   mes: number,
@@ -50,32 +52,55 @@ export async function gerarPdfTodosConsultores(
     .stroke()
   doc.moveDown(0.8)
 
-  for (const item of gerados) {
-    if (doc.y > doc.page.height - 130) {
-      doc.addPage()
-    }
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#1F3B57').text(`${item.nomeConsultor}  #${item.cod_consultor}`)
-    doc.fontSize(8.5).font('Helvetica').fillColor('#7A7A7A').text(`Equipe: ${item.equipe || '—'}`)
-    doc.moveDown(0.35)
-
-    doc.fontSize(9.5).font('Helvetica').fillColor('#222222')
-    doc.text(`Adesões no período: ${item.qtdAdesoes}`)
-    doc.text(`Adesão: ${formatarMoeda(item.totalAdesao)}    Recorrência: ${formatarMoeda(item.totalRecorrencia)}    Desconto rastreador: ${formatarMoeda(item.totalDescontoRastreador)}`)
-    doc.font('Helvetica-Bold').fontSize(10.5).text(`Total líquido: ${formatarMoeda(item.totalLiquido)}`)
-    doc.moveDown(0.4)
-
-    doc
-      .strokeColor('#DCE3EA')
-      .lineWidth(0.5)
-      .moveTo(MARGEM, doc.y)
-      .lineTo(doc.page.width - MARGEM, doc.y)
-      .stroke()
-    doc.moveDown(0.5)
-  }
-
   if (gerados.length === 0) {
     doc.fillColor('#7A7A7A').fontSize(10).text('Nenhum consultor selecionado tinha apuração gerada neste período.')
     doc.moveDown(0.8)
+  }
+
+  const porEquipe = new Map<string, ItemTodosConsultores[]>()
+  for (const item of gerados) {
+    const chave = item.equipe || '—'
+    if (!porEquipe.has(chave)) porEquipe.set(chave, [])
+    porEquipe.get(chave)!.push(item)
+  }
+  const equipesOrdenadas = Array.from(porEquipe.keys()).sort((a, b) => a.localeCompare(b))
+
+  for (const equipe of equipesOrdenadas) {
+    const itensEquipe = porEquipe.get(equipe)!.sort((a, b) => b.totalLiquido - a.totalLiquido)
+    const totalEquipe = itensEquipe.reduce((s, i) => s + i.totalLiquido, 0)
+
+    if (doc.y > doc.page.height - 130) doc.addPage()
+    doc.fontSize(13).font('Helvetica-Bold').fillColor('#1F3B57').text(`Equipe: ${equipe}`)
+    doc
+      .fontSize(9)
+      .font('Helvetica')
+      .fillColor('#4A4A4A')
+      .text(`${itensEquipe.length} consultor(es) — total líquido: ${formatarMoeda(totalEquipe)}`)
+    doc.moveDown(0.5)
+
+    for (const item of itensEquipe) {
+      if (doc.y > doc.page.height - 130) {
+        doc.addPage()
+      }
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#1F3B57').text(`${item.nomeConsultor}  #${item.cod_consultor}`)
+      doc.moveDown(0.15)
+
+      doc.fontSize(9.5).font('Helvetica').fillColor('#222222')
+      doc.text(`Adesões no período: ${item.qtdAdesoes}`)
+      doc.text(`Adesão: ${formatarMoeda(item.totalAdesao)}    Recorrência: ${formatarMoeda(item.totalRecorrencia)}    Desconto rastreador: ${formatarMoeda(item.totalDescontoRastreador)}`)
+      doc.font('Helvetica-Bold').fontSize(10.5).text(`Total líquido: ${formatarMoeda(item.totalLiquido)}`)
+      doc.moveDown(0.4)
+
+      doc
+        .strokeColor('#DCE3EA')
+        .lineWidth(0.5)
+        .moveTo(MARGEM, doc.y)
+        .lineTo(doc.page.width - MARGEM, doc.y)
+        .stroke()
+      doc.moveDown(0.5)
+    }
+
+    doc.moveDown(0.3)
   }
 
   if (pendentes.length > 0) {

@@ -390,10 +390,18 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
         toggles **"Atomic deployments"** e **"Auto promotion"** na tela de configuração da
         integração (Trigger.dev → Organization Settings → Integrations → Vercel → Configure).
         Deploys voltaram a promover normalmente, confirmado com um redeploy real. **Consequência
-        prática pro fluxo de trabalho**: sempre que o código dentro de `web/src/trigger/` mudar,
-        o deploy da tarefa pro Trigger.dev precisa ser feito manualmente
-        (`npx trigger.dev deploy --env prod`, de uma pasta sem espaço/acento no caminho) — não é
-        mais automático a partir do push.
+        prática pro fluxo de trabalho**: o deploy da tarefa pro Trigger.dev precisa ser feito
+        manualmente (`npx trigger.dev deploy --env prod`, de uma pasta sem espaço/acento no
+        caminho) — não é mais automático a partir do push.
+        **⚠️ Pegadinha real (14/07/2026)**: não é só quando `web/src/trigger/gerar-apuracao.ts`
+        muda — é sempre que **qualquer arquivo que essa tarefa importa** muda, incluindo
+        `lib/apuracao/mensal.ts` e `lib/apuracao/gerar.ts` (a lógica de cálculo em si). Esquecemos
+        disso ao adicionar a aba "Placas Ativadas": o código mudou, o site foi ao ar normal
+        (deploy da Vercel), mas a tarefa do Trigger.dev continuou rodando a versão **antiga** até
+        alguém regenerar manualmente e notar que o campo novo vinha vazio. **Regra prática**:
+        depois de qualquer mudança em `web/src/lib/apuracao/*` (não só em `web/src/trigger/`),
+        rodar `npx trigger.dev deploy --env prod` antes de considerar a mudança "no ar de
+        verdade".
       - **Redesenho visual + quarto bug real (13/07/2026)**: a pedido do Samuel, a tela
         `/gestor/gerar` ganhou visual novo (ícones, cards, barra de progresso segmentada
         verde/vermelho em tempo real, cronômetro, filtro por status) — ver
@@ -472,7 +480,13 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       `lib/apuracao/mensal.ts`, persistido em `detalhe.placasAtivadas`, com PDF próprio
       (`tipo=placas-ativadas`). **Meses já gerados antes de 14/07/2026 precisam ser gerados de
       novo pra essa aba aparecer preenchida** (o campo não existia no `detalhe` antes disso).
-      Testado de ponta a ponta com dado real (consultor 11, julho/2026).
+      Testado de ponta a ponta com dado real (consultor 11, julho/2026). **Confirmado também no
+      consultor #19** (o caso do achado de 13/07): esquecemos de reimplantar a tarefa do
+      Trigger.dev depois do commit que adicionou essa aba (ver nota "Pegadinha real" acima), então
+      a primeira regeneração de 16/07 saiu com o campo ausente (0 placas); redeploy manual da
+      tarefa + nova regeneração resolveu — `detalhe.placasAtivadas` do consultor #19 em 06/2026
+      veio com 29 placas, batendo com o valor que o Samuel via ao vivo no Ileva. Samuel confirmou
+      em 16/07/2026 que está OK.
 - [x] **Painel Gestor: "Gerar apuração" (`/gestor/gerar`, ex-painel Comercial, unificado em
       12/07/2026)**: formulário funcional para gerar a apuração de um consultor por vez (por
       `cod_consultor` + mês/ano), **mais a geração em lote de todos os ativos** (ver seção 6.4) —
@@ -493,6 +507,15 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       autorização de qualquer coisa embaixo de `/gestor` é do próprio Gestor. Testado com
       Playwright real (login como `gestor-teste@protegeclub.local`) navegando pelas 4 sub-telas
       do consultor 11 e conferindo os valores.
+- [x] **Gestor: ordenação por coluna na tabela principal (18/07/2026)** — cabeçalhos Consultor,
+      Equipe, Adesão, Recorrência, Desconto rastreador e Líquido viraram links clicáveis
+      (`?sort=campo&dir=asc|desc`, clicar de novo inverte a direção, seta ▲/▼ indica a coluna
+      ativa). Implementado 100% via URL/server component (sem client component novo) — mesmo
+      padrão dos filtros de equipe/busca que já existiam. Sem `sort` na URL, mantém o
+      comportamento padrão de sempre (gerados primeiro por líquido decrescente, depois
+      pendentes por nome). Testado com Playwright real: clique em "Líquido" ordena
+      decrescente, segundo clique inverte pra crescente; clique em "Consultor" ordena
+      alfabético.
 - [x] `/gestor/acessos`: gestão de convites de acesso dos consultores (ver seção 6.3)
 
 ### 6.8 Relatórios
@@ -520,6 +543,17 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       gerada nesse mês entra numa lista à parte no fim do PDF, não é omitido silenciosamente.
       Testado com dados reais: PDF de todos (7 páginas/consultores) e filtrado por equipe
       (subconjunto menor) — ambos gerados corretamente.
+- [x] **Exportação organizada por equipe, nos dois relatórios em lote (18/07/2026)** — a pedido
+      do Samuel: "PDF de todos" (`todos-consultores.ts`) e "Relatório resumido por período"
+      (`consolidado.ts` + `pdf.ts`) agora agrupam os consultores em **seções por equipe** (com
+      subtotal de líquido por equipe) quando nenhuma equipe específica é escolhida — antes o
+      "PDF de todos" listava todo mundo numa lista só ordenada por líquido, e o "Relatório
+      resumido" nem tinha noção de equipe. O filtro de equipe (select já existente na tela pro
+      "PDF de todos"; select novo adicionado ao formulário do "Relatório resumido") continua
+      funcionando pra baixar **só uma equipe** — nesse caso vira naturalmente uma seção única.
+      Testado com dados reais (Julho/2026, 204 consultores/17 equipes): PDF de todos sem filtro
+      saiu com 17 seções "Equipe:", com filtro saiu com 1; relatório consolidado sem filtro saiu
+      com 13 seções, com filtro ficou restrito à equipe escolhida.
 
 ### 6.9 Testes e validação
 - [ ] Testes com dados reais via API de teste (sem afetar produção)
