@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { Banner } from '@/lib/ui/banner'
+import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { formatarMoeda, type ApuracaoRow } from '../tipos'
 
@@ -10,7 +11,7 @@ export default async function InadimplentesPage() {
   const supabase = await createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) {
-    return <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">Sessão expirada.</div>
+    return <Banner tom="aviso">Sessão expirada.</Banner>
   }
 
   const { data: perfil } = await supabase
@@ -20,11 +21,7 @@ export default async function InadimplentesPage() {
     .single()
 
   if (!perfil?.cod_consultor) {
-    return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">
-        Este usuário não está vinculado a um consultor do Ileva.
-      </div>
-    )
+    return <Banner tom="aviso">Este usuário não está vinculado a um consultor do Ileva.</Banner>
   }
 
   const { data: linha } = await supabase
@@ -42,31 +39,24 @@ export default async function InadimplentesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link href="/consultor" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-          Voltar
-        </Link>
-        <h2 className="text-base font-semibold text-slate-900">Inadimplentes</h2>
-        {perfil.cod_consultor ? (
-          <a
-            href={`/api/relatorios/consultor?tipo=inadimplentes&cod_consultor=${perfil.cod_consultor}`}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
-          >
-            Baixar PDF
-          </a>
-        ) : null}
-      </div>
+      <CabecalhoPagina
+        titulo="Inadimplentes"
+        voltarHref="/consultor"
+        pdfHref={
+          perfil.cod_consultor
+            ? `/api/relatorios/consultor?tipo=inadimplentes&cod_consultor=${perfil.cod_consultor}`
+            : undefined
+        }
+      />
 
       {!linha ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
           Nenhuma apuração gerada ainda — peça ao Gestor para gerar ao menos uma vez.
         </div>
       ) : (
         <>
           <div className="flex flex-wrap gap-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-5">
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-sm text-slate-500">
                 Valor estimado de recorrência a receber em caso de pagamento
               </p>
@@ -80,9 +70,9 @@ export default async function InadimplentesPage() {
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-slate-800 text-white">
+              <thead className="bg-brand-navy text-white">
                 <tr>
                   <th className="px-4 py-2 font-medium">Vencimento</th>
                   <th className="px-4 py-2 font-medium">Associado</th>
@@ -110,7 +100,7 @@ export default async function InadimplentesPage() {
                 )}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-slate-800 bg-slate-50 font-semibold">
+                <tr className="border-t-2 border-brand-navy bg-slate-50 font-semibold">
                   <td className="px-4 py-2" colSpan={4}>Total</td>
                   <td className="px-4 py-2 text-right">{formatarMoeda(totalBoletos)}</td>
                 </tr>

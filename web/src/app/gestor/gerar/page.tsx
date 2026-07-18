@@ -12,10 +12,10 @@ export default async function GestorGerarPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <Link href="/gestor" className="text-xs text-slate-400 hover:underline">
+        <Link href="/gestor" className="text-xs text-slate-400 hover:text-brand-navy hover:underline">
           ← Voltar para a apuração
         </Link>
-        <h1 className="mt-1 text-lg font-semibold text-slate-900">Gerar apuração</h1>
+        <h1 className="mt-1 text-lg font-semibold text-brand-navy">Gerar apuração</h1>
         <p className="text-sm text-slate-500">
           Calcula a comissão de um consultor (ou de todos) direto na API do Ileva e salva o
           resultado. Roda em segundo plano — pode fechar a aba a qualquer momento.

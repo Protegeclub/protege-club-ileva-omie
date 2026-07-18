@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { sair } from '@/lib/auth/actions'
+import { Botao } from '@/lib/ui/botao'
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -42,15 +43,15 @@ export function FiltrosSidebar() {
       {!ocultarPeriodo && (
         <>
           <div>
-            <p className="mb-2 text-xs font-medium uppercase text-slate-400">Ano</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Ano</p>
             <div className="flex flex-col gap-1.5">
               {anosDisponiveis.map((a) => (
                 <button
                   key={a}
                   onClick={() => irPara({ ano: a })}
-                  className={`rounded-md border px-3 py-1.5 text-sm ${
+                  className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
                     a === ano
-                      ? 'border-slate-900 bg-slate-900 text-white'
+                      ? 'border-brand-navy bg-brand-navy text-white'
                       : 'border-slate-300 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
@@ -61,11 +62,11 @@ export function FiltrosSidebar() {
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-medium uppercase text-slate-400">Mês</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Mês</p>
             <select
               value={mes}
               onChange={(e) => irPara({ mes: Number(e.target.value) })}
-              className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
             >
               {NOMES_MESES.map((nome, i) => (
                 <option key={nome} value={i + 1}>
@@ -80,19 +81,16 @@ export function FiltrosSidebar() {
               type="checkbox"
               checked={equipe}
               onChange={(e) => irPara({ equipe: e.target.checked })}
-              className="rounded border-slate-300"
+              className="rounded border-slate-300 text-brand-navy focus:ring-brand-blue"
             />
             Visualizar dados da equipe
           </label>
         </>
       )}
 
-      <button
-        onClick={() => sair()}
-        className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
-      >
+      <Botao onClick={() => sair()} variante="fantasma" className="w-full">
         Sair
-      </button>
+      </Botao>
     </aside>
   )
 }

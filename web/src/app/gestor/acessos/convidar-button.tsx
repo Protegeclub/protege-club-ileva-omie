@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Botao } from '@/lib/ui/botao'
 import { convidarConsultor, type ConvidarEstado } from './actions'
 
 const estadoInicial: ConvidarEstado = {}
@@ -19,13 +20,9 @@ export function ConvidarButton({ codConsultor }: { codConsultor: number }) {
   return (
     <form action={formAction} className="flex flex-col items-start gap-1">
       <input type="hidden" name="cod_consultor" value={codConsultor} />
-      <button
-        type="submit"
-        disabled={pendente}
-        className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-      >
+      <Botao type="submit" disabled={pendente} variante="fantasma" tamanho="sm">
         {pendente ? 'Convidando...' : 'Convidar'}
-      </button>
+      </Botao>
       {estado.erro ? <span className="text-xs text-red-600">{estado.erro}</span> : null}
     </form>
   )

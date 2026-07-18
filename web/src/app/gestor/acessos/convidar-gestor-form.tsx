@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Botao } from '@/lib/ui/botao'
 import { convidarGestor, type ConvidarEstado } from './actions'
 
 const estadoInicial: ConvidarEstado = {}
@@ -28,7 +29,7 @@ export function ConvidarGestorForm() {
           name="nome"
           type="text"
           required
-          className="mt-1 w-56 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="mt-1 w-56 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
         />
       </div>
       <div>
@@ -40,16 +41,12 @@ export function ConvidarGestorForm() {
           name="email"
           type="email"
           required
-          className="mt-1 w-64 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+          className="mt-1 w-64 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
         />
       </div>
-      <button
-        type="submit"
-        disabled={pendente}
-        className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-      >
+      <Botao type="submit" disabled={pendente}>
         {pendente ? 'Convidando...' : 'Convidar como Gestor'}
-      </button>
+      </Botao>
       {estado.erro ? <p className="w-full text-sm text-red-600">{estado.erro}</p> : null}
     </form>
   )

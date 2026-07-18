@@ -1,7 +1,9 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Botao } from '@/lib/ui/botao'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
 // Landing do link de convite/recuperação de senha. O Supabase entrega a sessão pela própria URL
@@ -74,10 +76,18 @@ export default function DefinirSenhaPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <form
         onSubmit={aoSubmeter}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-slate-200 bg-white p-8 shadow-sm"
+        className="w-full max-w-sm space-y-5 rounded-xl border border-slate-200 bg-white p-8 shadow-sm"
       >
-        <div className="space-y-1 text-center">
-          <h1 className="text-lg font-semibold text-slate-900">Defina sua senha</h1>
+        <div className="space-y-2 text-center">
+          <Image
+            src="/Logo Protege Club.png"
+            alt="Protege Club"
+            width={56}
+            height={56}
+            priority
+            className="mx-auto h-14 w-14"
+          />
+          <h1 className="text-lg font-semibold text-brand-navy">Defina sua senha</h1>
           <p className="text-sm text-slate-500">Protege Club — Apuração de comissões</p>
         </div>
 
@@ -91,7 +101,7 @@ export default function DefinirSenhaPage() {
             required
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
           />
         </div>
 
@@ -105,19 +115,15 @@ export default function DefinirSenhaPage() {
             required
             value={confirmacao}
             onChange={(e) => setConfirmacao(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
           />
         </div>
 
         {erro ? <p className="text-sm text-red-600">{erro}</p> : null}
 
-        <button
-          type="submit"
-          disabled={enviando}
-          className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-        >
+        <Botao type="submit" disabled={enviando} className="w-full">
           {enviando ? 'Salvando...' : 'Salvar e entrar'}
-        </button>
+        </Botao>
       </form>
     </main>
   )

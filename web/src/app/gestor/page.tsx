@@ -1,5 +1,6 @@
-import Link from 'next/link'
 import { listarTodosConsultores } from '@/lib/ileva/api'
+import { Botao } from '@/lib/ui/botao'
+import { Cartao } from '@/lib/ui/cartao'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { Consultor } from '@/types/domain'
 import { TabelaGestor, type ApuracaoResumo } from './TabelaGestor'
@@ -65,7 +66,12 @@ export default async function GestorDashboardPage({
       <form method="GET" className="flex flex-wrap items-end gap-3">
         <div>
           <label htmlFor="mes" className="block text-xs font-medium text-slate-500">Mês</label>
-          <select id="mes" name="mes" defaultValue={mes} className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm">
+          <select
+            id="mes"
+            name="mes"
+            defaultValue={mes}
+            className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          >
             {NOMES_MESES.map((nome, i) => (
               <option key={nome} value={i + 1}>{nome}</option>
             ))}
@@ -78,20 +84,13 @@ export default async function GestorDashboardPage({
             name="ano"
             type="number"
             defaultValue={ano}
-            className="mt-1 w-24 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            className="mt-1 w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
           />
         </div>
-        <button type="submit" className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800">
-          Ver
-        </button>
+        <Botao type="submit">Ver</Botao>
       </form>
 
-      <form
-        method="GET"
-        action="/api/relatorios/consolidado"
-        target="_blank"
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4"
-      >
+      <Cartao className="flex flex-wrap items-end gap-3 p-4">
         <div>
           <p className="text-sm font-medium text-slate-700">Relatório resumido por período (PDF)</p>
           <p className="text-xs text-slate-400">
@@ -99,7 +98,12 @@ export default async function GestorDashboardPage({
             PDF sai organizado com uma seção separada por equipe.
           </p>
         </div>
-        <div className="ml-auto flex items-end gap-3">
+        <form
+          method="GET"
+          action="/api/relatorios/consolidado"
+          target="_blank"
+          className="ml-auto flex items-end gap-3"
+        >
           <div>
             <label htmlFor="equipe_consolidado" className="block text-xs font-medium text-slate-500">
               Equipe
@@ -108,7 +112,7 @@ export default async function GestorDashboardPage({
               id="equipe_consolidado"
               name="equipe"
               defaultValue=""
-              className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
             >
               <option value="">Todas as equipes (separadas no PDF)</option>
               {equipesDisponiveis.map((eq) => (
@@ -126,7 +130,7 @@ export default async function GestorDashboardPage({
               type="date"
               defaultValue={dataInicioPadrao}
               required
-              className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
             />
           </div>
           <div>
@@ -139,17 +143,14 @@ export default async function GestorDashboardPage({
               type="date"
               defaultValue={dataFimPadrao}
               required
-              className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
             />
           </div>
-          <button
-            type="submit"
-            className="rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
-          >
+          <Botao type="submit" variante="destaque">
             Baixar PDF
-          </button>
-        </div>
-      </form>
+          </Botao>
+        </form>
+      </Cartao>
 
       <TabelaGestor
         linhasIniciais={linhasIniciais}

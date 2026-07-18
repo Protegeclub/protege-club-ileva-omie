@@ -428,7 +428,10 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Gestor
 
 ### 6.5 Integração com Omie
-- [ ] Chave de teste (sandbox) obtida
+- [ ] Chave de teste (sandbox) obtida — **status (18/07/2026)**: Samuel recebeu um convite de
+      acesso à Omie da empresa (conta "ProtegeClub", parece ser produção), mas é só acesso de
+      usuário (login no ERP), não dá a chave de API (App Key + App Secret). Ele já pediu de
+      novo um acesso melhor especificamente pra isso. Continua bloqueado até essa chave chegar.
 - [ ] Autenticação validada
 - [x] Esqueleto do cliente escrito (`web/src/lib/omie/client.ts`, convenção de `call` da API da
       Omie) — sem credenciais ainda, não testado
@@ -631,3 +634,45 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       nome agora são instantâneos (confirmado com Playwright: nenhuma navegação disparada,
       `page.url()` não muda). O botão "Baixar PDF de todos" continua respeitando o filtro atual
       (o link é montado no cliente a partir do estado corrente de equipe/busca).
+
+### 6.12 Identidade visual (rebrand)
+- [x] **Repaginação visual completa dos painéis Gestor e Consultor (18/07/2026)** — a pedido do
+      Samuel, com o `Manual de Identidade Visual_Protege Club.pdf` (colocado em `web/public/`)
+      como referência. Escopo combinado: só aparência (nenhuma mudança de dado/lógica), fundo
+      branco/texto preto mantidos, resto seguindo a paleta e tipografia da marca, moderno e
+      profissional, sem piorar a velocidade do site.
+  - **Cores institucionais** aplicadas via `@theme` do Tailwind v4 em `globals.css`: navy
+    `#002A54` (`brand-navy`, cromia primária — botões primários, header de tabela, estado ativo
+    de navegação/filtros), azul claro `#25A9E1` (`brand-blue`, secundária — anéis de foco, links
+    secundários, ícone-tiles), laranja `#F19100` (`brand-orange`, destaque — reservado pro único
+    botão de ação principal por card/seção, ex.: "Baixar PDF", "Gerar apuração"). Cores
+    semânticas de status (emerald=sucesso, amber=aviso, red=erro) foram preservadas exatamente
+    como estavam — não fazem parte da identidade da marca.
+  - **Regra de contraste calculada** (WCAG, não estimada): botão navy usa texto branco
+    (14.4:1), mas botão azul-claro/laranja usa texto navy — texto branco neles reprova até pra
+    texto grande (~2.4-2.7:1). Isso está embutido no componente `Botao`.
+  - **Tipografia**: Gotham (a da marca) é paga, sem licença de uso web — substituída por
+    **Montserrat** (`next/font/google`, pesos 400/500/600/700, auto-hospedada), o par gratuito
+    mais próximo. De quebra, corrigido um bug real: `globals.css` tinha
+    `font-family: Arial, Helvetica, sans-serif` fixo no `body`, que sobrescrevia a fonte
+    carregada — o site inteiro renderizava em Arial, nunca em Geist (a fonte antiga).
+  - **5 componentes novos** em `web/src/lib/ui/` (`Botao`, `Cartao`+`CartaoCabecalho`, `Selo`,
+    `Banner`, `CabecalhoPagina`) — todos Server Components puros (sem `'use client'`, sem
+    hooks), pra não vazar JS extra em nenhuma página que hoje já é 100% servidor. Confirmado com
+    grep + comparação do "First Load JS" do build antes/depois: nenhuma rota ganhou JS.
+  - Aplicado em ~30 arquivos: as 10 telas de relatório (5 do Consultor + 5 espelhadas no
+    Gestor, que já eram idênticas byte a byte), os 3 dashboards, os 3 `layout.tsx` +
+    `filtros-sidebar.tsx`, a tela `gestor/gerar` (cards, ícone-tiles, barra de progresso — essa
+    ficou intocada, já era só cor semântica + largura dinâmica), `gestor/acessos`, login e
+    definir-senha (ganharam o logo, que antes não tinha em nenhum dos dois).
+  - **Navegação ativa no header do Gestor**: novo `nav-links.tsx` (único Client Component novo
+    deste trabalho, com `usePathname()`, mesmo padrão já usado em `filtros-sidebar.tsx`) —
+    mostra qual aba (Apuração/Gerar apuração/Acessos) está ativa, coisa que não existia antes.
+  - **Radius padronizado**: `rounded-xl` pra cards/tabelas (antes era `rounded-md`/`rounded-lg`
+    misturado sem critério — só a tela de gerar apuração usava `rounded-xl`), `rounded-lg` pra
+    botões/inputs, `rounded-full` pra selos/pills.
+  - Testado de ponta a ponta com Playwright real (login, dashboard do Gestor, detalhe de
+    consultor, uma tela de relatório, gerar apuração, acessos) — screenshots conferidos
+    visualmente, não só build passando. Build, `tsc --noEmit` e `eslint` limpos (os poucos
+    problemas de lint nos arquivos tocados já existiam antes desta sessão — confirmado
+    comparando com o commit anterior — não foram introduzidos por este rebrand).

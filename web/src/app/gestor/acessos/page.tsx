@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { listarTodosConsultores } from '@/lib/ileva/api'
+import { Cartao } from '@/lib/ui/cartao'
+import { Selo } from '@/lib/ui/selo'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { ConvidarButton } from './convidar-button'
 import { ConvidarGestorForm } from './convidar-gestor-form'
@@ -36,13 +38,13 @@ export default async function GestorAcessosPage() {
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/gestor" className="text-xs text-slate-400 hover:underline">
+        <Link href="/gestor" className="text-xs text-slate-400 hover:text-brand-navy hover:underline">
           ← Voltar para a apuração
         </Link>
         <h2 className="text-base font-semibold text-slate-900">Acessos</h2>
       </div>
 
-      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-5">
+      <Cartao className="space-y-3 p-5">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">Gestores com acesso</h3>
           <p className="text-sm text-slate-500">
@@ -50,7 +52,7 @@ export default async function GestorAcessosPage() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-md border border-slate-100">
+        <div className="overflow-x-auto rounded-lg border border-slate-100">
           <table className="w-full min-w-[420px] text-left text-sm">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
@@ -70,7 +72,7 @@ export default async function GestorAcessosPage() {
         </div>
 
         <ConvidarGestorForm />
-      </div>
+      </Cartao>
 
       <div>
         <h3 className="text-sm font-semibold text-slate-900">Acesso dos consultores</h3>
@@ -80,7 +82,7 @@ export default async function GestorAcessosPage() {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full min-w-[560px] text-left text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
@@ -98,9 +100,7 @@ export default async function GestorAcessosPage() {
                 <td className="px-4 py-2 text-slate-500">{consultor.email || '—'}</td>
                 <td className="px-4 py-2">
                   {codsComAcesso.has(consultor.cod_consultor) ? (
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
-                      Tem acesso
-                    </span>
+                    <Selo>Tem acesso</Selo>
                   ) : (
                     <ConvidarButton codConsultor={consultor.cod_consultor} />
                   )}

@@ -2,6 +2,9 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { Botao } from '@/lib/ui/botao'
+import { Cartao } from '@/lib/ui/cartao'
+import { Selo } from '@/lib/ui/selo'
 import type { Consultor } from '@/types/domain'
 
 export interface ApuracaoResumo {
@@ -155,7 +158,7 @@ export function TabelaGestor({
             id="equipe"
             value={equipe}
             onChange={(e) => setEquipe(e.target.value)}
-            className="mt-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
           >
             <option value="">Todas as equipes</option>
             {equipesDisponiveis.map((eq) => (
@@ -171,21 +174,17 @@ export function TabelaGestor({
             placeholder="Nome ou código"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="mt-1 w-48 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            className="mt-1 w-48 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
           />
         </div>
         {(equipe || busca || sortCampo) && (
-          <button
-            type="button"
-            onClick={limparFiltros}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-          >
+          <Botao type="button" onClick={limparFiltros} variante="fantasma">
             Limpar filtros
-          </button>
+          </Botao>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <Cartao className="flex flex-wrap items-center gap-3 p-4">
         <div>
           <p className="text-sm font-medium text-slate-700">Apuração detalhada de todos os consultores (PDF)</p>
           <p className="text-xs text-slate-400">
@@ -196,15 +195,10 @@ export function TabelaGestor({
             Pra baixar só uma equipe, selecione-a no filtro "Equipe" acima antes de baixar.
           </p>
         </div>
-        <a
-          href={`/api/relatorios/gestor/todos?${qsFiltros}`}
-          target="_blank"
-          rel="noreferrer"
-          className="ml-auto rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800"
-        >
+        <Botao href={`/api/relatorios/gestor/todos?${qsFiltros}`} target="_blank" rel="noreferrer" variante="destaque" className="ml-auto">
           Baixar PDF de todos
-        </a>
-      </div>
+        </Botao>
+      </Cartao>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CardResumo titulo="Total líquido do mês" valor={formatarMoeda(totalLiquidoGeral)} />
@@ -213,7 +207,7 @@ export function TabelaGestor({
         <CardResumo titulo="Apurações geradas" valor={`${geradosCount} / ${linhas.length}`} />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
@@ -247,9 +241,7 @@ export function TabelaGestor({
                     <td className="px-4 py-2">{formatarMoeda(apuracao.total_desconto_rastreador)}</td>
                     <td className="px-4 py-2 font-medium">{formatarMoeda(apuracao.total_liquido)}</td>
                     <td className="px-4 py-2">
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
-                        Gerado
-                      </span>
+                      <Selo>Gerado</Selo>
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex gap-3">
@@ -263,7 +255,7 @@ export function TabelaGestor({
                           href={`/api/relatorios/consultor?tipo=dashboard&cod_consultor=${consultor.cod_consultor}&${qsAtual}&equipe=0`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs font-medium text-emerald-700 hover:underline"
+                          className="text-xs font-medium text-brand-blue hover:underline"
                         >
                           PDF individual
                         </a>
@@ -273,7 +265,7 @@ export function TabelaGestor({
                 ) : (
                   <td colSpan={6} className="px-4 py-2 text-slate-400">
                     Apuração ainda não gerada para {NOMES_MESES[mes - 1]}/{ano} —{' '}
-                    <Link href="/gestor/gerar" className="underline hover:text-slate-600">
+                    <Link href="/gestor/gerar" className="text-brand-navy underline hover:text-brand-navy-hover">
                       gerar agora
                     </Link>
                   </td>
@@ -296,9 +288,9 @@ export function TabelaGestor({
 
 function CardResumo({ titulo, valor }: { titulo: string; valor: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5">
+    <Cartao>
       <p className="text-sm text-slate-500">{titulo}</p>
       <p className="mt-2 text-2xl font-semibold text-slate-900">{valor}</p>
-    </div>
+    </Cartao>
   )
 }

@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Banner } from '@/lib/ui/banner'
+import { Botao } from '@/lib/ui/botao'
+import { Cartao, CartaoCabecalho } from '@/lib/ui/cartao'
 import { consultarStatusPeriodo, revalidarPaineisAposLote, solicitarApuracaoLote, type StatusJob } from './actions'
 import { BarraProgresso } from './barra-progresso'
 import { IconeCamadas, IconeCheckCircle, IconeRelogio, IconeSpinner, IconeXCircle } from './icones'
@@ -107,17 +110,14 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-          <IconeCamadas className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-slate-900">Gerar em lote</h2>
-          <p className="text-xs text-slate-500">
-            Todos os {consultores.length} consultores ativos, um por vez.
-          </p>
-        </div>
+    <Cartao className="overflow-hidden p-0">
+      <div className="border-b border-slate-100 px-6 py-4">
+        <CartaoCabecalho
+          icone={<IconeCamadas className="h-5 w-5" />}
+          titulo="Gerar em lote"
+          descricao={`Todos os ${consultores.length} consultores ativos, um por vez.`}
+          tom="azul"
+        />
       </div>
 
       <div className="space-y-5 px-6 py-5">
@@ -134,7 +134,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
               value={mes}
               disabled={acompanhando}
               onChange={(e) => setMes(Number(e.target.value))}
-              className="mt-1 w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-50"
+              className="mt-1 w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -147,24 +147,18 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
               value={ano}
               disabled={acompanhando}
               onChange={(e) => setAno(Number(e.target.value))}
-              className="mt-1 w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-50"
+              className="mt-1 w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
 
           {!acompanhando ? (
-            <button
-              onClick={() => dispararLista(consultores)}
-              className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
-            >
+            <Botao onClick={() => dispararLista(consultores)} variante="destaque">
               Gerar apuração de todos ({consultores.length})
-            </button>
+            </Botao>
           ) : (
-            <button
-              onClick={pararDeAcompanhar}
-              className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            >
+            <Botao onClick={pararDeAcompanhar} variante="fantasma">
               Parar de acompanhar
-            </button>
+            </Botao>
           )}
 
           {!acompanhando && falhas.length > 0 && (
@@ -178,17 +172,17 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
         </div>
 
         {erroDisparo ? (
-          <div className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <Banner tom="erro" className="flex items-start gap-2">
             <IconeXCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{erroDisparo}</span>
-          </div>
+          </Banner>
         ) : null}
 
         {total > 0 && (
-          <div className="space-y-3 rounded-lg bg-slate-50 p-4">
+          <div className="space-y-3 rounded-xl bg-slate-50 p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tabular-nums text-slate-900">{pct}%</span>
+                <span className="text-2xl font-semibold tabular-nums text-brand-navy">{pct}%</span>
                 <span className="text-sm text-slate-500">
                   {concluidos} de {total} processados
                 </span>
@@ -246,7 +240,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
                   onClick={() => setFiltro(valor)}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     filtro === valor
-                      ? 'bg-slate-900 text-white'
+                      ? 'bg-brand-navy text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -255,7 +249,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
               ))}
             </div>
 
-            <div className="max-h-96 overflow-y-auto rounded-lg border border-slate-100">
+            <div className="max-h-96 overflow-y-auto rounded-xl border border-slate-100">
               <table className="w-full text-left text-sm">
                 <thead className="sticky top-0 bg-slate-50 text-slate-500">
                   <tr>
@@ -289,7 +283,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
           </div>
         )}
       </div>
-    </div>
+    </Cartao>
   )
 }
 

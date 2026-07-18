@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ApuracaoRow } from '@/app/consultor/tipos'
 import { formatarMoeda } from '@/app/consultor/tipos'
+import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 // Estado atual (quem está atrasado agora), igual web/src/app/consultor/inadimplentes/page.tsx —
@@ -29,28 +30,16 @@ export default async function GestorInadimplentesPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link
-          href={`/gestor/consultor/${codConsultor}`}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-          Voltar
-        </Link>
-        <h2 className="text-base font-semibold text-slate-900">Inadimplentes</h2>
-        <a
-          href={`/api/relatorios/consultor?tipo=inadimplentes&cod_consultor=${codConsultor}`}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
-        >
-          Baixar PDF
-        </a>
-      </div>
+      <CabecalhoPagina
+        titulo="Inadimplentes"
+        voltarHref={`/gestor/consultor/${codConsultor}`}
+        pdfHref={`/api/relatorios/consultor?tipo=inadimplentes&cod_consultor=${codConsultor}`}
+      />
 
       {!linha ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
           Nenhuma apuração gerada ainda para este consultor —{' '}
-          <Link href="/gestor/gerar" className="underline hover:text-slate-600">
+          <Link href="/gestor/gerar" className="text-brand-navy underline hover:text-brand-navy-hover">
             gere agora
           </Link>
           .
@@ -58,7 +47,7 @@ export default async function GestorInadimplentesPage({
       ) : (
         <>
           <div className="flex flex-wrap gap-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-5">
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-sm text-slate-500">
                 Valor estimado de recorrência a receber em caso de pagamento
               </p>
@@ -72,9 +61,9 @@ export default async function GestorInadimplentesPage({
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-slate-800 text-white">
+              <thead className="bg-brand-navy text-white">
                 <tr>
                   <th className="px-4 py-2 font-medium">Vencimento</th>
                   <th className="px-4 py-2 font-medium">Associado</th>
@@ -102,7 +91,7 @@ export default async function GestorInadimplentesPage({
                 )}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-slate-800 bg-slate-50 font-semibold">
+                <tr className="border-t-2 border-brand-navy bg-slate-50 font-semibold">
                   <td className="px-4 py-2" colSpan={4}>Total</td>
                   <td className="px-4 py-2 text-right">{formatarMoeda(totalBoletos)}</td>
                 </tr>

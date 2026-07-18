@@ -1,6 +1,9 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { Banner } from '@/lib/ui/banner'
+import { Botao } from '@/lib/ui/botao'
+import { Cartao, CartaoCabecalho } from '@/lib/ui/cartao'
 import { consultarStatusPeriodo, solicitarApuracao, type StatusJob } from './actions'
 import { IconeCheckCircle, IconeRelampago, IconeSpinner, IconeXCircle } from './icones'
 import { formatarDuracao, useCronometro } from './usar-cronometro'
@@ -52,17 +55,13 @@ export function GerarApuracaoForm() {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-          <IconeRelampago className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold text-slate-900">Gerar um consultor específico</h2>
-          <p className="text-xs text-slate-500">
-            Busca no Ileva e calcula adesão + recorrência do mês informado.
-          </p>
-        </div>
+    <Cartao className="overflow-hidden p-0">
+      <div className="border-b border-slate-100 px-6 py-4">
+        <CartaoCabecalho
+          icone={<IconeRelampago className="h-5 w-5" />}
+          titulo="Gerar um consultor específico"
+          descricao="Busca no Ileva e calcula adesão + recorrência do mês informado."
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
@@ -78,7 +77,7 @@ export function GerarApuracaoForm() {
               value={codConsultor}
               disabled={acompanhando}
               onChange={(e) => setCodConsultor(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-50"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -94,7 +93,7 @@ export function GerarApuracaoForm() {
               value={mes}
               disabled={acompanhando}
               onChange={(e) => setMes(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-50"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -108,16 +107,12 @@ export function GerarApuracaoForm() {
               value={ano}
               disabled={acompanhando}
               onChange={(e) => setAno(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 disabled:bg-slate-50"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={acompanhando}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-        >
+        <Botao type="submit" disabled={acompanhando} variante="destaque" className="w-full sm:w-auto">
           {acompanhando ? (
             <>
               <IconeSpinner className="h-4 w-4" />
@@ -126,7 +121,7 @@ export function GerarApuracaoForm() {
           ) : (
             'Gerar apuração'
           )}
-        </button>
+        </Botao>
 
         {erroEnvio ? (
           <p className="flex items-center gap-1.5 text-sm text-red-600">
@@ -136,20 +131,20 @@ export function GerarApuracaoForm() {
         ) : null}
 
         {status?.status === 'erro' ? (
-          <div className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <Banner tom="erro" className="flex items-start gap-2">
             <IconeXCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>Erro: {status.erro_mensagem}</span>
-          </div>
+          </Banner>
         ) : null}
 
         {status?.status === 'concluido' ? (
-          <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <Banner tom="sucesso" className="flex items-center gap-2">
             <IconeCheckCircle className="h-4 w-4 shrink-0" />
             <span>
               Apuração gerada com sucesso — veja o resultado na tabela acima ou no painel do
               Consultor.
             </span>
-          </div>
+          </Banner>
         ) : null}
 
         {acompanhando ? (
@@ -159,6 +154,6 @@ export function GerarApuracaoForm() {
           </p>
         ) : null}
       </form>
-    </div>
+    </Cartao>
   )
 }

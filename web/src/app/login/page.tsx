@@ -1,6 +1,8 @@
 'use client'
 
+import Image from 'next/image'
 import { useActionState } from 'react'
+import { Botao } from '@/lib/ui/botao'
 import { entrar } from './actions'
 
 const estadoInicial = { erro: '' }
@@ -12,10 +14,18 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <form
         action={formAction}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-slate-200 bg-white p-8 shadow-sm"
+        className="w-full max-w-sm space-y-5 rounded-xl border border-slate-200 bg-white p-8 shadow-sm"
       >
-        <div className="space-y-1 text-center">
-          <h1 className="text-lg font-semibold text-slate-900">Protege Club</h1>
+        <div className="space-y-2 text-center">
+          <Image
+            src="/Logo Protege Club.png"
+            alt="Protege Club"
+            width={56}
+            height={56}
+            priority
+            className="mx-auto h-14 w-14"
+          />
+          <h1 className="text-lg font-semibold text-brand-navy">Protege Club</h1>
           <p className="text-sm text-slate-500">Apuração de comissões</p>
         </div>
 
@@ -28,7 +38,7 @@ export default function LoginPage() {
             name="email"
             type="email"
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
           />
         </div>
 
@@ -41,19 +51,15 @@ export default function LoginPage() {
             name="password"
             type="password"
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
           />
         </div>
 
         {estado?.erro ? <p className="text-sm text-red-600">{estado.erro}</p> : null}
 
-        <button
-          type="submit"
-          disabled={pendente}
-          className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60"
-        >
+        <Botao type="submit" disabled={pendente} className="w-full">
           {pendente ? 'Entrando...' : 'Entrar'}
-        </button>
+        </Botao>
       </form>
     </main>
   )

@@ -1,5 +1,6 @@
-import Link from 'next/link'
 import { formatarMoeda, juntarItens } from '@/app/consultor/tipos'
+import { Banner } from '@/lib/ui/banner'
+import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
 import { carregarContextoGestorConsultor } from '../dados'
 
 export default async function GestorRastreadoresPage({
@@ -15,7 +16,7 @@ export default async function GestorRastreadoresPage({
   const contexto = await carregarContextoGestorConsultor(codConsultor, sp)
 
   if ('erro' in contexto) {
-    return <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">{contexto.erro}</div>
+    return <Banner tom="aviso">{contexto.erro}</Banner>
   }
 
   const { ano, mes, equipeAtiva, linhasEquipe } = contexto
@@ -25,27 +26,15 @@ export default async function GestorRastreadoresPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link
-          href={`/gestor/consultor/${codConsultor}?${qs}`}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-          Voltar
-        </Link>
-        <h2 className="text-base font-semibold text-slate-900">Desconto Rastreadores</h2>
-        <a
-          href={`/api/relatorios/consultor?tipo=rastreadores&cod_consultor=${codConsultor}&${qs}`}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
-        >
-          Baixar PDF
-        </a>
-      </div>
+      <CabecalhoPagina
+        titulo="Desconto Rastreadores"
+        voltarHref={`/gestor/consultor/${codConsultor}?${qs}`}
+        pdfHref={`/api/relatorios/consultor?tipo=rastreadores&cod_consultor=${codConsultor}&${qs}`}
+      />
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full min-w-[680px] text-left text-sm">
-          <thead className="bg-slate-800 text-white">
+          <thead className="bg-brand-navy text-white">
             <tr>
               <th className="px-4 py-2 font-medium">Contrato</th>
               <th className="px-4 py-2 font-medium">Associado</th>
@@ -73,7 +62,7 @@ export default async function GestorRastreadoresPage({
             )}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-slate-800 bg-slate-50 font-semibold">
+            <tr className="border-t-2 border-brand-navy bg-slate-50 font-semibold">
               <td className="px-4 py-2" colSpan={4}>Total</td>
               <td className="px-4 py-2 text-right">{formatarMoeda(total)}</td>
             </tr>

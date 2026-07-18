@@ -8,17 +8,31 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Cores institucionais da Protege Club (Manual de Identidade Visual, seção 07) — RGB/Hex são
+     os valores certos pra web; CMYK/Pantone no manual são só pra material impresso.
+     `-hover` é um tom próprio escolhido à mão (não opacidade: opacity deixa a cor mais CLARA,
+     não mais escura, então não serve pra estado de :hover de um botão sólido). */
+  --brand-navy: #002a54;
+  --brand-navy-hover: #001d3d;
+  --brand-blue: #25a9e1;
+  --brand-orange: #f19100;
+  --brand-orange-hover: #d97f00;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-montserrat);
+
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-navy-hover: var(--brand-navy-hover);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-orange-hover: var(--brand-orange-hover);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

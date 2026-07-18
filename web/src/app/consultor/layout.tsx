@@ -10,7 +10,7 @@ export default function ConsultorLayout({ children }: { children: React.ReactNod
         <FiltrosSidebar />
       </Suspense>
       <div className="flex-1">
-        <header className="border-b border-slate-200 bg-white px-6 py-4">
+        <header className="border-b border-slate-200 bg-white px-6 py-3">
           <LogoTitulo titulo="Painel do Consultor" />
         </header>
         <main className="p-6">{children}</main>

@@ -1,4 +1,6 @@
-import Link from 'next/link'
+import { Banner } from '@/lib/ui/banner'
+import { Botao } from '@/lib/ui/botao'
+import { Cartao } from '@/lib/ui/cartao'
 import { carregarContextoConsultor } from './dados'
 import { formatarMoeda } from './tipos'
 
@@ -11,7 +13,7 @@ export default async function ConsultorDashboardPage({
   const contexto = await carregarContextoConsultor(params)
 
   if ('erro' in contexto) {
-    return <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">{contexto.erro}</div>
+    return <Banner tom="aviso">{contexto.erro}</Banner>
   }
 
   const { ano, mes, equipeAtiva, linhaPropria, linhasEquipe, codConsultor } = contexto
@@ -19,7 +21,7 @@ export default async function ConsultorDashboardPage({
 
   if (!linhaPropria) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
         Apuração ainda não gerada para este período. Peça ao Gestor para gerar.
       </div>
     )
@@ -44,18 +46,28 @@ export default async function ConsultorDashboardPage({
         <p className="text-sm text-slate-500">
           {contexto.nomeConsultor} — referência {String(mes).padStart(2, '0')}/{ano}
         </p>
-        <div className="flex items-center gap-3 rounded-full bg-slate-900 px-5 py-2 text-white">
+        <div className="flex items-center gap-3 rounded-full bg-brand-navy px-5 py-2 text-white">
           <span className="text-sm">Total a receber:</span>
           <span className="text-lg font-semibold">{formatarMoeda(totalReceber)}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <BotaoTela href={`/consultor/adesoes?${qs}`} label="Visualizar Adesões" />
-        <BotaoTela href={`/consultor/recorrencia?${qs}`} label="Visualizar Recorrência" />
-        <BotaoTela href={`/consultor/rastreadores?${qs}`} label="Visualizar descontos de rastreadores" />
-        <BotaoTela href={`/consultor/placas-ativadas?${qs}`} label="Visualizar Placas Ativadas" />
-        <BotaoTela href={`/consultor/inadimplentes?cod=${codConsultor}`} label="Visualizar Inadimplentes" />
+        <Botao href={`/consultor/adesoes?${qs}`} variante="secundaria" className="h-full py-4 text-center">
+          Visualizar Adesões
+        </Botao>
+        <Botao href={`/consultor/recorrencia?${qs}`} variante="secundaria" className="h-full py-4 text-center">
+          Visualizar Recorrência
+        </Botao>
+        <Botao href={`/consultor/rastreadores?${qs}`} variante="secundaria" className="h-full py-4 text-center">
+          Visualizar descontos de rastreadores
+        </Botao>
+        <Botao href={`/consultor/placas-ativadas?${qs}`} variante="secundaria" className="h-full py-4 text-center">
+          Visualizar Placas Ativadas
+        </Botao>
+        <Botao href={`/consultor/inadimplentes?cod=${codConsultor}`} variante="secundaria" className="h-full py-4 text-center">
+          Visualizar Inadimplentes
+        </Botao>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -88,26 +100,15 @@ export default async function ConsultorDashboardPage({
         />
       </div>
 
-      <a
+      <Botao
         href={`/api/relatorios/consultor?tipo=dashboard&cod_consultor=${codConsultor}&${qs}`}
         target="_blank"
         rel="noreferrer"
-        className="inline-block rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+        variante="destaque"
       >
         Baixar PDF
-      </a>
+      </Botao>
     </div>
-  )
-}
-
-function BotaoTela({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-center rounded-md bg-slate-800 px-3 py-4 text-center text-sm font-medium text-white hover:bg-slate-700"
-    >
-      {label}
-    </Link>
   )
 }
 
@@ -123,10 +124,10 @@ function Card({
   corValor?: string
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5">
+    <Cartao>
       <p className="text-sm text-slate-500">{titulo}</p>
       <p className={`mt-2 text-2xl font-semibold ${corValor ?? 'text-slate-900'}`}>{valor}</p>
       {nota ? <p className="mt-1 text-xs text-slate-400">{nota}</p> : null}
-    </div>
+    </Cartao>
   )
 }

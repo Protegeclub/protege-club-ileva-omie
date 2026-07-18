@@ -1,6 +1,7 @@
-import Link from 'next/link'
+import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
 import { carregarContextoConsultor } from '../dados'
 import { formatarMoeda, juntarItens } from '../tipos'
+import { Banner } from '@/lib/ui/banner'
 
 export default async function RecorrenciaPage({
   searchParams,
@@ -11,7 +12,7 @@ export default async function RecorrenciaPage({
   const contexto = await carregarContextoConsultor(params)
 
   if ('erro' in contexto) {
-    return <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">{contexto.erro}</div>
+    return <Banner tom="aviso">{contexto.erro}</Banner>
   }
 
   const { ano, mes, equipeAtiva, linhasEquipe, codConsultor } = contexto
@@ -21,24 +22,15 @@ export default async function RecorrenciaPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link href={`/consultor?${qs}`} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-          Voltar
-        </Link>
-        <h2 className="text-base font-semibold text-slate-900">Recorrência</h2>
-        <a
-          href={`/api/relatorios/consultor?tipo=recorrencia&cod_consultor=${codConsultor}&${qs}`}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800"
-        >
-          Baixar PDF
-        </a>
-      </div>
+      <CabecalhoPagina
+        titulo="Recorrência"
+        voltarHref={`/consultor?${qs}`}
+        pdfHref={`/api/relatorios/consultor?tipo=recorrencia&cod_consultor=${codConsultor}&${qs}`}
+      />
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-slate-800 text-white">
+          <thead className="bg-brand-navy text-white">
             <tr>
               <th className="px-4 py-2 font-medium">Associado</th>
               <th className="px-4 py-2 font-medium">Placa</th>
@@ -64,7 +56,7 @@ export default async function RecorrenciaPage({
             )}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-slate-800 bg-slate-50 font-semibold">
+            <tr className="border-t-2 border-brand-navy bg-slate-50 font-semibold">
               <td className="px-4 py-2" colSpan={3}>Total</td>
               <td className="px-4 py-2 text-right">{formatarMoeda(total)}</td>
             </tr>
