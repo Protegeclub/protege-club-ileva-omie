@@ -1,4 +1,4 @@
-import { buscarCobranca, buscarConsultor, listarCobrancasPorVeiculo, listarVeiculos } from '@/lib/ileva/api'
+import { buscarCobranca, buscarConsultorSemCache, listarCobrancasPorVeiculo, listarVeiculos } from '@/lib/ileva/api'
 import { COD_BENEFICIO_ASSISTENCIA_PROFISSIONAL, VALOR_DESCONTO_RASTREADOR } from '@/types/domain'
 import type { Veiculo } from '@/types/domain'
 
@@ -161,8 +161,12 @@ export async function apurarConsultorMes(
   const { de, ate } = intervaloMes(ano, mes)
   const hoje = new Date().toISOString().slice(0, 10)
 
+  // SEMPRE a versão sem cache aqui: nome/cod_equipe são persistidos em apuracoes_mensais (ver
+  // gerar.ts) — um cache de 60s poderia gravar a equipe errada no mês apurado se o consultor
+  // tivesse acabado de trocar de equipe. Apuração é uma ação deliberada e já demorada (minutos
+  // pros consultores maiores), então não há ganho real de performance em cachear isso aqui.
   const [{ consultor }, veiculos] = await Promise.all([
-    buscarConsultor({ cod_consultor: codConsultor }),
+    buscarConsultorSemCache({ cod_consultor: codConsultor }),
     listarTodosVeiculosDoConsultor(codConsultor),
   ])
   const nomeConsultor = consultor.nome

@@ -572,3 +572,62 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       não é a entrega final ao cliente
 - [ ] Repasse rápido de uso para Gestor/Comercial
 - [ ] Início do contrato de manutenção mensal (R$ 300/mês)
+
+### 6.11 Performance
+- [x] **Cache de `listarTodosConsultores`/`buscarConsultor` (18/07/2026)** — a pedido do Samuel
+      ("quero que esse sistema seja rápido... quando clico nos botões demora, parece que o
+      sistema é pesado"). Root cause medido de verdade (não suposição): toda navegação em
+      `/gestor`, `/gestor/gerar`, `/gestor/acessos` e nas 5 sub-telas do Consultor/Gestor
+      (quando o toggle "ver equipe" está ligado) refazia uma chamada **ao vivo** ao Ileva
+      (`ilevaGet` usa `cache: 'no-store'` de propósito, ver `lib/ileva/client.ts`) — medido em
+      isolado: ~1,4s de login (token) + ~0,6s+0,2s de paginação quando o token não está quente.
+      Isso sozinho já explicava várias centenas de ms a alguns segundos por clique. Envolvido
+      agora em `unstable_cache` (Next), 60s de `revalidate`, já que o cadastro de
+      consultores/equipe muda raramente — depois do cache, a mesma chamada sai em 1-12ms.
+      Medido com Playwright + timing real de servidor (`console.time`, removido depois) contra
+      `next start`: `/gestor` foi de ~carregar do zero pra ~300-350ms até a tabela aparecer
+      (`domcontentloaded` + tabela visível), `/gestor/gerar` e `/gestor/acessos` em
+      120-260ms. **Cuidado ao medir isso de novo**: `page.waitUntil: 'networkidle'` do
+      Playwright deu leituras falsas de 8-29s nesse ambiente (alguma conexão que não fecha) —
+      meça sempre com `domcontentloaded` + `waitForSelector`, não com `networkidle`.
+      **Efeito colateral notado**: como `/gestor/gerar` e `/gestor/acessos` não tinham mais
+      nenhuma chamada `no-store` no caminho de render, o Next passou a tratar as duas rotas
+      inteiras como estáticas/ISR (`revalidate: 1m` no build) — inclusive as queries diretas
+      ao Supabase nelas (perfis/gestores/convites), que antes eram sempre "ao vivo". Não é um
+      problema de segurança (a autenticação continua sendo sempre reforçada pelo `proxy.ts` a
+      cada request, independente de a página ser estática ou não) nem de dado cruzado entre
+      usuários (o conteúdo dessas páginas não é personalizado por quem está logado). O risco
+      real seria mostrar dado importante desatualizado por até 1 min — mitigado porque as
+      Server Actions de convite (`gestor/acessos/actions.ts`) já chamavam `revalidatePath` antes
+      disso, então o cache é invalidado na hora certa depois de qualquer convite.
+      **Revisão de segurança dos dados (18/07/2026, a pedido do Samuel — "isso interfere
+      negativamente nos dados?")**: auditados todos os usos de `buscarConsultor` pra achar
+      qualquer lugar onde um cache de 60s pudesse gravar algo errado no banco ou disparar uma
+      ação com dado errado (bem mais grave que só "carregar devagar"). Achados dois pontos
+      sensíveis e corrigidos — os dois agora usam `buscarConsultorSemCache` (nova função
+      exportada, sem cache) em vez da `buscarConsultor` cacheada:
+      1. `lib/apuracao/mensal.ts` (motor de cálculo): o `cod_equipe` retornado é **persistido**
+         em `apuracoes_mensais` — um cache de 60s podia gravar a equipe errada no mês apurado se
+         o consultor tivesse acabado de trocar de equipe no Ileva. Não afeta valor de comissão
+         (adesão/recorrência/desconto vêm 100% ao vivo de `listarTodosVeiculosDoConsultor`/
+         `listarCobrancasPorVeiculo`, nunca cacheados), só a classificação de equipe salva.
+      2. `gestor/acessos/actions.ts` (convidar consultor): usa o e-mail retornado pra mandar o
+         convite — um cache de 60s podia mandar pro e-mail antigo se tivesse sido corrigido no
+         Ileva pouco antes do convite.
+      A `buscarConsultor` cacheada continua em uso só onde é 100% exibição em tela/PDF (toggle
+      "ver equipe" do painel Consultor/Gestor, agrupamento por equipe no PDF individual) — nunca
+      grava nada nem dispara ação. Também verificado empiricamente (Playwright, dois
+      consultores de equipes diferentes, um logo depois do outro): o cache do Next diferencia
+      corretamente por `cod_consultor` — não houve contaminação entre consultores.
+      `listarTodosConsultores` (a outra função cacheada) só alimenta listas/relatórios de
+      exibição em todos os pontos onde é usada — nenhum grava nem age sobre o resultado, então
+      não precisou de ajuste.
+- [x] **Ordenação/filtro do painel Gestor 100% client-side (18/07/2026)** — a tabela principal
+      de `/gestor` (antes toda em `page.tsx`, servidor) foi dividida: o server component
+      (`page.tsx`) só busca os dados de ano/mês (única coisa que realmente exige um novo
+      request); equipe, busca por nome/código e ordenação de coluna viraram estado de um Client
+      Component novo (`TabelaGestor.tsx`), filtrando/ordenando o array já carregado na hora, sem
+      nenhum round-trip ao servidor. Clique em cabeçalho de coluna, troca de equipe e busca por
+      nome agora são instantâneos (confirmado com Playwright: nenhuma navegação disparada,
+      `page.url()` não muda). O botão "Baixar PDF de todos" continua respeitando o filtro atual
+      (o link é montado no cliente a partir do estado corrente de equipe/busca).

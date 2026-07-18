@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import { buscarConsultor } from '@/lib/ileva/api'
+import { buscarConsultorSemCache } from '@/lib/ileva/api'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
@@ -59,7 +59,9 @@ export async function convidarConsultor(
   let email: string
   let nome: string
   try {
-    const { consultor } = await buscarConsultor({ cod_consultor: codConsultor })
+    // Sem cache de propósito: isso decide pra qual e-mail o convite vai — um e-mail trocado no
+    // Ileva há pouco não pode ir parar num cache de 60s e mandar o convite pro endereço antigo.
+    const { consultor } = await buscarConsultorSemCache({ cod_consultor: codConsultor })
     email = consultor.email?.trim()
     nome = consultor.nome
   } catch (e) {

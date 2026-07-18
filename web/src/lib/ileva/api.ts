@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { ilevaGet } from '@/lib/ileva/client'
 import type { BoletoDetalhe, BoletoResumo, Consultor, SituacaoBoleto, Veiculo } from '@/types/domain'
 
@@ -18,12 +19,25 @@ export async function listarConsultores(
   return ilevaGet('/consultor/listar', { ...params })
 }
 
-export async function buscarConsultor(params: {
+// Versão sem cache — SEMPRE usar esta (nunca a `buscarConsultor` cacheada abaixo) em qualquer
+// lugar que persista o resultado (ex.: `lib/apuracao/mensal.ts`, salva `cod_equipe`/nome no mês
+// apurado) ou que use o dado pra agir sobre ele (ex.: convite por e-mail em
+// `gestor/acessos/actions.ts` — mandar pro e-mail errado por causa de um cache de 60s seria bem
+// pior do que qualquer ganho de velocidade). Cache só é seguro para exibição transitória em tela.
+export async function buscarConsultorSemCache(params: {
   cod_consultor?: number
   cpfCnpj?: string
 }): Promise<{ consultor: Consultor }> {
   return ilevaGet('/consultor/buscar', { ...params })
 }
+
+// Cacheada por 60s — só para exibição em tela (toggle "ver equipe" do painel Consultor/Gestor e
+// do PDF, que só usam nome/cod_equipe pra mostrar/agrupar, nunca gravam nada no banco nem tomam
+// nenhuma ação com o resultado). Sem cache, cada clique de aba com o toggle ligado pagava mais
+// uma chamada ao vivo no Ileva só pra descobrir a equipe de alguém que raramente muda de equipe.
+export const buscarConsultor = unstable_cache(buscarConsultorSemCache, ['buscar-consultor'], {
+  revalidate: 60,
+})
 
 export async function listarVeiculos(
   params: Paginacao & {
@@ -66,7 +80,7 @@ export async function listarBeneficios(params: Paginacao) {
 // Percorre todas as páginas — hoje são ~245 consultores no total, então isso é uma chamada
 // rápida (1-2 páginas), bem diferente do problema de escala visto em listarTodosVeiculosDoConsultor
 // (web/src/lib/apuracao/mensal.ts), onde um único consultor pode ter centenas de veículos.
-export async function listarTodosConsultores(): Promise<Consultor[]> {
+async function listarTodosConsultoresSemCache(): Promise<Consultor[]> {
   const tamanhoPagina = 200
   let inicio = 0
   const todos: Consultor[] = []
@@ -83,3 +97,14 @@ export async function listarTodosConsultores(): Promise<Consultor[]> {
 
   return todos
 }
+
+// Cacheado por 60s (`unstable_cache` do Next, persiste entre requests/instâncias na Vercel) — o
+// cadastro de consultores muda raramente (contratação/desligamento), mas essa função era chamada
+// de novo do zero (2 chamadas HTTP reais ao Ileva) em toda navegação do painel Gestor, inclusive
+// só pra ordenar uma coluna ou trocar o filtro de equipe — isso que dava a sensação de "sistema
+// lento" reportada em 18/07/2026. Sem cache, cada clique pagava essa latência de novo.
+export const listarTodosConsultores = unstable_cache(
+  listarTodosConsultoresSemCache,
+  ['listar-todos-consultores'],
+  { revalidate: 60 }
+)
