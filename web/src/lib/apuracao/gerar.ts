@@ -1,4 +1,8 @@
 import { apurarConsultorMes } from './mensal'
+import {
+  calcularComissaoGerencialPlacas,
+  COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS,
+} from './comissao-gerencial'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export interface ResumoGeracao {
@@ -21,11 +25,21 @@ export async function gerarESalvarApuracao(
 ): Promise<ResumoGeracao> {
   const resultado = await apurarConsultorMes(codConsultor, ano, mes)
 
+  // Só calcula pro consultor #302 (Thiago, gerente) — pra todo mundo mais isso é uma query a
+  // menos no Supabase, sem custo nenhum. Ver comissao-gerencial.ts pra regra completa.
+  const comissaoGerencial =
+    codConsultor === COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS
+      ? await calcularComissaoGerencialPlacas(ano, mes)
+      : null
+
   // Premiação (individual/equipe) segue de fora: as regras do plano de carreira ainda não foram
   // definidas pelo cliente (ver CONTEXTO_E_CHECKLIST.md, seção 6.1). Gravamos 0 em vez de
   // inventar uma fórmula.
   const totalLiquido =
-    resultado.totalAdesao + resultado.totalRecorrencia - resultado.totalDescontoRastreador
+    resultado.totalAdesao +
+    resultado.totalRecorrencia -
+    resultado.totalDescontoRastreador +
+    (comissaoGerencial?.valorTotal ?? 0)
 
   const admin = createSupabaseAdminClient()
   const { error } = await admin.from('apuracoes_mensais').upsert(
@@ -39,6 +53,7 @@ export async function gerarESalvarApuracao(
       total_desconto_rastreador: resultado.totalDescontoRastreador,
       total_premiacao_individual: 0,
       total_premiacao_equipe: 0,
+      total_comissao_gerencial: comissaoGerencial?.valorTotal ?? 0,
       total_liquido: totalLiquido,
       gerado_por: geradoPorUserId,
       gerado_em: new Date().toISOString(),
@@ -51,6 +66,7 @@ export async function gerarESalvarApuracao(
         placasAtivadas: resultado.placasAtivadas,
         inadimplentes: resultado.inadimplentes,
         totalRecorrenciaEstimadaInadimplentes: resultado.totalRecorrenciaEstimadaInadimplentes,
+        ...(comissaoGerencial ? { comissaoGerencialPlacas: comissaoGerencial } : {}),
       },
     },
     { onConflict: 'cod_consultor,ano,mes' }

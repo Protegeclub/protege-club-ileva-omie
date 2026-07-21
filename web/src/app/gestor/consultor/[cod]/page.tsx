@@ -1,4 +1,4 @@
-import { formatarMoeda } from '@/app/consultor/tipos'
+import { calcularTotalReceber, formatarMoeda } from '@/app/consultor/tipos'
 import { Banner } from '@/lib/ui/banner'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
@@ -45,12 +45,7 @@ export default async function GestorConsultorDetalhePage({
     .filter((l) => l.cod_equipe === linhaPropria.cod_equipe)
     .reduce((soma, l) => soma + (l.detalhe?.adesoes?.length ?? 0), 0) - totalAdesoes
 
-  const totalReceber =
-    linhaPropria.total_adesao +
-    linhaPropria.total_recorrencia -
-    linhaPropria.total_desconto_rastreador +
-    linhaPropria.total_premiacao_individual +
-    linhaPropria.total_premiacao_equipe
+  const totalReceber = calcularTotalReceber(linhaPropria)
 
   return (
     <div className="space-y-6">
@@ -119,6 +114,15 @@ export default async function GestorConsultorDetalhePage({
           valor={formatarMoeda(linhaPropria.total_desconto_rastreador)}
           corValor="text-red-600"
         />
+        {linhaPropria.total_comissao_gerencial > 0 && (
+          <Card
+            titulo="Comissão de Gerência"
+            valor={formatarMoeda(linhaPropria.total_comissao_gerencial)}
+            nota={`R$2,00 por placa ativada de outros consultores (${
+              linhaPropria.detalhe?.comissaoGerencialPlacas?.totalPlacas ?? 0
+            } ${(linhaPropria.detalhe?.comissaoGerencialPlacas?.totalPlacas ?? 0) === 1 ? 'placa' : 'placas'} neste mês)`}
+          />
+        )}
       </div>
 
       <Botao

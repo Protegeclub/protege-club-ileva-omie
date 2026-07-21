@@ -459,6 +459,33 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       (consultor 11, veículo 2740: 3 boletos em aberto, dez/2025 a mai/2026).
 - [x] **Total Equipe**: soma as adesões dos colegas da mesma equipe (`cod_equipe`) que também já
       tiveram apuração gerada no mesmo mês — quem não gerou ainda não entra na conta.
+- [x] **Comissão gerencial do Thiago (#302) — regra específica (21/07/2026)**: a pedido do
+      Samuel, o consultor #302 (Thiago Siqueira Abba, gerente) recebe R$2,00 por placa ativada
+      no mês de **todos os outros consultores**, exceto ele mesmo e a equipe #19 (Marcos
+      Aurélio Vieira Cabral, equipe "Marcos Cabral", `cod_equipe=7` — confirmado via API real,
+      50 consultores nessa equipe). Confirmado com o Samuel que as próprias placas do Thiago
+      **não contam** (só as dos outros, pra não duplicar comissão). Implementado em
+      `web/src/lib/apuracao/comissao-gerencial.ts` (constantes
+      `COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS=302`,
+      `COD_EQUIPE_EXCLUIDA_COMISSAO_GERENCIAL=7`, `VALOR_COMISSAO_GERENCIAL_POR_PLACA=2`),
+      chamado de `gerar.ts` só quando `cod_consultor === 302` (zero custo extra pros outros 204).
+      Nova coluna `total_comissao_gerencial` (migration `0005_comissao_gerencial.sql`, já
+      aplicada em produção) + breakdown por consultor salvo em
+      `detalhe.comissaoGerencialPlacas` (auditável). Novo card "Comissão de Gerência" nos dois
+      dashboards (Consultor e Gestor) e nova linha no PDF do dashboard — ambos só aparecem
+      quando o valor é > 0 (na prática, só pro Thiago). Criado também
+      `calcularTotalReceber()` em `consultor/tipos.ts` — único lugar que soma os componentes do
+      "Total a receber", pra não arriscar a fórmula divergir entre os dois dashboards.
+      **Limitação operacional importante** (mesma lógica do "Total Equipe" acima): o valor só
+      conta quem **já tem apuração gerada** nesse mês/ano — se a apuração do Thiago for gerada
+      antes da dos outros consultores, sai subestimado e não se autocorrige depois. **Sempre
+      gerar a apuração do Thiago por último**, depois do lote completo do mês. Testado de ponta
+      a ponta com dado real (julho/2026): calculado de forma independente direto no banco antes
+      (1 placa de 1 consultor = R$2,00, equipe 7 corretamente excluída) e depois batido contra o
+      resultado real da geração (rodou local com `trigger.dev dev` contra produção) — bateu
+      exato, inclusive confirmando que a placa do próprio Thiago (ele tinha 1) não entrou na
+      conta. **Pendente**: redeploy manual do Trigger.dev em produção (mudou `gerar.ts`, que é
+      dependência da tarefa) antes que isso valha em produção de verdade — ver nota na seção 6.4.
 - [ ] Cálculo do plano de carreira / premiação (bloqueado até o cliente definir as regras) —
       confirmamos com um exemplo real do Power BI (19 adesões → R$1.150 premiação individual)
       que existe uma fórmula, só falta o cliente detalhar as faixas.

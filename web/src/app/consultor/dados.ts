@@ -47,7 +47,7 @@ export async function carregarContextoConsultor(searchParams: {
   const { data: linhaPropria } = await supabase
     .from('apuracoes_mensais')
     .select(
-      'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_liquido, cod_equipe, gerado_em, detalhe'
+      'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_liquido, cod_equipe, gerado_em, detalhe'
     )
     .eq('cod_consultor', perfil.cod_consultor)
     .eq('ano', ano)
@@ -63,7 +63,7 @@ export async function carregarContextoConsultor(searchParams: {
       const { data } = await admin
         .from('apuracoes_mensais')
         .select(
-          'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_liquido, cod_equipe, gerado_em, detalhe'
+          'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_liquido, cod_equipe, gerado_em, detalhe'
         )
         .eq('cod_equipe', consultor.cod_equipe)
         .eq('ano', ano)

@@ -24,6 +24,7 @@ export interface ResumoDashboard {
   totalAdesao: number
   totalRecorrencia: number
   totalDescontoRastreador: number
+  totalComissaoGerencial: number
 }
 
 export async function gerarPdfDashboard(
@@ -40,7 +41,8 @@ export async function gerarPdfDashboard(
     resumo.totalRecorrencia -
     resumo.totalDescontoRastreador +
     resumo.totalPremiacaoIndividual +
-    resumo.totalPremiacaoEquipe
+    resumo.totalPremiacaoEquipe +
+    resumo.totalComissaoGerencial
 
   doc.fontSize(12).fillColor('#1F3B57').font('Helvetica-Bold').text('Total a receber')
   doc.fontSize(22).fillColor('#111111').text(formatarMoeda(totalReceber))
@@ -55,6 +57,9 @@ export async function gerarPdfDashboard(
     ['Adesão', formatarMoeda(resumo.totalAdesao)],
     ['Recorrência', formatarMoeda(resumo.totalRecorrencia)],
     ['Desconto de rastreadores', formatarMoeda(resumo.totalDescontoRastreador)],
+    ...(resumo.totalComissaoGerencial > 0
+      ? ([['Comissão de gerência', formatarMoeda(resumo.totalComissaoGerencial)]] as [string, string][])
+      : []),
   ]
   for (const [rotulo, valor] of linhas) {
     doc.text(`${rotulo}: `, { continued: true }).font('Helvetica-Bold').text(valor).font('Helvetica')

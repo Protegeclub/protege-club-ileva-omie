@@ -15,7 +15,7 @@ export interface ContextoGestorConsultor {
 export type ResultadoContextoGestor = ContextoGestorConsultor | { erro: string }
 
 const SELECT_APURACAO =
-  'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_liquido, cod_equipe, gerado_em, detalhe'
+  'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_liquido, cod_equipe, gerado_em, detalhe'
 
 // Equivalente a web/src/app/consultor/dados.ts, mas para o Gestor olhar a apuração de
 // QUALQUER consultor (não só a própria) — por isso usa direto o cliente admin (bypassa a RLS de
