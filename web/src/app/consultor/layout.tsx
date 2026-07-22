@@ -1,20 +1,26 @@
 import { Suspense } from 'react'
-import { LogoTitulo } from '@/lib/ui/logo-titulo'
-import { FiltrosSidebar } from './filtros-sidebar'
+import { BotaoSair } from '@/lib/auth/botao-sair'
+import { buscarUsuarioLogado } from '@/lib/auth/usuario-logado'
+import { FiltrosToolbar } from './filtros-toolbar'
+import { SidebarConsultor } from './sidebar'
 
-export default function ConsultorLayout({ children }: { children: React.ReactNode }) {
+export default async function ConsultorLayout({ children }: { children: React.ReactNode }) {
+  const usuario = await buscarUsuarioLogado()
+
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Suspense por causa do useSearchParams no Client Component — exigência do Next.js. */}
-      <Suspense fallback={<div className="w-56 shrink-0 border-r border-slate-200 bg-white" />}>
-        <FiltrosSidebar />
+      {/* Suspense por causa do useSearchParams nos Client Components — exigência do Next.js. */}
+      <Suspense fallback={<div className="h-screen w-60 shrink-0 bg-brand-navy" />}>
+        <SidebarConsultor nome={usuario?.nome ?? null}>
+          <BotaoSair />
+        </SidebarConsultor>
       </Suspense>
-      <div className="flex-1">
-        <header className="border-b border-slate-200 bg-white px-6 py-3">
-          <LogoTitulo titulo="Painel do Consultor" />
-        </header>
-        <main className="p-6">{children}</main>
-      </div>
+      <main className="min-w-0 flex-1 overflow-x-auto p-6">
+        <Suspense fallback={<div className="mb-6 h-[92px] rounded-xl border border-slate-200 bg-white" />}>
+          <FiltrosToolbar />
+        </Suspense>
+        {children}
+      </main>
     </div>
   )
 }

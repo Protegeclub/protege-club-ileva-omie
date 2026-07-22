@@ -703,3 +703,57 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
     visualmente, não só build passando. Build, `tsc --noEmit` e `eslint` limpos (os poucos
     problemas de lint nos arquivos tocados já existiam antes desta sessão — confirmado
     comparando com o commit anterior — não foram introduzidos por este rebrand).
+
+### 6.13 Menu lateral (navegação)
+- [x] **Header horizontal trocado por menu lateral fixo e recolhível (21-22/07/2026)** — a
+      pedido do Samuel, no estilo de dashboards modernos (referências que ele mandou: sidebar
+      escura, ícone+rótulo, card de usuário, botão de recolher). Escopo só de
+      navegação/layout — **nenhuma lógica de dado foi tocada** (confirmado explicitamente com o
+      Samuel antes de começar: motor de apuração, cálculos, regra da comissão gerencial etc.
+      continuam exatamente iguais).
+  - **`SidebarGestor`** (`web/src/app/gestor/sidebar.tsx`) — 3 itens (Apuração, Gerar apuração,
+    Acessos); "Apuração" fica destacado também dentro do detalhe de qualquer consultor
+    (`/gestor/consultor/[cod]/*`), já que é uma tela "filha" da lista.
+  - **`SidebarConsultor`** (`web/src/app/consultor/sidebar.tsx`) — 6 itens (Dashboard, Adesões,
+    Recorrência, Descontos de Rastreadores, Placas Ativadas, Inadimplentes) — navegação
+    persistente que **não existia antes** nesse painel (só dava pra chegar nas sub-telas pelos
+    botões da própria dashboard, que continuam existindo). Os links carregam a querystring
+    atual (`ano`/`mes`/`equipe`) pra não resetar o período selecionado ao trocar de tela pelo
+    menu — testado de verdade: mudar o ano pela barra de filtro e depois clicar num item do
+    menu preserva o ano escolhido na URL de destino.
+  - Os filtros de período (ano/mês/equipe), que antes eram uma segunda sidebar vertical
+    (`FiltrosSidebarGestor`/`FiltrosSidebar`), viraram uma **barra horizontal** no topo do
+    conteúdo (`filtros-toolbar.tsx` nos dois painéis) — decisão deliberada (não só estética):
+    duas sidebars lado a lado tomariam ~464px de largura permanentemente contra telas com
+    tabelas largas; a barra horizontal custa altura uma vez só. O botão "Sair" que existia
+    dentro da sidebar de filtro do Consultor foi removido (duplicava o Sair que agora vive no
+    rodapé do `SidebarConsultor`).
+  - Componentes novos compartilhados: `ItemNavSidebar` (`lib/ui/item-nav-sidebar.tsx`, item de
+    menu sem lógica própria) e `icones-sidebar.tsx` (ícones SVG desenhados à mão, mesmo estilo
+    de `gerar/icones.tsx`, sem dependência nova) — e `buscarUsuarioLogado()`
+    (`lib/auth/usuario-logado.ts`), função única usada pelos dois layouts pra mostrar
+    nome/perfil no card do menu (evita duplicar a mesma query de `perfis`).
+  - Nova variante `fantasma-claro` no `Botao` (`lib/ui/botao.tsx`) — o "fantasma" normal
+    (borda/texto cinza) fica quase invisível sobre o fundo navy do menu; usada só pelo
+    `BotaoSair` dentro da sidebar.
+  - **Efeito colateral aceito conscientemente**: `buscarUsuarioLogado()` chama `cookies()`, o
+    que forçou `/gestor/gerar` e `/gestor/acessos` de volta pra renderização dinâmica por
+    request (antes eram estáticas/ISR, ver seção 6.11) — confirmado comparando a tabela de
+    rotas do `next build` antes/depois. Custo pequeno e aceito: o `proxy.ts` já faz uma consulta
+    de auth + `perfis` em toda requisição pra essas rotas mesmo hoje (controle de acesso), então
+    é mais uma query pequena em cima de um custo que já existia.
+  - Removidos (código morto após a troca): `gestor/nav-links.tsx`, os dois
+    `filtros-sidebar.tsx` antigos, `lib/ui/logo-titulo.tsx` (não sobrava nenhum uso depois que o
+    header virou sidebar).
+  - Testado de ponta a ponta com Playwright real (Gestor: dashboard, recolher/expandir,
+    detalhe de consultor com "Apuração" ainda ativo, tela de relatório, gerar apuração, acessos;
+    Consultor: dashboard, navegação pelo menu preservando o período). **Achado durante o
+    teste, sem relação com esta mudança**: logo depois do login, a URL às vezes fica em `/` em
+    vez de redirecionar pra `/consultor` (o conteúdo certo aparece, só a barra de endereço não
+    atualiza) — reproduzido também sem qualquer alteração deste trabalho (`proxy.ts`/
+    `login/actions.ts` não foram tocados), então é uma particularidade pré-existente do fluxo
+    de login, não introduzida aqui. Efeito prático mínimo: o item do menu não aparece destacado
+    só nesse instante específico, se corrige na primeira navegação real.
+  - **Conta de teste do Consultor** (`consultor-teste@protegeclub.local`) não tinha senha
+    documentada — defini `Consultor123!` (mesmo padrão de `Gestor123!`/`Comercial123!`) via
+    Supabase Admin API pra poder testar o painel do Consultor de ponta a ponta.

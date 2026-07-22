@@ -1,13 +1,14 @@
 import { Suspense } from 'react'
-import { FiltrosSidebarGestor } from './filtros-sidebar'
+import { FiltrosToolbarGestor } from './filtros-toolbar'
 
 export default function GestorConsultorLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[calc(100vh-65px)] bg-slate-50">
-      <Suspense fallback={<div className="w-56 shrink-0 border-r border-slate-200 bg-white" />}>
-        <FiltrosSidebarGestor />
+    <div>
+      {/* Suspense por causa do useSearchParams no Client Component — exigência do Next.js. */}
+      <Suspense fallback={<div className="mb-6 h-[92px] rounded-xl border border-slate-200 bg-white" />}>
+        <FiltrosToolbarGestor />
       </Suspense>
-      <div className="flex-1 p-6">{children}</div>
+      {children}
     </div>
   )
 }

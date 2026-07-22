@@ -14,6 +14,9 @@ const VARIANTES = {
   secundaria: 'bg-sky-50 text-brand-navy border border-brand-blue/40 hover:bg-sky-100',
   destaque: 'bg-brand-orange text-brand-navy hover:bg-brand-orange-hover font-semibold',
   fantasma: 'border border-slate-300 text-slate-600 hover:bg-slate-50',
+  // Mesma ideia do "fantasma", mas pra usar sobre fundo escuro (menu lateral navy) — o
+  // "fantasma" normal (border-slate-300/text-slate-600) fica quase invisível ali.
+  'fantasma-claro': 'border border-white/20 text-white/70 hover:bg-white/10 hover:text-white',
 } as const
 
 const TAMANHOS = {

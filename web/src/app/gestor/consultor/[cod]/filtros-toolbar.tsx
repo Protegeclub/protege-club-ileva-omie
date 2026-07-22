@@ -1,12 +1,14 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { NOMES_MESES } from '@/app/consultor/tipos'
-import { Botao } from '@/lib/ui/botao'
 
-// Igual a web/src/app/consultor/filtros-sidebar.tsx, mas sem o botão Sair (o Gestor já tem um
-// no header do layout pai) e com um link de volta para a lista de consultores.
-export function FiltrosSidebarGestor() {
+// Igual a web/src/app/consultor/filtros-toolbar.tsx, mas sem o botão Sair (o menu lateral do
+// Gestor já tem um no rodapé) e com um link de volta para a lista de consultores. Era uma
+// sidebar vertical; virou uma barra horizontal no topo do conteúdo quando o menu lateral de
+// navegação (SidebarGestor) passou a ocupar a coluna esquerda da tela.
+export function FiltrosToolbarGestor() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -29,16 +31,18 @@ export function FiltrosSidebarGestor() {
   }
 
   return (
-    <aside className="w-56 shrink-0 space-y-6 border-r border-slate-200 bg-white p-5">
-      <Botao href="/gestor" variante="fantasma" tamanho="sm" className="w-full">
+    <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+      <Link href="/gestor" className="text-sm text-slate-500 hover:text-brand-navy hover:underline">
         ← Voltar para lista
-      </Botao>
+      </Link>
 
       {!ocultarPeriodo && (
         <>
+          <div className="h-6 w-px bg-slate-200" aria-hidden />
+
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Ano</p>
-            <div className="flex flex-col gap-1.5">
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Ano</p>
+            <div className="flex gap-1.5">
               {anosDisponiveis.map((a) => (
                 <button
                   key={a}
@@ -56,11 +60,11 @@ export function FiltrosSidebarGestor() {
           </div>
 
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Mês</p>
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Mês</p>
             <select
               value={mes}
               onChange={(e) => irPara({ mes: Number(e.target.value) })}
-              className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
             >
               {NOMES_MESES.map((nome, i) => (
                 <option key={nome} value={i + 1}>
@@ -81,6 +85,6 @@ export function FiltrosSidebarGestor() {
           </label>
         </>
       )}
-    </aside>
+    </div>
   )
 }
