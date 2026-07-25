@@ -38,8 +38,8 @@ export default async function GestorAcessosPage() {
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/gestor" className="text-xs text-slate-400 hover:text-brand-navy hover:underline">
-          ← Voltar para a apuração
+        <Link href="/gestor/consultores" className="text-xs text-slate-400 hover:text-brand-navy hover:underline">
+          ← Voltar para consultores
         </Link>
         <h2 className="text-base font-semibold text-slate-900">Acessos</h2>
       </div>

@@ -62,16 +62,16 @@ export function SidebarConsultor({ nome, children }: { nome: string | null; chil
         colapsado ? 'w-[76px]' : 'w-60'
       }`}
     >
-      <div className="flex items-center gap-2 px-4 py-4">
+      <div className="flex items-center gap-3 px-4 py-6">
         <Image
           src="/Logo Protege Club.png"
           alt="Protege Club"
-          width={32}
-          height={32}
+          width={36}
+          height={36}
           priority
-          className="h-8 w-8 shrink-0"
+          className="h-9 w-9 shrink-0"
         />
-        {!colapsado && <span className="truncate text-sm font-semibold text-white">Protege Club</span>}
+        {!colapsado && <span className="truncate text-xs font-semibold tracking-wide text-white">Protege Club</span>}
         <button
           type="button"
           onClick={() => setColapsado((v) => !v)}
@@ -84,19 +84,19 @@ export function SidebarConsultor({ nome, children }: { nome: string | null; chil
       </div>
 
       {nome && (
-        <div className={`mx-3 mb-3 rounded-lg bg-white/5 px-3 py-2.5 ${colapsado ? 'text-center' : ''}`}>
+        <div className={`mx-3.5 mb-5 rounded-lg bg-white/5 px-3.5 py-3.5 ${colapsado ? 'text-center' : ''}`}>
           {colapsado ? (
-            <span className="text-sm font-semibold text-white">{nome.charAt(0).toUpperCase()}</span>
+            <span className="text-xs font-semibold text-white">{nome.charAt(0).toUpperCase()}</span>
           ) : (
             <>
-              <p className="truncate text-sm font-medium text-white">{nome}</p>
-              <p className="text-xs text-white/50">Consultor</p>
+              <p className="truncate text-xs font-medium text-white">{nome}</p>
+              <p className="text-[11px] text-white/50">Consultor</p>
             </>
           )}
         </div>
       )}
 
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 space-y-2.5 px-3.5">
         {itens.map((item) => (
           <ItemNavSidebar
             key={item.rota}
@@ -109,7 +109,7 @@ export function SidebarConsultor({ nome, children }: { nome: string | null; chil
         ))}
       </nav>
 
-      <div className="border-t border-white/10 p-3">{children}</div>
+      <div className="border-t border-white/10 p-3.5">{children}</div>
     </aside>
   )
 }

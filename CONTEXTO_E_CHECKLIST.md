@@ -757,3 +757,46 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
   - **Conta de teste do Consultor** (`consultor-teste@protegeclub.local`) não tinha senha
     documentada — defini `Consultor123!` (mesmo padrão de `Gestor123!`/`Comercial123!`) via
     Supabase Admin API pra poder testar o painel do Consultor de ponta a ponta.
+
+### 6.14 Dashboard do Gestor e reforma da lista de consultores (24-25/07/2026)
+- [x] **Separação Dashboard vs Lista**, a pedido do Samuel (sequência de ~14 pedidos de
+      refinamento visual num único fio de conversa) — `/gestor` virou a tela de **dashboard**
+      (KPIs + gráficos), e a tela antiga (filtros + tabela) mudou pra **`/gestor/consultores`**.
+      A sidebar ganhou o item "Consultores" (ícone novo `IconeLista` em `icones-sidebar.tsx`).
+  - **Dashboard** (`gestor/page.tsx` + `gestor/dashboard-graficos.tsx`): 6 KPIs (Líquido, Adesão,
+    Recorrência, Desconto rastreador, Placas ativadas, Apurados), um gráfico de linha fina
+    (evolução do líquido/adesão nos últimos 6 meses), dois donuts finos (status das apurações —
+    Gerado/Pendente/Processando/Erro — e composição Adesão vs Recorrência), e dois rankings (top
+    consultores/equipes por adesões no mês) com barra proporcional em CSS puro — sem gráfico ali
+    de propósito, pra manter leve. Toda a agregação vem de `lib/apuracao/dashboard-mes.ts`
+    (`montarDashboardMes`) — só soma/conta/agrupa o que já está salvo em `apuracoes_mensais` e
+    `apuracao_jobs`, nenhuma fórmula nova.
+  - **Recharts** entrou como dependência nova, mas só é carregado nessa rota (`/gestor`) — o
+    Next.js separa o bundle por página, então não pesa em nenhuma outra tela do sistema (pedido
+    explícito do Samuel: "gráficos leves pra não sobrecarregar o sistema").
+  - **Lista de consultores** (`gestor/consultores/page.tsx` + `TabelaGestor.tsx`) reorganizada em
+    blocos — antes tudo (filtros + PDF + KPIs + tabela) misturado numa página só:
+    - Cabeçalho: título "Apuração de Comissões" + período + "Última atualização" (maior
+      `gerado_em` já gravado no mês) + botões Atualizar (`router.refresh()`) e Gerar PDF.
+    - KPIs em estilo "Stripe" (ícone + valor + tendência "▲/▼ X% · Mês anterior: RS Y",
+      comparando com o mesmo conjunto filtrado do mês anterior).
+    - Filtros em pílula solta (sem card/borda ao redor, sem rótulo flutuando em cima de cada
+      campo) — Equipe/Consultor filtram na hora (client-side, sem round-trip); Mês/Ano exigem o
+      "Aplicar" porque trocam o mês inteiro de apuração buscado no servidor. Busca de consultor
+      alargada e com placeholder descritivo, estilo GitHub.
+    - Tabela em estilo "Notion": sem linhas horizontais, só hover cinza; badges de status
+      "estilo HubSpot" (Gerado/Pendente/Processando/Erro, cruzando `apuracoes_mensais` com a
+      tabela `apuracao_jobs` que já existia pra acompanhar o Trigger.dev — não é dado novo, só
+      leitura nova); hierarquia visual nas colunas de dinheiro (Líquido em destaque com barra
+      proporcional embaixo, demais colunas mais claras); menu "⋮" por linha com "Baixar PDF" e
+      **"Recalcular"** (reaproveita `solicitarApuracao`, a mesma Server Action que
+      `/gestor/gerar` já usa pra disparar uma geração individual no Trigger.dev — não é lógica
+      nova, só um atalho novo pra ela).
+  - Testado de ponta a ponta com Playwright real (dashboard, lista, filtro por equipe, busca por
+    nome, menu de ações abrindo/fechando, navegação Dashboard ↔ Consultores ↔ detalhe do
+    consultor, `/gestor/gerar`, `/gestor/acessos`) — zero erros de console/página em toda a
+    sequência.
+  - **Escopo respeitado em todas as rodadas**: nenhuma alteração em
+    `lib/apuracao/{mensal,gerar,equipe,comissao-gerencial}.ts` nem em `trigger/*` — tudo aqui é
+    leitura/apresentação do que já estava calculado e salvo. Sem redeploy do Trigger.dev
+    necessário.

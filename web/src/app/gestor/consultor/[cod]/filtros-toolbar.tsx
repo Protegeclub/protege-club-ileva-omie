@@ -32,7 +32,7 @@ export function FiltrosToolbarGestor() {
 
   return (
     <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
-      <Link href="/gestor" className="text-sm text-slate-500 hover:text-brand-navy hover:underline">
+      <Link href="/gestor/consultores" className="text-sm text-slate-500 hover:text-brand-navy hover:underline">
         ← Voltar para lista
       </Link>
 

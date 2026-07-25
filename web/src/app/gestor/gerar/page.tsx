@@ -12,8 +12,8 @@ export default async function GestorGerarPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <Link href="/gestor" className="text-xs text-slate-400 hover:text-brand-navy hover:underline">
-          ← Voltar para a apuração
+        <Link href="/gestor/consultores" className="text-xs text-slate-400 hover:text-brand-navy hover:underline">
+          ← Voltar para consultores
         </Link>
         <h1 className="mt-1 text-lg font-semibold text-brand-navy">Gerar apuração</h1>
         <p className="text-sm text-slate-500">

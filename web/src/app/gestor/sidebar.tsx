@@ -3,21 +3,26 @@
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
-import { IconeColapsar, IconeDashboard, IconeUsuarios } from '@/lib/ui/icones-sidebar'
+import { IconeColapsar, IconeDashboard, IconeLista, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 import { ItemNavSidebar } from '@/lib/ui/item-nav-sidebar'
 import { IconeRelampago } from './gerar/icones'
 
 const ITENS = [
-  { href: '/gestor', label: 'Apuração', icone: <IconeDashboard /> },
-  { href: '/gestor/gerar', label: 'Gerar apuração', icone: <IconeRelampago /> },
+  { href: '/gestor', label: 'Dashboard', icone: <IconeDashboard /> },
+  { href: '/gestor/consultores', label: 'Consultores', icone: <IconeLista /> },
+  { href: '/gestor/gerar', label: 'Gerar', icone: <IconeRelampago /> },
   { href: '/gestor/acessos', label: 'Acessos', icone: <IconeUsuarios /> },
 ]
 
-// "Apuração" fica destacado também dentro do detalhe de um consultor (/gestor/consultor/[cod]/*)
-// — é uma tela "filha" da lista, alcançada clicando num consultor nela.
+// "Consultores" fica destacado também dentro do detalhe de um consultor
+// (/gestor/consultor/[cod]/*) — é uma tela "filha" da lista, alcançada clicando num consultor
+// nela. "Dashboard" só fica ativo em /gestor exato, senão os dois itens acendiam juntos.
 function ehAtivo(href: string, pathname: string) {
   if (href === '/gestor') {
-    return pathname === '/gestor' || pathname.startsWith('/gestor/consultor')
+    return pathname === '/gestor'
+  }
+  if (href === '/gestor/consultores') {
+    return pathname.startsWith('/gestor/consultores') || pathname.startsWith('/gestor/consultor/')
   }
   return pathname.startsWith(href)
 }
@@ -35,16 +40,16 @@ export function SidebarGestor({ nome, children }: { nome: string | null; childre
         colapsado ? 'w-[76px]' : 'w-60'
       }`}
     >
-      <div className="flex items-center gap-2 px-4 py-4">
+      <div className="flex items-center gap-3 px-4 py-6">
         <Image
           src="/Logo Protege Club.png"
           alt="Protege Club"
-          width={32}
-          height={32}
+          width={36}
+          height={36}
           priority
-          className="h-8 w-8 shrink-0"
+          className="h-9 w-9 shrink-0"
         />
-        {!colapsado && <span className="truncate text-sm font-semibold text-white">Protege Club</span>}
+        {!colapsado && <span className="truncate text-xs font-semibold tracking-wide text-white">Protege Club</span>}
         <button
           type="button"
           onClick={() => setColapsado((v) => !v)}
@@ -57,19 +62,19 @@ export function SidebarGestor({ nome, children }: { nome: string | null; childre
       </div>
 
       {nome && (
-        <div className={`mx-3 mb-3 rounded-lg bg-white/5 px-3 py-2.5 ${colapsado ? 'text-center' : ''}`}>
+        <div className={`mx-3.5 mb-5 rounded-lg bg-white/5 px-3.5 py-3.5 ${colapsado ? 'text-center' : ''}`}>
           {colapsado ? (
-            <span className="text-sm font-semibold text-white">{nome.charAt(0).toUpperCase()}</span>
+            <span className="text-xs font-semibold text-white">{nome.charAt(0).toUpperCase()}</span>
           ) : (
             <>
-              <p className="truncate text-sm font-medium text-white">{nome}</p>
-              <p className="text-xs text-white/50">Gestor</p>
+              <p className="truncate text-xs font-medium text-white">{nome}</p>
+              <p className="text-[11px] text-white/50">Gestor</p>
             </>
           )}
         </div>
       )}
 
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 space-y-2.5 px-3.5">
         {ITENS.map((item) => (
           <ItemNavSidebar
             key={item.href}
@@ -82,7 +87,7 @@ export function SidebarGestor({ nome, children }: { nome: string | null; childre
         ))}
       </nav>
 
-      <div className="border-t border-white/10 p-3">{children}</div>
+      <div className="border-t border-white/10 p-3.5">{children}</div>
     </aside>
   )
 }

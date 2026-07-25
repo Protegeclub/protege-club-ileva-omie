@@ -216,4 +216,5 @@ export async function consultarStatusPeriodo(ano: number, mes: number): Promise<
 export async function revalidarPaineisAposLote() {
   revalidatePath('/consultor')
   revalidatePath('/gestor')
+  revalidatePath('/gestor/consultores')
 }
