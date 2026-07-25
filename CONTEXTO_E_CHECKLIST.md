@@ -800,3 +800,56 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
     `lib/apuracao/{mensal,gerar,equipe,comissao-gerencial}.ts` nem em `trigger/*` — tudo aqui é
     leitura/apresentação do que já estava calculado e salvo. Sem redeploy do Trigger.dev
     necessário.
+
+### 6.15 Correção do domínio de convite + reforma de `/gestor/acessos` (25/07/2026)
+- [x] **Bug real corrigido: link de convite saía com o domínio errado.** `redirectTo` do
+      `inviteUserByEmail` era montado a partir do header `Origin` da requisição (`headers().get(
+      'origin')`) — ou seja, o domínio que o Gestor por acaso estava usando no navegador no
+      momento do clique (podia ser `localhost` num teste local, por exemplo), não um valor fixo.
+      Corrigido com uma variável nova, `NEXT_PUBLIC_SITE_URL` (adicionada em `web/.env.local`,
+      **ainda precisa ser adicionada nas variáveis de ambiente de Production na Vercel** pra
+      valer em produção), priorizada sobre o `Origin` em `gestor/acessos/actions.ts`
+      (`obterUrlBase()`). **Pendente de conferir**: se
+      `https://protege-club-ileva-omie.vercel.app/definir-senha` está na lista de "Redirect URLs"
+      permitidas no Supabase (Authentication → URL Configuration) — sem isso lá, o link pode
+      continuar quebrando mesmo com o domínio certo no código.
+- [x] **"Remover acesso"** — botão (depois migrado pro Drawer, ver abaixo) que apaga o usuário do
+      consultor no Supabase Auth (`admin.auth.admin.deleteUser`); a linha em `perfis` some junto
+      via `on delete cascade` (migration `0001_init.sql`). Não mexe em nada do Ileva nem em
+      `apuracoes_mensais`, só revoga o login. Novo convite depois recria do zero.
+- [x] **Reforma completa de `/gestor/acessos`**, a pedido do Samuel (coluna Status, busca,
+      filtros, cards de resumo, Drawer estilo HubSpot):
+      - **Status real por consultor** (não só "tem/não tem acesso" como antes): 🟢 **Ativo**
+        (`email_confirmed_at` preenchido no Supabase Auth — já confirmou/definiu senha), 🟡
+        **Convite pendente** (perfil existe, ainda não confirmou), ⚪ **Nunca convidado** (sem
+        perfil). Badges no mesmo estilo "HubSpot" já usado em `TabelaGestor.tsx` (fundo claro +
+        bolinha + rótulo).
+      - **Busca + filtros de Status/Equipe** — tudo client-side (`tabela-acessos.tsx`), mesmo
+        padrão de `TabelaGestor.tsx`, sem round-trip ao servidor.
+      - **Cards de resumo** (Gestores, Consultores, Acessos ativos, Pendentes, Sem acesso) —
+        contagens fixas (não reagem aos filtros da tabela), calculadas uma vez no servidor.
+      - **Drawer lateral** (`drawer-consultor.tsx`) substitui os botões que ficavam direto na
+        linha — clicar num consultor abre um painel deslizante (Nome, Equipe, E-mail editável,
+        Status) com ações que mudam conforme o status: Nunca convidado → Enviar convite;
+        Pendente → Reenviar convite + Copiar link; Ativo → Copiar link (redefinição de senha) +
+        Remover acesso. `convidar-button.tsx` e `remover-acesso-button.tsx` (antigos botões de
+        linha) foram removidos — a lógica deles migrou pro Drawer.
+      - **Duas ações novas em `actions.ts`**: `reenviarConvite` (chama `inviteUserByEmail` de
+        novo pra quem ainda não confirmou — mesmo mecanismo do botão "Resend invitation" do
+        próprio dashboard do Supabase) e `gerarLinkAcesso` (usa `generateLink`, que só devolve a
+        URL sem disparar e-mail nenhum — tipo `invite` pra pendente, `recovery` pra ativo, pra
+        copiar e mandar manualmente por WhatsApp etc.). Mais `editarEmailConsultor`
+        (`admin.auth.admin.updateUserById`, troca o e-mail de login sem exigir confirmação, ação
+        de admin).
+      - **Achado real durante o teste, não relacionado a este trabalho**: a tabela `perfis` está
+        com **zero linhas de consultor** agora (só as 5 linhas de Gestor) — todos os consultores
+        que tinham acesso antes (confirmados em sessões de teste anteriores) sumiram. Suspeita
+        forte: o pause/restore do projeto Supabase (que aconteceu no meio desta mesma sessão de
+        trabalho) restaurou um backup anterior à criação desses perfis. Confirmado direto no
+        banco (script standalone fora do Next.js, sem cache nenhum no meio) — não é bug de
+        exibição. **Ainda não resolvido** — Samuel precisa conferir os backups do Supabase.
+      - Testado com Playwright real (cards, busca, filtro por Status/Equipe, abrir/fechar o
+        Drawer, cancelar edição de e-mail sem salvar) — zero erros de console. **Não testado de
+        propósito** (mesma cautela de sempre): enviar/reenviar convite, gerar link, editar e-mail
+        e remover acesso de verdade — e também não dá mais pra testar os estados "Ativo"/
+        "Pendente" com dado real até algum consultor ser convidado de novo (ver achado acima).

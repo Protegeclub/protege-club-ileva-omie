@@ -1,10 +1,9 @@
 import Link from 'next/link'
 import { listarTodosConsultores } from '@/lib/ileva/api'
 import { Cartao } from '@/lib/ui/cartao'
-import { Selo } from '@/lib/ui/selo'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { ConvidarButton } from './convidar-button'
 import { ConvidarGestorForm } from './convidar-gestor-form'
+import { TabelaAcessos, type LinhaAcesso, type StatusAcesso } from './tabela-acessos'
 
 // Gestão de acesso: consultores (quem já foi convidado, ligado ao cod_consultor do Ileva) e
 // Gestores (mais de uma pessoa pode ter acesso total ao sistema — ver CONTEXTO_E_CHECKLIST.md
@@ -16,17 +15,41 @@ export default async function GestorAcessosPage() {
 
   const [consultores, { data: perfisConsultores }, { data: perfisGestores }] = await Promise.all([
     listarTodosConsultores(),
-    admin.from('perfis').select('cod_consultor').eq('perfil', 'consultor'),
+    admin.from('perfis').select('cod_consultor, user_id').eq('perfil', 'consultor'),
     admin.from('perfis').select('user_id, nome').eq('perfil', 'gestor'),
   ])
 
-  const codsComAcesso = new Set((perfisConsultores ?? []).map((p) => p.cod_consultor))
+  // Status real de cada consultor com perfil: "ativo" = já confirmou o e-mail (concluiu o
+  // "Defina sua senha" ou já fez login); "pendente" = perfil existe mas ainda não confirmou.
+  // Mesmo padrão já usado abaixo pra buscar os Gestores (Promise.all de getUserById).
+  const usuariosConsultores = await Promise.all(
+    (perfisConsultores ?? []).map(async (p) => {
+      const { data } = await admin.auth.admin.getUserById(p.user_id)
+      return { cod_consultor: p.cod_consultor as number, ativo: !!data.user?.email_confirmed_at }
+    })
+  )
+  const statusPorCod = new Map(usuariosConsultores.map((u) => [u.cod_consultor, u.ativo]))
 
-  const linhas = consultores
+  const linhas: LinhaAcesso[] = consultores
     .filter((c) => c.situacao === 'Ativo')
-    .sort((a, b) => Number(codsComAcesso.has(a.cod_consultor)) - Number(codsComAcesso.has(b.cod_consultor)))
+    .map((consultor) => {
+      const temAcesso = statusPorCod.has(consultor.cod_consultor)
+      const status: StatusAcesso = !temAcesso
+        ? 'nunca_convidado'
+        : statusPorCod.get(consultor.cod_consultor)
+          ? 'ativo'
+          : 'pendente'
+      return {
+        cod_consultor: consultor.cod_consultor,
+        nome: consultor.nome,
+        email: consultor.email || '',
+        equipe: consultor.equipe || '—',
+        status,
+      }
+    })
+    .sort((a, b) => a.nome.localeCompare(b.nome))
 
-  const semAcessoCount = linhas.filter((c) => !codsComAcesso.has(c.cod_consultor)).length
+  const equipesDisponiveis = Array.from(new Set(linhas.map((l) => l.equipe))).sort((a, b) => a.localeCompare(b))
 
   const gestores = await Promise.all(
     (perfisGestores ?? []).map(async (g) => {
@@ -35,6 +58,10 @@ export default async function GestorAcessosPage() {
     })
   )
 
+  const totalAtivos = linhas.filter((l) => l.status === 'ativo').length
+  const totalPendentes = linhas.filter((l) => l.status === 'pendente').length
+  const totalSemAcesso = linhas.filter((l) => l.status === 'nunca_convidado').length
+
   return (
     <div className="space-y-8">
       <div>
@@ -42,6 +69,16 @@ export default async function GestorAcessosPage() {
           ← Voltar para consultores
         </Link>
         <h2 className="text-base font-semibold text-slate-900">Acessos</h2>
+      </div>
+
+      {/* Cards de resumo — contagens fixas (não reagem aos filtros da tabela abaixo), pro
+          Gestor ter uma referência estável do total, igual ao resto do sistema. */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <CardResumo titulo="Gestores" valor={gestores.length} />
+        <CardResumo titulo="Consultores" valor={linhas.length} />
+        <CardResumo titulo="Acessos ativos" valor={totalAtivos} tom="emerald" />
+        <CardResumo titulo="Pendentes" valor={totalPendentes} tom="amber" />
+        <CardResumo titulo="Sem acesso" valor={totalSemAcesso} tom="slate" />
       </div>
 
       <Cartao className="space-y-3 p-5">
@@ -74,42 +111,30 @@ export default async function GestorAcessosPage() {
         <ConvidarGestorForm />
       </Cartao>
 
-      <div>
-        <h3 className="text-sm font-semibold text-slate-900">Acesso dos consultores</h3>
-        <p className="text-sm text-slate-500">
-          {linhas.length - semAcessoCount} de {linhas.length} consultores ativos já têm acesso
-          ao sistema.
-        </p>
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="px-4 py-2 font-medium">Consultor</th>
-              <th className="px-4 py-2 font-medium">E-mail (Ileva)</th>
-              <th className="px-4 py-2 font-medium">Acesso</th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.map((consultor) => (
-              <tr key={consultor.cod_consultor} className="border-t border-slate-100">
-                <td className="px-4 py-2 text-slate-800">
-                  {consultor.nome} <span className="text-slate-400">#{consultor.cod_consultor}</span>
-                </td>
-                <td className="px-4 py-2 text-slate-500">{consultor.email || '—'}</td>
-                <td className="px-4 py-2">
-                  {codsComAcesso.has(consultor.cod_consultor) ? (
-                    <Selo>Tem acesso</Selo>
-                  ) : (
-                    <ConvidarButton codConsultor={consultor.cod_consultor} />
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <TabelaAcessos linhas={linhas} equipesDisponiveis={equipesDisponiveis} />
     </div>
+  )
+}
+
+function CardResumo({
+  titulo,
+  valor,
+  tom = 'navy',
+}: {
+  titulo: string
+  valor: number
+  tom?: 'navy' | 'emerald' | 'amber' | 'slate'
+}) {
+  const cores: Record<string, string> = {
+    navy: 'text-brand-navy',
+    emerald: 'text-emerald-600',
+    amber: 'text-amber-600',
+    slate: 'text-slate-500',
+  }
+  return (
+    <Cartao>
+      <p className="text-sm text-slate-500">{titulo}</p>
+      <p className={`mt-2 text-2xl font-semibold ${cores[tom]}`}>{valor}</p>
+    </Cartao>
   )
 }

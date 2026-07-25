@@ -12,6 +12,33 @@ export interface ConvidarEstado {
   emailConvidado?: string
 }
 
+export interface RemoverAcessoEstado {
+  sucesso?: boolean
+  erro?: string
+}
+
+export interface LinkAcessoEstado {
+  sucesso?: boolean
+  erro?: string
+  link?: string
+}
+
+export interface EditarEmailEstado {
+  sucesso?: boolean
+  erro?: string
+}
+
+// Prioriza NEXT_PUBLIC_SITE_URL (fixo, configurado no ambiente) sobre o header Origin da
+// requisição — antes o link do convite saía com o domínio que o Gestor por acaso estava usando
+// no navegador no momento do clique (localhost durante um teste local, uma URL de preview
+// deploy etc.), o que quebrava o convite pra quem recebia de verdade. Cai no Origin só como
+// fallback de conveniência pra dev local, quando a variável não está configurada.
+async function obterUrlBase(): Promise<string | undefined> {
+  const configurada = process.env.NEXT_PUBLIC_SITE_URL
+  if (configurada) return configurada.replace(/\/+$/, '')
+  return (await headers()).get('origin') ?? undefined
+}
+
 async function confirmarGestor() {
   const supabase = await createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
@@ -72,10 +99,10 @@ export async function convidarConsultor(
     return { erro: `Consultor "${nome}" não tem e-mail cadastrado no Ileva — não dá pra convidar por e-mail.` }
   }
 
-  const origin = (await headers()).get('origin') ?? undefined
+  const urlBase = await obterUrlBase()
 
   const { data: convite, error: erroConvite } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: origin ? `${origin}/definir-senha` : undefined,
+    redirectTo: urlBase ? `${urlBase}/definir-senha` : undefined,
   })
 
   if (erroConvite || !convite.user) {
@@ -118,10 +145,10 @@ export async function convidarGestor(
   }
 
   const admin = createSupabaseAdminClient()
-  const origin = (await headers()).get('origin') ?? undefined
+  const urlBase = await obterUrlBase()
 
   const { data: convite, error: erroConvite } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: origin ? `${origin}/definir-senha` : undefined,
+    redirectTo: urlBase ? `${urlBase}/definir-senha` : undefined,
   })
 
   if (erroConvite || !convite.user) {
@@ -141,4 +168,179 @@ export async function convidarGestor(
 
   revalidatePath('/gestor/acessos')
   return { sucesso: true, emailConvidado: email }
+}
+
+// Revoga o login do consultor — apaga o usuário no Supabase Auth, o que já apaga a linha de
+// `perfis` junto (FK `on delete cascade`, ver migration 0001_init.sql). Não mexe em nada do
+// Ileva nem em `apuracoes_mensais` — só quem consegue entrar no sistema. Se precisar dar acesso
+// de volta depois, um novo convite cria um usuário do zero (senha nova, definida pela própria
+// pessoa de novo).
+export async function removerAcessoConsultor(
+  _estadoAnterior: RemoverAcessoEstado,
+  formData: FormData
+): Promise<RemoverAcessoEstado> {
+  try {
+    await confirmarGestor()
+  } catch (e) {
+    return { erro: e instanceof Error ? e.message : 'Sem permissão.' }
+  }
+
+  const codConsultor = Number(formData.get('cod_consultor'))
+  if (!codConsultor) {
+    return { erro: 'cod_consultor inválido.' }
+  }
+
+  const admin = createSupabaseAdminClient()
+
+  const { data: perfil, error: erroBusca } = await admin
+    .from('perfis')
+    .select('user_id')
+    .eq('cod_consultor', codConsultor)
+    .eq('perfil', 'consultor')
+    .maybeSingle()
+
+  if (erroBusca || !perfil) {
+    return { erro: 'Este consultor não tem acesso ativo.' }
+  }
+
+  const { error: erroDelete } = await admin.auth.admin.deleteUser(perfil.user_id)
+  if (erroDelete) {
+    return { erro: `Falha ao remover acesso: ${erroDelete.message}` }
+  }
+
+  revalidatePath('/gestor/acessos')
+  return { sucesso: true }
+}
+
+// Reenvia o convite pra quem está com status "Convite pendente" (perfil existe, e-mail ainda
+// não confirmado) — chama inviteUserByEmail de novo, mesmo mecanismo que o próprio dashboard do
+// Supabase usa no botão "Resend invitation" pra usuário ainda não confirmado. Recusa se o
+// e-mail já estiver confirmado, pra não arriscar reenviar convite pra quem já tem acesso ativo.
+export async function reenviarConvite(
+  _estadoAnterior: ConvidarEstado,
+  formData: FormData
+): Promise<ConvidarEstado> {
+  try {
+    await confirmarGestor()
+  } catch (e) {
+    return { erro: e instanceof Error ? e.message : 'Sem permissão.' }
+  }
+
+  const codConsultor = Number(formData.get('cod_consultor'))
+  if (!codConsultor) return { erro: 'cod_consultor inválido.' }
+
+  const admin = createSupabaseAdminClient()
+
+  const { data: perfil } = await admin
+    .from('perfis')
+    .select('user_id')
+    .eq('cod_consultor', codConsultor)
+    .eq('perfil', 'consultor')
+    .maybeSingle()
+
+  if (!perfil) return { erro: 'Este consultor não tem um convite pendente.' }
+
+  const { data: usuario } = await admin.auth.admin.getUserById(perfil.user_id)
+  const email = usuario.user?.email
+  if (!email) return { erro: 'Não achei o e-mail desse usuário.' }
+  if (usuario.user?.email_confirmed_at) {
+    return { erro: 'Esse consultor já confirmou o acesso — não é mais um convite pendente.' }
+  }
+
+  const urlBase = await obterUrlBase()
+  const { error } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: urlBase ? `${urlBase}/definir-senha` : undefined,
+  })
+
+  if (error) {
+    return { erro: `Falha ao reenviar (${email}): ${error.message}` }
+  }
+
+  revalidatePath('/gestor/acessos')
+  return { sucesso: true, emailConvidado: email }
+}
+
+// Gera um link pra copiar e mandar manualmente (WhatsApp etc.), sem depender do e-mail chegar —
+// usa generateLink, que só devolve a URL e não dispara e-mail nenhum sozinho. Tipo "invite" pra
+// quem nunca confirmou (pendente), tipo "recovery" (redefinição de senha) pra quem já está
+// ativo.
+export async function gerarLinkAcesso(
+  _estadoAnterior: LinkAcessoEstado,
+  formData: FormData
+): Promise<LinkAcessoEstado> {
+  try {
+    await confirmarGestor()
+  } catch (e) {
+    return { erro: e instanceof Error ? e.message : 'Sem permissão.' }
+  }
+
+  const codConsultor = Number(formData.get('cod_consultor'))
+  if (!codConsultor) return { erro: 'cod_consultor inválido.' }
+
+  const admin = createSupabaseAdminClient()
+
+  const { data: perfil } = await admin
+    .from('perfis')
+    .select('user_id')
+    .eq('cod_consultor', codConsultor)
+    .eq('perfil', 'consultor')
+    .maybeSingle()
+
+  if (!perfil) return { erro: 'Este consultor ainda não tem acesso — envie um convite primeiro.' }
+
+  const { data: usuario } = await admin.auth.admin.getUserById(perfil.user_id)
+  const email = usuario.user?.email
+  if (!email) return { erro: 'Não achei o e-mail desse usuário.' }
+
+  const urlBase = await obterUrlBase()
+  const redirectTo = urlBase ? `${urlBase}/definir-senha` : undefined
+  const ativo = !!usuario.user?.email_confirmed_at
+
+  const { data, error } = ativo
+    ? await admin.auth.admin.generateLink({ type: 'recovery', email, options: { redirectTo } })
+    : await admin.auth.admin.generateLink({ type: 'invite', email, options: { redirectTo } })
+
+  if (error || !data) {
+    return { erro: `Falha ao gerar o link: ${error?.message ?? 'erro desconhecido'}` }
+  }
+
+  return { sucesso: true, link: data.properties.action_link }
+}
+
+// Corrige o e-mail de login de um consultor (não mexe no cadastro dele no Ileva — só o e-mail
+// usado pra entrar no sistema). Ação de admin: `updateUserById` troca direto, sem exigir
+// confirmação do novo endereço (diferente de um usuário trocando o próprio e-mail sozinho).
+export async function editarEmailConsultor(
+  _estadoAnterior: EditarEmailEstado,
+  formData: FormData
+): Promise<EditarEmailEstado> {
+  try {
+    await confirmarGestor()
+  } catch (e) {
+    return { erro: e instanceof Error ? e.message : 'Sem permissão.' }
+  }
+
+  const codConsultor = Number(formData.get('cod_consultor'))
+  const novoEmail = String(formData.get('email') ?? '').trim()
+  if (!codConsultor) return { erro: 'cod_consultor inválido.' }
+  if (!novoEmail) return { erro: 'Informe um e-mail.' }
+
+  const admin = createSupabaseAdminClient()
+
+  const { data: perfil } = await admin
+    .from('perfis')
+    .select('user_id')
+    .eq('cod_consultor', codConsultor)
+    .eq('perfil', 'consultor')
+    .maybeSingle()
+
+  if (!perfil) return { erro: 'Este consultor não tem acesso ativo.' }
+
+  const { error } = await admin.auth.admin.updateUserById(perfil.user_id, { email: novoEmail })
+  if (error) {
+    return { erro: `Falha ao atualizar o e-mail: ${error.message}` }
+  }
+
+  revalidatePath('/gestor/acessos')
+  return { sucesso: true }
 }
