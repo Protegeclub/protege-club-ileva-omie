@@ -54,6 +54,42 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
     }
   }, [])
 
+  // Retoma o acompanhamento sozinho ao montar (inclusive quando o Gestor navega pra outra tela e
+  // volta — o Next.js remonta esse componente do zero, já que /gestor/gerar é uma página própria,
+  // não um layout compartilhado). O lote em si continua rodando no Trigger.dev independente disso
+  // (fica gravado em `apuracao_jobs`); sem isso, a tela simplesmente esquecia que existia um lote
+  // em andamento e voltava a mostrar o botão de disparar do zero, dando a impressão de que tinha
+  // sido cancelado.
+  useEffect(() => {
+    let cancelado = false
+
+    async function retomarSeNecessario() {
+      const statusAtual = await consultarStatusPeriodo(ano, mes)
+      if (cancelado) return
+
+      const codsDaLista = new Set(consultores.map((c) => c.cod_consultor))
+      const relevantes = statusAtual.filter((s) => codsDaLista.has(s.cod_consultor))
+      if (relevantes.length === 0) return
+
+      const porConsultor: Record<number, StatusJob> = {}
+      for (const s of relevantes) porConsultor[s.cod_consultor] = s
+      setStatusPorConsultor((prev) => ({ ...prev, ...porConsultor }))
+
+      const aindaRodando = relevantes.some((s) => s.status === 'pendente' || s.status === 'processando')
+      if (aindaRodando) {
+        pararPollingRef.current = false
+        setAcompanhando(true)
+        acompanharAtePronto()
+      }
+    }
+
+    retomarSeNecessario()
+    return () => {
+      cancelado = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ano, mes])
+
   async function acompanharAtePronto() {
     while (!pararPollingRef.current) {
       const statusAtual = await consultarStatusPeriodo(ano, mes)
