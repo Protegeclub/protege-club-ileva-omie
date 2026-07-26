@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { NOMES_MESES } from '@/app/consultor/tipos'
+import { Botao } from '@/lib/ui/botao'
+import { IconeAtualizar, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 
 // Igual a web/src/app/consultor/filtros-toolbar.tsx, mas sem o botão Sair (o menu lateral do
 // Gestor já tem um no rodapé) e com um link de volta para a lista de consultores. Era uma
@@ -81,10 +83,16 @@ export function FiltrosToolbarGestor() {
               onChange={(e) => irPara({ equipe: e.target.checked })}
               className="rounded border-slate-300 text-brand-navy focus:ring-brand-blue"
             />
+            <IconeUsuarios className="h-4 w-4 text-slate-400" />
             Visualizar dados da equipe
           </label>
         </>
       )}
+
+      <Botao type="button" variante="fantasma" className="ml-auto h-11" onClick={() => router.refresh()}>
+        <IconeAtualizar className="h-4 w-4" />
+        Atualizar
+      </Botao>
     </div>
   )
 }

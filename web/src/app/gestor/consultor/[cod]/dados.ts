@@ -1,15 +1,27 @@
 import { buscarConsultor } from '@/lib/ileva/api'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import type { ApuracaoRow } from '@/app/consultor/tipos'
+import {
+  montarEvolucao,
+  periodoAnterior,
+  type ApuracaoRow,
+  type LinhaEvolucaoRow,
+  type PontoEvolucaoConsultor,
+} from '@/app/consultor/tipos'
+
+const MESES_EVOLUCAO = 6
+const SELECT_EVOLUCAO = 'mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_liquido, detalhe'
 
 export interface ContextoGestorConsultor {
   codConsultor: number
   nomeConsultor: string
+  equipeNome: string
   ano: number
   mes: number
   equipeAtiva: boolean
   linhaPropria: ApuracaoRow | null
   linhasEquipe: ApuracaoRow[]
+  anterior: ApuracaoRow | null
+  evolucao: PontoEvolucaoConsultor[]
 }
 
 export type ResultadoContextoGestor = ContextoGestorConsultor | { erro: string }
@@ -37,26 +49,54 @@ export async function carregarContextoGestorConsultor(
 
   const admin = createSupabaseAdminClient()
 
-  const { data: linhaPropria } = await admin
-    .from('apuracoes_mensais')
-    .select(SELECT_APURACAO)
-    .eq('cod_consultor', codConsultor)
-    .eq('ano', ano)
-    .eq('mes', mes)
-    .maybeSingle<ApuracaoRow>()
+  const periodoAnt = periodoAnterior(ano, mes)
+  const periodos: { ano: number; mes: number }[] = []
+  let cursor = { ano, mes }
+  for (let i = 0; i < MESES_EVOLUCAO; i++) {
+    periodos.unshift(cursor)
+    cursor = periodoAnterior(cursor.ano, cursor.mes)
+  }
+
+  const [{ data: linhaPropria }, { data: linhaAnterior }, evolucaoResultados] = await Promise.all([
+    admin
+      .from('apuracoes_mensais')
+      .select(SELECT_APURACAO)
+      .eq('cod_consultor', codConsultor)
+      .eq('ano', ano)
+      .eq('mes', mes)
+      .maybeSingle<ApuracaoRow>(),
+    admin
+      .from('apuracoes_mensais')
+      .select(SELECT_APURACAO)
+      .eq('cod_consultor', codConsultor)
+      .eq('ano', periodoAnt.ano)
+      .eq('mes', periodoAnt.mes)
+      .maybeSingle<ApuracaoRow>(),
+    Promise.all(
+      periodos.map(({ ano: a, mes: m }) =>
+        admin
+          .from('apuracoes_mensais')
+          .select(SELECT_EVOLUCAO)
+          .eq('cod_consultor', codConsultor)
+          .eq('ano', a)
+          .eq('mes', m)
+          .maybeSingle<LinhaEvolucaoRow>()
+      )
+    ),
+  ])
 
   let linhasEquipe: ApuracaoRow[] = linhaPropria ? [linhaPropria] : []
   let nomeConsultor = linhaPropria?.detalhe?.nomeConsultor ?? ''
   let codEquipeConsultor = linhaPropria?.cod_equipe ?? null
+  let equipeNome = ''
 
-  if (!nomeConsultor || (equipeAtiva && !codEquipeConsultor)) {
-    try {
-      const { consultor } = await buscarConsultor({ cod_consultor: codConsultor })
-      nomeConsultor = nomeConsultor || consultor.nome
-      codEquipeConsultor = codEquipeConsultor ?? consultor.cod_equipe
-    } catch {
-      nomeConsultor = nomeConsultor || `Consultor #${codConsultor}`
-    }
+  try {
+    const { consultor } = await buscarConsultor({ cod_consultor: codConsultor })
+    nomeConsultor = nomeConsultor || consultor.nome
+    codEquipeConsultor = codEquipeConsultor ?? consultor.cod_equipe
+    equipeNome = consultor.equipe || ''
+  } catch {
+    nomeConsultor = nomeConsultor || `Consultor #${codConsultor}`
   }
 
   if (equipeAtiva && codEquipeConsultor) {
@@ -72,10 +112,16 @@ export async function carregarContextoGestorConsultor(
   return {
     codConsultor,
     nomeConsultor,
+    equipeNome,
     ano,
     mes,
     equipeAtiva,
     linhaPropria: linhaPropria ?? null,
     linhasEquipe,
+    anterior: linhaAnterior ?? null,
+    evolucao: montarEvolucao(
+      periodos,
+      evolucaoResultados.map((r) => r.data ?? null)
+    ),
   }
 }

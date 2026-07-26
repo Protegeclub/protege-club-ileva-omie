@@ -1,8 +1,30 @@
 import { Banner } from '@/lib/ui/banner'
 import { Botao } from '@/lib/ui/botao'
-import { Cartao } from '@/lib/ui/cartao'
+import { CardAtalho } from '@/lib/ui/card-atalho'
+import { CardFinanceiro } from '@/lib/ui/card-financeiro'
+import { CardKpi, calcularTendencia } from '@/lib/ui/card-kpi'
+import { CardMeta } from '@/lib/ui/card-meta'
+import { AreaProducaoMensal, BarraAdesoesPorMes, DonutComposicaoConsultor } from '@/lib/ui/graficos-consultor'
+import {
+  IconeAdesao,
+  IconeAlerta,
+  IconeCarteira,
+  IconePlaca,
+  IconeRastreador,
+  IconeRecorrencia,
+  IconeTrofeu,
+  IconeUsuarios,
+} from '@/lib/ui/icones-sidebar'
+import { TimelineMovimentacoes } from '@/lib/ui/timeline-movimentacoes'
 import { carregarContextoConsultor } from './dados'
-import { calcularTotalReceber, formatarMoeda } from './tipos'
+import { calcularTotalReceber, formatarMoeda, montarTimeline, NOMES_MESES } from './tipos'
+
+function iniciaisNome(nome: string) {
+  const partes = nome.trim().split(/\s+/)
+  const primeira = partes[0]?.[0] ?? ''
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : ''
+  return (primeira + ultima).toUpperCase()
+}
 
 export default async function ConsultorDashboardPage({
   searchParams,
@@ -16,7 +38,8 @@ export default async function ConsultorDashboardPage({
     return <Banner tom="aviso">{contexto.erro}</Banner>
   }
 
-  const { ano, mes, equipeAtiva, linhaPropria, linhasEquipe, codConsultor } = contexto
+  const { ano, mes, equipeAtiva, linhaPropria, linhasEquipe, codConsultor, nomeConsultor, equipeNome, anterior, evolucao } =
+    contexto
   const qs = `ano=${ano}&mes=${mes}&equipe=${equipeAtiva ? 1 : 0}`
 
   if (!linhaPropria) {
@@ -34,74 +57,174 @@ export default async function ConsultorDashboardPage({
     .reduce((soma, l) => soma + (l.detalhe?.adesoes?.length ?? 0), 0) - totalAdesoes
 
   const totalReceber = calcularTotalReceber(linhaPropria)
+  const timeline = montarTimeline(linhaPropria)
+
+  const adesoesAnterior = anterior?.detalhe?.adesoes?.length ?? 0
+  const placasAnterior = anterior?.detalhe?.placasAtivadas?.length ?? 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-slate-500">
-          {contexto.nomeConsultor} — referência {String(mes).padStart(2, '0')}/{ano}
-        </p>
-        <div className="flex items-center gap-3 rounded-full bg-brand-navy px-5 py-2 text-white">
-          <span className="text-sm">Total a receber:</span>
-          <span className="text-lg font-semibold">{formatarMoeda(totalReceber)}</span>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:justify-between">
+        <div className="flex items-start gap-4">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-orange/90 text-lg font-semibold text-brand-navy">
+            {iniciaisNome(nomeConsultor)}
+          </span>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-brand-navy">{nomeConsultor}</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {equipeNome ? `${equipeNome} · ` : ''}Referência {NOMES_MESES[mes - 1]}/{ano}
+            </p>
+            <p className="mt-2 text-sm text-slate-400">Confira abaixo o resumo da sua produção.</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 rounded-xl bg-brand-navy p-5 text-white shadow-sm lg:w-96">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-white [&>svg]:h-6 [&>svg]:w-6">
+            <IconeCarteira />
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-white/60">Total a receber</p>
+            <p className="text-2xl font-bold">{formatarMoeda(totalReceber)}</p>
+            <p className="text-xs text-white/50">Previsão para este período</p>
+          </div>
         </div>
       </div>
 
+      {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Botao href={`/consultor/adesoes?${qs}`} variante="secundaria" className="h-full py-4 text-center">
-          Visualizar Adesões
-        </Botao>
-        <Botao href={`/consultor/recorrencia?${qs}`} variante="secundaria" className="h-full py-4 text-center">
-          Visualizar Recorrência
-        </Botao>
-        <Botao href={`/consultor/rastreadores?${qs}`} variante="secundaria" className="h-full py-4 text-center">
-          Visualizar descontos de rastreadores
-        </Botao>
-        <Botao href={`/consultor/placas-ativadas?${qs}`} variante="secundaria" className="h-full py-4 text-center">
-          Visualizar Placas Ativadas
-        </Botao>
-        <Botao href={`/consultor/inadimplentes?cod=${codConsultor}`} variante="secundaria" className="h-full py-4 text-center">
-          Visualizar Inadimplentes
-        </Botao>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Card titulo="Total de Adesões" valor={String(totalAdesoes)} />
-        <Card
-          titulo="Placas Ativadas"
+        <CardKpi
+          icone={<IconeAdesao />}
+          cor="emerald"
+          titulo="Adesões"
+          valor={String(totalAdesoes)}
+          tendenciaPct={calcularTendencia(totalAdesoes, adesoesAnterior)}
+          valorAnterior={String(adesoesAnterior)}
+        />
+        <CardKpi
+          icone={<IconePlaca />}
+          cor="orange"
+          titulo="Placas ativadas"
           valor={String(totalPlacasAtivadas)}
-          nota="Contratos iniciados no período (visão operacional, não é comissão)"
+          tendenciaPct={calcularTendencia(totalPlacasAtivadas, placasAnterior)}
+          valorAnterior={String(placasAnterior)}
         />
-        <Card titulo="Total - Equipe" valor={String(Math.max(totalEquipe, 0))} />
-        <Card
-          titulo="Premiação Individual"
+        <CardKpi
+          icone={<IconeUsuarios />}
+          cor="blue"
+          titulo="Produção da equipe"
+          valor={String(Math.max(totalEquipe, 0))}
+          descricao="Adesões dos colegas"
+        />
+        <CardKpi
+          icone={<IconeTrofeu />}
+          cor="navy"
+          titulo="Premiação individual"
           valor={formatarMoeda(linhaPropria.total_premiacao_individual)}
-          nota="Regras do plano de carreira ainda não definidas"
+          descricao="Regras do plano de carreira ainda não definidas"
         />
-        <Card
-          titulo="Premiação Líder de equipe"
+        <CardKpi
+          icone={<IconeTrofeu />}
+          cor="navy"
+          titulo="Premiação liderança"
           valor={formatarMoeda(linhaPropria.total_premiacao_equipe)}
-          nota="Regras do plano de carreira ainda não definidas"
+          descricao="Regras do plano de carreira ainda não definidas"
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card titulo="Adesão" valor={formatarMoeda(linhaPropria.total_adesao)} />
-        <Card titulo="Recorrência" valor={formatarMoeda(linhaPropria.total_recorrencia)} />
-        <Card
-          titulo="Desconto Rastreadores"
-          valor={formatarMoeda(linhaPropria.total_desconto_rastreador)}
-          corValor="text-red-600"
+      {linhaPropria.total_comissao_gerencial > 0 && (
+        <Banner tom="neutro">
+          <span className="font-medium text-slate-700">
+            Comissão de gerência: {formatarMoeda(linhaPropria.total_comissao_gerencial)}
+          </span>{' '}
+          — R$2,00 por placa ativada de outros consultores (
+          {linhaPropria.detalhe?.comissaoGerencialPlacas?.totalPlacas ?? 0}{' '}
+          {(linhaPropria.detalhe?.comissaoGerencialPlacas?.totalPlacas ?? 0) === 1 ? 'placa' : 'placas'} neste mês).
+        </Banner>
+      )}
+
+      {/* Atalhos */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <CardAtalho href={`/consultor/adesoes?${qs}`} icone={<IconeAdesao />} titulo="Adesões" descricao="Contratos e valores do período" />
+        <CardAtalho
+          href={`/consultor/recorrencia?${qs}`}
+          icone={<IconeRecorrencia />}
+          titulo="Recorrência"
+          descricao="Pagamentos recorrentes recebidos"
         />
-        {linhaPropria.total_comissao_gerencial > 0 && (
-          <Card
-            titulo="Comissão de Gerência"
-            valor={formatarMoeda(linhaPropria.total_comissao_gerencial)}
-            nota={`R$2,00 por placa ativada de outros consultores (${
-              linhaPropria.detalhe?.comissaoGerencialPlacas?.totalPlacas ?? 0
-            } ${(linhaPropria.detalhe?.comissaoGerencialPlacas?.totalPlacas ?? 0) === 1 ? 'placa' : 'placas'} neste mês)`}
-          />
-        )}
+        <CardAtalho
+          href={`/consultor/rastreadores?${qs}`}
+          icone={<IconeRastreador />}
+          titulo="Descontos"
+          descricao="Descontos de rastreadores"
+        />
+        <CardAtalho
+          href={`/consultor/placas-ativadas?${qs}`}
+          icone={<IconePlaca />}
+          titulo="Placas"
+          descricao="Placas ativadas no período"
+        />
+        <CardAtalho
+          href={`/consultor/inadimplentes?cod=${codConsultor}`}
+          icone={<IconeAlerta />}
+          titulo="Inadimplentes"
+          descricao="Situação atual dos associados"
+        />
+      </div>
+
+      {/* Resumo financeiro */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <CardFinanceiro
+          icone={<IconeAdesao />}
+          titulo="Adesão"
+          valor={formatarMoeda(linhaPropria.total_adesao)}
+          cor="#f19100"
+          evolucao={evolucao}
+          campo="totalAdesao"
+        />
+        <CardFinanceiro
+          icone={<IconeRecorrencia />}
+          titulo="Recorrência"
+          valor={formatarMoeda(linhaPropria.total_recorrencia)}
+          cor="#25a9e1"
+          evolucao={evolucao}
+          campo="totalRecorrencia"
+        />
+        <CardFinanceiro
+          icone={<IconeRastreador />}
+          titulo="Desconto rastreadores"
+          valor={formatarMoeda(linhaPropria.total_desconto_rastreador)}
+          cor="#ef4444"
+          corTexto="text-red-600"
+          evolucao={evolucao}
+          campo="totalDescontoRastreador"
+        />
+        <CardFinanceiro
+          icone={<IconeCarteira />}
+          titulo="Comissão líquida"
+          valor={formatarMoeda(linhaPropria.total_liquido)}
+          cor="#002a54"
+          evolucao={evolucao}
+          campo="totalLiquido"
+        />
+      </div>
+
+      {/* Gráficos */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AreaProducaoMensal evolucao={evolucao} />
+        <DonutComposicaoConsultor
+          totalLiquido={linhaPropria.total_liquido}
+          totalAdesao={linhaPropria.total_adesao}
+          totalRecorrencia={linhaPropria.total_recorrencia}
+          totalDescontoRastreador={linhaPropria.total_desconto_rastreador}
+        />
+        <BarraAdesoesPorMes evolucao={evolucao} />
+      </div>
+
+      {/* Histórico + Metas */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <TimelineMovimentacoes itens={timeline} />
+        <CardMeta />
       </div>
 
       <Botao
@@ -113,25 +236,5 @@ export default async function ConsultorDashboardPage({
         Baixar PDF
       </Botao>
     </div>
-  )
-}
-
-function Card({
-  titulo,
-  valor,
-  nota,
-  corValor,
-}: {
-  titulo: string
-  valor: string
-  nota?: string
-  corValor?: string
-}) {
-  return (
-    <Cartao>
-      <p className="text-sm text-slate-500">{titulo}</p>
-      <p className={`mt-2 text-2xl font-semibold ${corValor ?? 'text-slate-900'}`}>{valor}</p>
-      {nota ? <p className="mt-1 text-xs text-slate-400">{nota}</p> : null}
-    </Cartao>
   )
 }

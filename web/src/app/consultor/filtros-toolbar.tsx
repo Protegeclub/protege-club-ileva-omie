@@ -1,6 +1,8 @@
 'use client'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { Botao } from '@/lib/ui/botao'
+import { IconeAtualizar, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -82,8 +84,14 @@ export function FiltrosToolbar() {
           onChange={(e) => irPara({ equipe: e.target.checked })}
           className="rounded border-slate-300 text-brand-navy focus:ring-brand-blue"
         />
+        <IconeUsuarios className="h-4 w-4 text-slate-400" />
         Visualizar dados da equipe
       </label>
+
+      <Botao type="button" variante="fantasma" className="ml-auto h-11" onClick={() => router.refresh()}>
+        <IconeAtualizar className="h-4 w-4" />
+        Atualizar
+      </Botao>
     </div>
   )
 }

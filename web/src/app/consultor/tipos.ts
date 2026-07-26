@@ -63,7 +63,116 @@ export function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+export type TipoMovimentacao = 'adesao' | 'recorrencia' | 'desconto' | 'placa'
+
+export interface ItemTimeline {
+  tipo: TipoMovimentacao
+  titulo: string
+  descricao: string
+  valor: number
+  data: string
+}
+
+const TITULOS_MOVIMENTACAO: Record<TipoMovimentacao, string> = {
+  adesao: 'Nova adesão',
+  recorrencia: 'Pagamento de recorrência',
+  desconto: 'Desconto de rastreador aplicado',
+  placa: 'Placa ativada',
+}
+
+// Monta a "timeline de movimentações" só juntando e ordenando o que já está calculado em
+// detalhe (adesões/recorrências/descontos/placas) por data — não soma nem recalcula nada, é
+// puramente uma reapresentação cronológica do mesmo dado que os cards e o PDF já usam.
+export function montarTimeline(linha: ApuracaoRow | null, limite = 8): ItemTimeline[] {
+  if (!linha) return []
+  const detalhe = linha.detalhe ?? {}
+
+  const itens: ItemTimeline[] = [
+    ...(detalhe.adesoes ?? [])
+      .filter((a) => a.dt_pagamento)
+      .map((a) => ({
+        tipo: 'adesao' as const,
+        titulo: TITULOS_MOVIMENTACAO.adesao,
+        descricao: `${a.associado} · placa ${a.placa}`,
+        valor: a.valor,
+        data: a.dt_pagamento as string,
+      })),
+    ...(detalhe.recorrencias ?? [])
+      .filter((r) => r.dt_pagamento)
+      .map((r) => ({
+        tipo: 'recorrencia' as const,
+        titulo: TITULOS_MOVIMENTACAO.recorrencia,
+        descricao: `${r.associado} · placa ${r.placa}`,
+        valor: r.valor,
+        data: r.dt_pagamento as string,
+      })),
+    ...(detalhe.descontosRastreador ?? []).map((d) => ({
+      tipo: 'desconto' as const,
+      titulo: TITULOS_MOVIMENTACAO.desconto,
+      descricao: `${d.associado} · placa ${d.placa}`,
+      valor: d.valor,
+      data: d.dt_contrato,
+    })),
+    ...(detalhe.placasAtivadas ?? []).map((p) => ({
+      tipo: 'placa' as const,
+      titulo: TITULOS_MOVIMENTACAO.placa,
+      descricao: `${p.associado} · placa ${p.placa}`,
+      valor: 0,
+      data: p.dt_contrato,
+    })),
+  ]
+
+  return itens.sort((a, b) => b.data.localeCompare(a.data)).slice(0, limite)
+}
+
 export const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
+
+const NOMES_MESES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+// Mesmo mês do ano anterior (com virada de ano em janeiro) — usado tanto pra buscar o período
+// anterior (comparação dos KPIs) quanto pra montar os últimos N meses do histórico.
+export function periodoAnterior(ano: number, mes: number): { ano: number; mes: number } {
+  return mes === 1 ? { ano: ano - 1, mes: 12 } : { ano, mes: mes - 1 }
+}
+
+export interface PontoEvolucaoConsultor {
+  rotulo: string
+  totalAdesao: number
+  totalRecorrencia: number
+  totalDescontoRastreador: number
+  totalLiquido: number
+  qtdAdesoes: number
+}
+
+// Linha crua de apuracoes_mensais só com os campos usados no histórico (select enxuto, sem
+// `detalhe` inteiro, pra não puxar adesões/recorrências de 6 meses à toa).
+export interface LinhaEvolucaoRow {
+  mes: number
+  total_adesao: number
+  total_recorrencia: number
+  total_desconto_rastreador: number
+  total_liquido: number
+  detalhe: { adesoes?: unknown[] } | null
+}
+
+// Transforma as linhas já buscadas (uma por período, mais antiga primeiro) no formato que os
+// gráficos usam — só remapeia campos e calcula o rótulo, não soma nem recalcula nada de negócio.
+export function montarEvolucao(
+  periodos: { ano: number; mes: number }[],
+  linhasPorPeriodo: (LinhaEvolucaoRow | null)[]
+): PontoEvolucaoConsultor[] {
+  return periodos.map(({ ano, mes }, i) => {
+    const linha = linhasPorPeriodo[i]
+    return {
+      rotulo: `${NOMES_MESES_ABREV[mes - 1]}/${String(ano).slice(2)}`,
+      totalAdesao: linha?.total_adesao ?? 0,
+      totalRecorrencia: linha?.total_recorrencia ?? 0,
+      totalDescontoRastreador: linha?.total_desconto_rastreador ?? 0,
+      totalLiquido: linha?.total_liquido ?? 0,
+      qtdAdesoes: linha?.detalhe?.adesoes?.length ?? 0,
+    }
+  })
+}
