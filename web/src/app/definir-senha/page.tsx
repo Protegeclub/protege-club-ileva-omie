@@ -1,16 +1,32 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Botao } from '@/lib/ui/botao'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 
-// Landing do link de convite/recuperação de senha. O Supabase entrega a sessão pela própria URL
-// (fragmento #access_token=...) — o cliente do browser detecta isso sozinho ao carregar
-// (detectSessionInUrl, ligado por padrão). Por isso o proxy.ts deixa essa rota passar mesmo sem
-// sessão visível no servidor: só o JS do navegador consegue processar esse link.
+// Landing do link de convite/recuperação de senha. Dois formatos de link chegam aqui:
+// 1) `?token_hash=...&type=invite|recovery` — o link que a gente mesmo monta em
+//    `gerarLinkAcesso` (botão "Copiar link"). De propósito NÃO é o link hospedado do Supabase
+//    (`.../auth/v1/verify?token=...`), que redime o token com um simples GET — qualquer preview
+//    automático (WhatsApp/Telegram/Slack) ou scanner de e-mail que "visite" a URL antes da
+//    pessoa já consome o token de uso único. Aqui a troca só acontece via `verifyOtp`, chamado
+//    por JS quando um navegador de verdade carrega a página — bots de preview não executam JS.
+// 2) Fragmento `#access_token=...` — formato antigo (e o que o próprio e-mail de convite do
+//    Supabase ainda usa hoje, `{{ .ConfirmationURL }}`); o cliente do browser detecta isso
+//    sozinho ao carregar (detectSessionInUrl, ligado por padrão).
+// Por isso o proxy.ts deixa essa rota passar mesmo sem sessão visível no servidor: só o JS do
+// navegador consegue processar os dois formatos.
 export default function DefinirSenhaPage() {
+  return (
+    <Suspense fallback={null}>
+      <DefinirSenhaConteudo />
+    </Suspense>
+  )
+}
+
+function DefinirSenhaConteudo() {
   const [senha, setSenha] = useState('')
   const [confirmacao, setConfirmacao] = useState('')
   const [carregandoSessao, setCarregandoSessao] = useState(true)
@@ -18,14 +34,29 @@ export default function DefinirSenhaPage() {
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
-    supabase.auth.getSession().then(({ data }) => {
+    const tokenHash = searchParams.get('token_hash')
+    const tipo = searchParams.get('type')
+
+    async function estabelecerSessao() {
+      if (tokenHash && (tipo === 'invite' || tipo === 'recovery')) {
+        const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: tipo })
+        if (error) {
+          setTemSessao(false)
+          setCarregandoSessao(false)
+          return
+        }
+      }
+      const { data } = await supabase.auth.getSession()
       setTemSessao(!!data.session)
       setCarregandoSessao(false)
-    })
-  }, [])
+    }
+
+    estabelecerSessao()
+  }, [searchParams])
 
   async function aoSubmeter(e: React.FormEvent) {
     e.preventDefault()

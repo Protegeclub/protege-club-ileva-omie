@@ -264,6 +264,15 @@ export async function reenviarConvite(
 // usa generateLink, que só devolve a URL e não dispara e-mail nenhum sozinho. Tipo "invite" pra
 // quem nunca confirmou (pendente), tipo "recovery" (redefinição de senha) pra quem já está
 // ativo.
+//
+// Importante: NÃO devolvemos `data.properties.action_link` (o link hospedado do próprio
+// Supabase, algo como `.../auth/v1/verify?token=...&type=...`). Esse link redime o token com um
+// simples GET — qualquer coisa que "visite" a URL antes da pessoa (o preview automático que
+// WhatsApp/Telegram/Slack geram ao colar um link, ou um scanner de segurança de e-mail) já
+// consome o token de uso único, e o clique de verdade cai em "otp_expired". Em vez disso,
+// montamos nosso próprio link pra `/definir-senha` carregando só o `token_hash` — a troca pela
+// sessão de verdade só acontece via JS (`supabase.auth.verifyOtp`) quando um navegador de
+// verdade abre a página, o que esses bots de preview não executam.
 export async function gerarLinkAcesso(
   _estadoAnterior: LinkAcessoEstado,
   formData: FormData
@@ -295,16 +304,20 @@ export async function gerarLinkAcesso(
   const urlBase = await obterUrlBase()
   const redirectTo = urlBase ? `${urlBase}/definir-senha` : undefined
   const ativo = !!usuario.user?.email_confirmed_at
+  const tipo = ativo ? 'recovery' : 'invite'
 
-  const { data, error } = ativo
-    ? await admin.auth.admin.generateLink({ type: 'recovery', email, options: { redirectTo } })
-    : await admin.auth.admin.generateLink({ type: 'invite', email, options: { redirectTo } })
+  const { data, error } = await admin.auth.admin.generateLink({ type: tipo, email, options: { redirectTo } })
 
   if (error || !data) {
     return { erro: `Falha ao gerar o link: ${error?.message ?? 'erro desconhecido'}` }
   }
 
-  return { sucesso: true, link: data.properties.action_link }
+  const destino = urlBase ? `${urlBase}/definir-senha` : undefined
+  const link = destino
+    ? `${destino}?token_hash=${data.properties.hashed_token}&type=${tipo}`
+    : data.properties.action_link
+
+  return { sucesso: true, link }
 }
 
 // Corrige o e-mail de login de um consultor (não mexe no cadastro dele no Ileva — só o e-mail
