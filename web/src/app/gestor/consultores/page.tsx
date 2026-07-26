@@ -1,9 +1,20 @@
+import type { ApuracaoDetalhe } from '@/app/consultor/tipos'
 import { listarTodosConsultores } from '@/lib/ileva/api'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { Consultor } from '@/types/domain'
 import { TabelaGestor, type ApuracaoResumo, type JobResumo } from '../TabelaGestor'
+
+interface ApuracaoRowComDetalhe {
+  cod_consultor: number
+  total_adesao: number
+  total_recorrencia: number
+  total_desconto_rastreador: number
+  total_liquido: number
+  gerado_em: string
+  detalhe: ApuracaoDetalhe | null
+}
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -42,7 +53,7 @@ export default async function GestorConsultoresPage({
     listarTodosConsultores(),
     createSupabaseAdminClient()
       .from('apuracoes_mensais')
-      .select('cod_consultor, total_adesao, total_recorrencia, total_desconto_rastreador, total_liquido, gerado_em')
+      .select('cod_consultor, total_adesao, total_recorrencia, total_desconto_rastreador, total_liquido, gerado_em, detalhe')
       .eq('ano', ano)
       .eq('mes', mes),
     createSupabaseAdminClient()
@@ -60,7 +71,14 @@ export default async function GestorConsultoresPage({
       .eq('mes', mes),
   ])
 
-  const apuracoes = (apuracoesResult.data ?? []) as ApuracaoResumo[]
+  // Vem com `detalhe` (JSONB) só pra extrair a quantidade de placas ativadas — não repassamos o
+  // objeto inteiro pro client (TabelaGestor), pra não mandar adesões/recorrências/inadimplentes de
+  // ~200 consultores num prop à toa.
+  const apuracoesComDetalhe = (apuracoesResult.data ?? []) as ApuracaoRowComDetalhe[]
+  const apuracoes: ApuracaoResumo[] = apuracoesComDetalhe.map(({ detalhe, ...resto }) => ({
+    ...resto,
+    qtd_placas_ativadas: detalhe?.placasAtivadas?.length ?? 0,
+  }))
   const apuracaoPorConsultor = new Map(apuracoes.map((a) => [a.cod_consultor, a]))
 
   const apuracoesAnterior = (apuracoesAnteriorResult.data ?? []) as ApuracaoResumo[]

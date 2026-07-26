@@ -62,14 +62,19 @@ export function SidebarGestor({ nome, children }: { nome: string | null; childre
       </div>
 
       {nome && (
-        <div className={`mx-3.5 mb-5 rounded-lg bg-white/5 px-3.5 py-3.5 ${colapsado ? 'text-center' : ''}`}>
-          {colapsado ? (
-            <span className="text-xs font-semibold text-white">{nome.charAt(0).toUpperCase()}</span>
-          ) : (
-            <>
+        <div
+          className={`mx-3.5 mb-5 flex items-center gap-2.5 rounded-lg bg-white/5 px-3.5 py-3 ${
+            colapsado ? 'justify-center px-0' : ''
+          }`}
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-orange/90 text-xs font-semibold text-brand-navy">
+            {nome.charAt(0).toUpperCase()}
+          </span>
+          {!colapsado && (
+            <div className="min-w-0">
               <p className="truncate text-xs font-medium text-white">{nome}</p>
               <p className="text-[11px] text-white/50">Gestor</p>
-            </>
+            </div>
           )}
         </div>
       )}

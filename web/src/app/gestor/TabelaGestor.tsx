@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { solicitarApuracao } from './gerar/actions'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
-import { IconeAdesao, IconeRecorrencia, IconeUsuarios } from '@/lib/ui/icones-sidebar'
+import { IconeAdesao, IconePlaca, IconeRecorrencia, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 import type { Consultor } from '@/types/domain'
 
 export interface ApuracaoResumo {
@@ -16,6 +16,7 @@ export interface ApuracaoResumo {
   total_desconto_rastreador: number
   total_liquido: number
   gerado_em: string
+  qtd_placas_ativadas: number
 }
 
 // Espelha StatusJob de gestor/gerar/actions.ts (tabela apuracao_jobs) — mesmo dado que a tela de
@@ -126,6 +127,36 @@ function IconeBusca({ className }: { className?: string }) {
   )
 }
 
+function IconeAtualizar({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path d="M17 4v3.5h-3.5M7 20v-3.5h3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function IconeFiltro({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M4 6h16M7.5 12h9M11 18h2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function IconeLimpar({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function IconeSeta({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
@@ -141,6 +172,55 @@ function IconeMais({ className }: { className?: string }) {
       <circle cx="12" cy="12" r="1.6" />
       <circle cx="12" cy="19" r="1.6" />
     </svg>
+  )
+}
+
+// Indicadores de coluna ordenável (padrão datagrid tipo Stripe/Attio): par de chevrons esmaecido
+// quando a coluna não é a ordenação ativa; chevron único, sólido e apontando pra direção certa
+// quando é (ver ThOrdenavel).
+function IconeOrdenacaoNeutra({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M7 10l5-5 5 5M7 15l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function IconeChevron({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// Avatar circular com as iniciais do consultor — cor escolhida de forma determinística pelo
+// código (mesmo consultor sempre cai na mesma cor), só decorativo, sem estado nem dado novo.
+const CORES_AVATAR = [
+  'bg-blue-100 text-blue-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-violet-100 text-violet-700',
+  'bg-amber-100 text-amber-700',
+  'bg-pink-100 text-pink-700',
+  'bg-cyan-100 text-cyan-700',
+]
+
+function iniciaisNome(nome: string) {
+  const partes = nome.trim().split(/\s+/)
+  const primeira = partes[0]?.[0] ?? ''
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : ''
+  return (primeira + ultima).toUpperCase()
+}
+
+function AvatarConsultor({ nome, codConsultor }: { nome: string; codConsultor: number }) {
+  const cor = CORES_AVATAR[codConsultor % CORES_AVATAR.length]
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${cor}`}
+    >
+      {iniciaisNome(nome)}
+    </span>
   )
 }
 
@@ -290,6 +370,7 @@ export function TabelaGestor({
   const totalLiquidoGeral = linhas.reduce((soma, l) => soma + (l.apuracao?.total_liquido ?? 0), 0)
   const totalAdesaoGeral = linhas.reduce((soma, l) => soma + (l.apuracao?.total_adesao ?? 0), 0)
   const totalRecorrenciaGeral = linhas.reduce((soma, l) => soma + (l.apuracao?.total_recorrencia ?? 0), 0)
+  const totalPlacasAtivadasGeral = linhas.reduce((soma, l) => soma + (l.apuracao?.qtd_placas_ativadas ?? 0), 0)
   const geradosCount = linhas.filter((l) => l.apuracao).length
 
   // Maior líquido do conjunto filtrado — só pra escalar a barrinha proporcional da coluna
@@ -319,11 +400,6 @@ export function TabelaGestor({
     }
   }
 
-  function indicadorOrdenacao(campo: string) {
-    if (sortCampo !== campo) return null
-    return sortDir === 'asc' ? '▲' : '▼'
-  }
-
   function limparFiltros() {
     setEquipe('')
     setBusca('')
@@ -340,14 +416,22 @@ export function TabelaGestor({
     label: string
     direcaoPadrao?: 'asc' | 'desc'
   }) {
+    const ativo = sortCampo === campo
     return (
       <th className="px-4 py-3 font-medium">
         <button
           type="button"
           onClick={() => clicarOrdenar(campo, direcaoPadrao)}
-          className="flex items-center gap-1 hover:text-slate-800"
+          className="flex items-center gap-1 hover:text-slate-700"
         >
-          {label} <span className="text-slate-400">{indicadorOrdenacao(campo)}</span>
+          {label}
+          {ativo ? (
+            <IconeChevron
+              className={`h-3.5 w-3.5 text-brand-navy transition-transform ${sortDir === 'asc' ? 'rotate-180' : ''}`}
+            />
+          ) : (
+            <IconeOrdenacaoNeutra className="h-3 w-3 text-slate-300" />
+          )}
         </button>
       </th>
     )
@@ -358,7 +442,7 @@ export function TabelaGestor({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-brand-navy">Apuração de Comissões</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-brand-navy">Apuração de Comissões</h1>
           <p className="mt-1 text-sm text-slate-500">{periodoLabel}</p>
           <p className="mt-3 text-xs text-slate-400">
             {ultimaAtualizacao
@@ -368,6 +452,7 @@ export function TabelaGestor({
         </div>
         <div className="flex items-center gap-3">
           <Botao type="button" variante="fantasma" className="h-11" onClick={() => router.refresh()}>
+            <IconeAtualizar className="h-4 w-4" />
             Atualizar
           </Botao>
           <Botao href={`/api/relatorios/gestor/todos?${qsFiltros}`} target="_blank" rel="noreferrer" variante="destaque" className="h-11">
@@ -376,10 +461,14 @@ export function TabelaGestor({
         </div>
       </div>
 
-      {/* KPIs — refletem os filtros de Equipe/Consultor abaixo (reativo, sem round-trip) */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      {/* KPIs — refletem os filtros de Equipe/Consultor abaixo (reativo, sem round-trip). Cada
+          card tem uma cor de apoio diferente (mesmo espírito "dashboard executivo" do print de
+          referência do Samuel, 26/07/2026) — só decorativo, não codifica nenhum significado além
+          de diferenciar os cards visualmente. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <CardResumo
           icone={<IconeCarteira />}
+          cor="blue"
           titulo="Líquido"
           valor={formatarMoeda(totalLiquidoGeral)}
           tendenciaPct={calcularTendencia(totalLiquidoGeral, totalLiquidoAnterior)}
@@ -387,6 +476,7 @@ export function TabelaGestor({
         />
         <CardResumo
           icone={<IconeAdesao />}
+          cor="emerald"
           titulo="Adesão"
           valor={formatarMoeda(totalAdesaoGeral)}
           tendenciaPct={calcularTendencia(totalAdesaoGeral, totalAdesaoAnterior)}
@@ -394,27 +484,46 @@ export function TabelaGestor({
         />
         <CardResumo
           icone={<IconeRecorrencia />}
+          cor="violet"
           titulo="Recorrência"
           valor={formatarMoeda(totalRecorrenciaGeral)}
           tendenciaPct={calcularTendencia(totalRecorrenciaGeral, totalRecorrenciaAnterior)}
           valorAnterior={formatarMoeda(totalRecorrenciaAnterior)}
         />
-        <CardResumo icone={<IconeApurado />} titulo="Apurados" valor={String(geradosCount)} />
-        <CardResumo icone={<IconeUsuarios />} titulo="Consultores" valor={String(linhas.length)} />
+        <CardResumo
+          icone={<IconePlaca />}
+          cor="orange"
+          titulo="Placas ativadas"
+          valor={String(totalPlacasAtivadasGeral)}
+          descricao="Este mês"
+        />
+        <CardResumo
+          icone={<IconeApurado />}
+          cor="navy"
+          titulo="Apurados"
+          valor={String(geradosCount)}
+          descricao="Consultores apurados"
+        />
+        <CardResumo
+          icone={<IconeUsuarios />}
+          cor="navy"
+          titulo="Consultores"
+          valor={String(linhas.length)}
+          descricao="Total de consultores"
+        />
       </div>
 
-      {/* Filtros — pílulas soltas na página (sem card/borda ao redor), sem rótulo flutuando em
-          cima de cada campo, pra não parecer formulário de cadastro. Equipe/Consultor filtram na
-          hora (client-side); Mês/Ano exigem o "Ver" porque trocam o mês inteiro de apuração
-          buscado no servidor (ver comentário mais acima). */}
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Filtros — Equipe/Consultor filtram na hora (client-side); Mês/Ano exigem "Aplicar
+          filtros" porque trocam o mês inteiro de apuração buscado no servidor (ver comentário
+          mais acima). */}
+      <Cartao className="flex flex-wrap items-center gap-3 p-4">
         <select
           aria-label="Equipe"
           value={equipe}
           onChange={(e) => setEquipe(e.target.value)}
           className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
         >
-          <option value="">Equipe</option>
+          <option value="">Todas as equipes</option>
           {equipesDisponiveis.map((eq) => (
             <option key={eq} value={eq}>{eq}</option>
           ))}
@@ -425,7 +534,7 @@ export function TabelaGestor({
           <input
             aria-label="Consultor"
             type="text"
-            placeholder="Procurar consultor por nome ou código..."
+            placeholder="Buscar consultor por nome ou código..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
@@ -452,25 +561,34 @@ export function TabelaGestor({
             defaultValue={ano}
             className="h-11 w-20 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
           />
-          <Botao type="submit" variante="secundaria" className="h-11">Aplicar</Botao>
+          <Botao type="submit" variante="primaria" className="h-11">
+            <IconeFiltro className="h-4 w-4" />
+            Aplicar filtros
+          </Botao>
         </form>
 
         {(equipe || busca || sortCampo) && (
-          <Botao type="button" onClick={limparFiltros} variante="fantasma" className="h-11 ml-auto">
+          <button
+            type="button"
+            onClick={limparFiltros}
+            className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+          >
+            <IconeLimpar className="h-4 w-4" />
             Limpar filtros
-          </Botao>
+          </button>
         )}
-      </div>
+      </Cartao>
 
-      {/* Tabela — estilo Notion: sem linhas horizontais, só hover, bastante espaço em branco */}
+      {/* Tabela — datagrid: divisórias finas entre linhas, cabeçalho com fundo sutil, painel com
+          borda + sombra leve (mesmo tratamento de "cartão elevado" do resto da tela). */}
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-slate-400">
           Consultores ({linhas.length})
         </h2>
 
-        <div className="overflow-x-auto rounded-xl bg-white">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="border-b border-slate-200 text-slate-400">
+            <thead className="bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               <tr>
                 <ThOrdenavel campo="nome" label="Consultor" direcaoPadrao="asc" />
                 <ThOrdenavel campo="equipe" label="Equipe" direcaoPadrao="asc" />
@@ -478,11 +596,11 @@ export function TabelaGestor({
                 <ThOrdenavel campo="recorrencia" label="Recorrência" />
                 <ThOrdenavel campo="desconto" label="Desconto rastreador" />
                 <ThOrdenavel campo="liquido" label="Líquido" />
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Ações</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Ações</th>
               </tr>
             </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {linhas.map(({ consultor, apuracao, job }) => {
               const status = calcularStatus(apuracao, job)
               const pctLiquido = apuracao ? Math.max(0, (apuracao.total_liquido / maxLiquido) * 100) : 0
@@ -492,13 +610,18 @@ export function TabelaGestor({
                   className="group cursor-pointer transition-colors duration-150 hover:bg-slate-50"
                 >
                   <td className="px-4 py-4 text-slate-800">
-                    <Link
-                      href={`/gestor/consultor/${consultor.cod_consultor}?${qsAtual}`}
-                      className="font-medium hover:underline"
-                    >
-                      {consultor.nome}
-                    </Link>{' '}
-                    <span className="text-slate-400">#{consultor.cod_consultor}</span>
+                    <div className="flex items-center gap-3">
+                      <AvatarConsultor nome={consultor.nome} codConsultor={consultor.cod_consultor} />
+                      <div>
+                        <Link
+                          href={`/gestor/consultor/${consultor.cod_consultor}?${qsAtual}`}
+                          className="font-medium hover:underline"
+                        >
+                          {consultor.nome}
+                        </Link>{' '}
+                        <span className="text-slate-400">#{consultor.cod_consultor}</span>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-slate-500">{consultor.equipe}</td>
                   <td className="px-4 py-4 text-slate-500">
@@ -569,41 +692,59 @@ export function TabelaGestor({
   )
 }
 
-// Estilo "Stripe" — ícone num tile, valor em destaque, rótulo discreto embaixo e, quando dá pra
-// comparar com o mês anterior, uma linha de tendência (verde subindo / vermelho descendo).
+type CorAcentoCard = 'blue' | 'emerald' | 'violet' | 'orange' | 'navy'
+
+// Cor de apoio discreta por card — só decorativo (ver comentário no bloco de KPIs acima).
+const ACENTOS_CARD: Record<CorAcentoCard, string> = {
+  blue: 'bg-blue-50 text-blue-600',
+  emerald: 'bg-emerald-50 text-emerald-600',
+  violet: 'bg-violet-50 text-violet-600',
+  orange: 'bg-orange-50 text-orange-600',
+  navy: 'bg-brand-navy/10 text-brand-navy',
+}
+
+// Estilo "Stripe" — ícone circular colorido, rótulo em caixa alta ao lado, valor em destaque e,
+// quando dá pra comparar com o mês anterior, uma linha de tendência (verde subindo / vermelho
+// descendo); sem tendência, uma descrição curta no lugar (ex.: "Total de consultores").
 function CardResumo({
   icone,
   titulo,
   valor,
+  cor = 'navy',
   tendenciaPct,
   valorAnterior,
+  descricao,
 }: {
   icone: ReactNode
   titulo: string
   valor: string
+  cor?: CorAcentoCard
   tendenciaPct?: number | null
   valorAnterior?: string
+  descricao?: string
 }) {
   const subiu = (tendenciaPct ?? 0) >= 0
 
   return (
-    <Cartao>
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-navy/10 text-brand-navy [&>svg]:h-5 [&>svg]:w-5">
-        {icone}
+    <Cartao className="p-4 transition-shadow hover:shadow-md">
+      <div className="flex items-center gap-2.5">
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full [&>svg]:h-4 [&>svg]:w-4 ${ACENTOS_CARD[cor]}`}>
+          {icone}
+        </div>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{titulo}</p>
       </div>
-      <p className="mt-4 text-2xl font-semibold text-slate-900">{valor}</p>
-      <p className="text-sm text-slate-500">{titulo}</p>
-      {tendenciaPct != null && (
-        <div className="mt-3 text-xs">
-          <p className={`font-medium ${subiu ? 'text-emerald-600' : 'text-red-600'}`}>
+      <p className="mt-3 text-xl font-semibold text-slate-900">{valor}</p>
+      {tendenciaPct != null ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs">
+          <span className={`inline-flex items-center gap-0.5 font-medium ${subiu ? 'text-emerald-600' : 'text-red-600'}`}>
             {subiu ? '▲' : '▼'} {subiu ? '+' : '-'}
             {Math.abs(Math.round(tendenciaPct))}%
-          </p>
-          {valorAnterior && (
-            <p className="mt-0.5 text-slate-400">Mês anterior: {valorAnterior}</p>
-          )}
+          </span>
+          {valorAnterior && <span className="text-slate-400">Mês anterior: {valorAnterior}</span>}
         </div>
-      )}
+      ) : descricao ? (
+        <p className="mt-1.5 text-xs text-slate-400">{descricao}</p>
+      ) : null}
     </Cartao>
   )
 }
