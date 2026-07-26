@@ -2,11 +2,21 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { solicitarApuracao } from './gerar/actions'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
-import { IconeAdesao, IconePlaca, IconeRecorrencia, IconeUsuarios } from '@/lib/ui/icones-sidebar'
+import { CardKpi, calcularTendencia } from '@/lib/ui/card-kpi'
+import {
+  IconeAdesao,
+  IconeApurado,
+  IconeAtualizar,
+  IconeCarteira,
+  IconePlaca,
+  IconeRecorrencia,
+  IconeSeta,
+  IconeUsuarios,
+} from '@/lib/ui/icones-sidebar'
 import type { Consultor } from '@/types/domain'
 
 export interface ApuracaoResumo {
@@ -81,62 +91,11 @@ function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-// null = sem base de comparação (mês anterior zerado ou sem nenhuma apuração) — nesse caso o
-// card não mostra tendência nenhuma, pra não inventar um "+100%"/"-100%" sem sentido.
-function calcularTendencia(atual: number, anterior: number): number | null {
-  if (!anterior) return null
-  return ((atual - anterior) / anterior) * 100
-}
-
-// Ícones dos cards de KPI — só usados aqui, por isso ficam locais (mesmo espírito de
-// gerar/icones.tsx: SVG à mão, sem depender de lib de ícones).
-function IconeCarteira({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path
-        d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5V9H6.5A2.5 2.5 0 0 1 4 6.5v1Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M4 6.5v10A2.5 2.5 0 0 0 6.5 19h11a2.5 2.5 0 0 0 2.5-2.5V9H16a2 2 0 1 0 0 4h4"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function IconeApurado({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 function IconeBusca({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
       <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.8" />
       <path d="M20 20l-4.3-4.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function IconeAtualizar({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path
-        d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <path d="M17 4v3.5h-3.5M7 20v-3.5h3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -153,14 +112,6 @@ function IconeLimpar({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
       <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function IconeSeta({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -466,7 +417,7 @@ export function TabelaGestor({
           referência do Samuel, 26/07/2026) — só decorativo, não codifica nenhum significado além
           de diferenciar os cards visualmente. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <CardResumo
+        <CardKpi
           icone={<IconeCarteira />}
           cor="blue"
           titulo="Líquido"
@@ -474,7 +425,7 @@ export function TabelaGestor({
           tendenciaPct={calcularTendencia(totalLiquidoGeral, totalLiquidoAnterior)}
           valorAnterior={formatarMoeda(totalLiquidoAnterior)}
         />
-        <CardResumo
+        <CardKpi
           icone={<IconeAdesao />}
           cor="emerald"
           titulo="Adesão"
@@ -482,7 +433,7 @@ export function TabelaGestor({
           tendenciaPct={calcularTendencia(totalAdesaoGeral, totalAdesaoAnterior)}
           valorAnterior={formatarMoeda(totalAdesaoAnterior)}
         />
-        <CardResumo
+        <CardKpi
           icone={<IconeRecorrencia />}
           cor="violet"
           titulo="Recorrência"
@@ -490,21 +441,21 @@ export function TabelaGestor({
           tendenciaPct={calcularTendencia(totalRecorrenciaGeral, totalRecorrenciaAnterior)}
           valorAnterior={formatarMoeda(totalRecorrenciaAnterior)}
         />
-        <CardResumo
+        <CardKpi
           icone={<IconePlaca />}
           cor="orange"
           titulo="Placas ativadas"
           valor={String(totalPlacasAtivadasGeral)}
           descricao="Este mês"
         />
-        <CardResumo
+        <CardKpi
           icone={<IconeApurado />}
           cor="navy"
           titulo="Apurados"
           valor={String(geradosCount)}
           descricao="Consultores apurados"
         />
-        <CardResumo
+        <CardKpi
           icone={<IconeUsuarios />}
           cor="navy"
           titulo="Consultores"
@@ -692,59 +643,3 @@ export function TabelaGestor({
   )
 }
 
-type CorAcentoCard = 'blue' | 'emerald' | 'violet' | 'orange' | 'navy'
-
-// Cor de apoio discreta por card — só decorativo (ver comentário no bloco de KPIs acima).
-const ACENTOS_CARD: Record<CorAcentoCard, string> = {
-  blue: 'bg-blue-50 text-blue-600',
-  emerald: 'bg-emerald-50 text-emerald-600',
-  violet: 'bg-violet-50 text-violet-600',
-  orange: 'bg-orange-50 text-orange-600',
-  navy: 'bg-brand-navy/10 text-brand-navy',
-}
-
-// Estilo "Stripe" — ícone circular colorido, rótulo em caixa alta ao lado, valor em destaque e,
-// quando dá pra comparar com o mês anterior, uma linha de tendência (verde subindo / vermelho
-// descendo); sem tendência, uma descrição curta no lugar (ex.: "Total de consultores").
-function CardResumo({
-  icone,
-  titulo,
-  valor,
-  cor = 'navy',
-  tendenciaPct,
-  valorAnterior,
-  descricao,
-}: {
-  icone: ReactNode
-  titulo: string
-  valor: string
-  cor?: CorAcentoCard
-  tendenciaPct?: number | null
-  valorAnterior?: string
-  descricao?: string
-}) {
-  const subiu = (tendenciaPct ?? 0) >= 0
-
-  return (
-    <Cartao className="p-4 transition-shadow hover:shadow-md">
-      <div className="flex items-center gap-2.5">
-        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full [&>svg]:h-4 [&>svg]:w-4 ${ACENTOS_CARD[cor]}`}>
-          {icone}
-        </div>
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{titulo}</p>
-      </div>
-      <p className="mt-3 text-xl font-semibold text-slate-900">{valor}</p>
-      {tendenciaPct != null ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs">
-          <span className={`inline-flex items-center gap-0.5 font-medium ${subiu ? 'text-emerald-600' : 'text-red-600'}`}>
-            {subiu ? '▲' : '▼'} {subiu ? '+' : '-'}
-            {Math.abs(Math.round(tendenciaPct))}%
-          </span>
-          {valorAnterior && <span className="text-slate-400">Mês anterior: {valorAnterior}</span>}
-        </div>
-      ) : descricao ? (
-        <p className="mt-1.5 text-xs text-slate-400">{descricao}</p>
-      ) : null}
-    </Cartao>
-  )
-}

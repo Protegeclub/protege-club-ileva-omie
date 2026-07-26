@@ -10,6 +10,7 @@ interface ApuracaoRowDashboard {
   total_desconto_rastreador: number
   total_liquido: number
   detalhe: ApuracaoDetalhe | null
+  gerado_em: string
 }
 
 interface JobRowDashboard {
@@ -43,6 +44,18 @@ export interface PontoEvolucao {
   rotulo: string
   totalLiquido: number
   totalAdesao: number
+  totalRecorrencia: number
+}
+
+// Mesmos totais do mês, mas do período anterior — só pra calcular a tendência dos cards de KPI
+// (ver calcularTendencia em TabelaGestor.tsx/CardKpi), mesmo padrão que consultores/page.tsx já
+// usa hoje.
+export interface TotaisPeriodo {
+  totalLiquido: number
+  totalAdesao: number
+  totalRecorrencia: number
+  totalDescontoRastreador: number
+  qtdPlacasAtivadas: number
 }
 
 export interface DashboardMes {
@@ -55,6 +68,8 @@ export interface DashboardMes {
   qtdPlacasAtivadas: number
   qtdConsultoresApurados: number
   qtdConsultoresAtivos: number
+  ultimaAtualizacao: string | null
+  anterior: TotaisPeriodo
   statusContagem: StatusContagem
   rankingConsultores: RankingConsultorItem[]
   rankingEquipes: RankingEquipeItem[]
@@ -62,7 +77,7 @@ export interface DashboardMes {
 }
 
 const NOMES_MESES_ABREV = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-const TOP_N = 5
+const TOP_N = 10
 const MESES_EVOLUCAO = 6
 
 function periodoAnterior(ano: number, mes: number) {
@@ -86,19 +101,30 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
     cursor = periodoAnterior(cursor.ano, cursor.mes)
   }
 
-  const [consultores, apuracoesResult, jobsResult, evolucaoResultados] = await Promise.all([
+  const periodoAnteriorAlvo = periodoAnterior(ano, mes)
+
+  const [consultores, apuracoesResult, jobsResult, evolucaoResultados, apuracoesAnteriorResult] = await Promise.all([
     listarTodosConsultores(),
     admin
       .from('apuracoes_mensais')
-      .select('cod_consultor, total_adesao, total_recorrencia, total_desconto_rastreador, total_liquido, detalhe')
+      .select('cod_consultor, total_adesao, total_recorrencia, total_desconto_rastreador, total_liquido, detalhe, gerado_em')
       .eq('ano', ano)
       .eq('mes', mes),
     admin.from('apuracao_jobs').select('cod_consultor, status').eq('ano', ano).eq('mes', mes),
     Promise.all(
       periodos.map(({ ano: a, mes: m }) =>
-        admin.from('apuracoes_mensais').select('total_liquido, total_adesao').eq('ano', a).eq('mes', m)
+        admin
+          .from('apuracoes_mensais')
+          .select('total_liquido, total_adesao, total_recorrencia')
+          .eq('ano', a)
+          .eq('mes', m)
       )
     ),
+    admin
+      .from('apuracoes_mensais')
+      .select('total_adesao, total_recorrencia, total_desconto_rastreador, total_liquido, detalhe')
+      .eq('ano', periodoAnteriorAlvo.ano)
+      .eq('mes', periodoAnteriorAlvo.mes),
   ])
 
   const consultoresAtivos = consultores.filter((c: Consultor) => c.situacao === 'Ativo')
@@ -163,13 +189,18 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
   }
 
   const evolucao: PontoEvolucao[] = periodos.map(({ ano: a, mes: m }, i) => {
-    const linhasPeriodo = (evolucaoResultados[i].data ?? []) as { total_liquido: number; total_adesao: number }[]
+    const linhasPeriodo = (evolucaoResultados[i].data ?? []) as {
+      total_liquido: number
+      total_adesao: number
+      total_recorrencia: number
+    }[]
     return {
       ano: a,
       mes: m,
       rotulo: `${NOMES_MESES_ABREV[m - 1]}/${String(a).slice(2)}`,
       totalLiquido: linhasPeriodo.reduce((soma, l) => soma + l.total_liquido, 0),
       totalAdesao: linhasPeriodo.reduce((soma, l) => soma + l.total_adesao, 0),
+      totalRecorrencia: linhasPeriodo.reduce((soma, l) => soma + l.total_recorrencia, 0),
     }
   })
 
@@ -177,6 +208,31 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
     .map(([equipe, valores]) => ({ equipe, ...valores }))
     .sort((a, b) => b.qtdAdesoes - a.qtdAdesoes)
     .slice(0, TOP_N)
+
+  // Maior gerado_em entre as linhas do mês — mesmo padrão de "Última atualização" já usado em
+  // gestor/consultores/page.tsx.
+  const ultimaAtualizacao = linhas.reduce<string | null>(
+    (max, l) => (!max || l.gerado_em > max ? l.gerado_em : max),
+    null
+  )
+
+  const linhasAnterior = (apuracoesAnteriorResult.data ?? []) as {
+    total_adesao: number
+    total_recorrencia: number
+    total_desconto_rastreador: number
+    total_liquido: number
+    detalhe: ApuracaoDetalhe | null
+  }[]
+  const anterior: TotaisPeriodo = linhasAnterior.reduce(
+    (acc, l) => ({
+      totalLiquido: acc.totalLiquido + l.total_liquido,
+      totalAdesao: acc.totalAdesao + l.total_adesao,
+      totalRecorrencia: acc.totalRecorrencia + l.total_recorrencia,
+      totalDescontoRastreador: acc.totalDescontoRastreador + l.total_desconto_rastreador,
+      qtdPlacasAtivadas: acc.qtdPlacasAtivadas + (l.detalhe?.placasAtivadas?.length ?? 0),
+    }),
+    { totalLiquido: 0, totalAdesao: 0, totalRecorrencia: 0, totalDescontoRastreador: 0, qtdPlacasAtivadas: 0 }
+  )
 
   return {
     ano,
@@ -188,6 +244,8 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
     qtdPlacasAtivadas,
     qtdConsultoresApurados: linhas.length,
     qtdConsultoresAtivos: consultoresAtivos.length,
+    ultimaAtualizacao,
+    anterior,
     statusContagem,
     rankingConsultores: [...rankingConsultores].sort((a, b) => b.qtdAdesoes - a.qtdAdesoes).slice(0, TOP_N),
     rankingEquipes,
