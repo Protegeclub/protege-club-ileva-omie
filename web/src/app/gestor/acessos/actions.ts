@@ -39,7 +39,7 @@ async function obterUrlBase(): Promise<string | undefined> {
   return (await headers()).get('origin') ?? undefined
 }
 
-async function confirmarGestor() {
+async function confirmarGestor(): Promise<{ userId: string }> {
   const supabase = await createSupabaseServerClient()
   const { data: userData } = await supabase.auth.getUser()
   if (!userData.user) throw new Error('Sessão expirada, faça login novamente.')
@@ -53,6 +53,8 @@ async function confirmarGestor() {
   if (perfilRow?.perfil !== 'gestor') {
     throw new Error('Só o Gestor pode convidar novos acessos.')
   }
+
+  return { userId: userData.user.id }
 }
 
 export async function convidarConsultor(
@@ -204,6 +206,50 @@ export async function removerAcessoConsultor(
   }
 
   const { error: erroDelete } = await admin.auth.admin.deleteUser(perfil.user_id)
+  if (erroDelete) {
+    return { erro: `Falha ao remover acesso: ${erroDelete.message}` }
+  }
+
+  revalidatePath('/gestor/acessos')
+  return { sucesso: true }
+}
+
+// Revoga o acesso de um Gestor — mesmo mecanismo de removerAcessoConsultor (apaga o usuário no
+// Supabase Auth, cascata apaga a linha de `perfis`). Duas travas que não existem pro Consultor
+// porque não fazem sentido lá: não deixa remover o ÚLTIMO gestor (ninguém mais poderia gerenciar
+// acessos depois) nem remover a si mesmo (evita um logout acidental no meio da própria sessão).
+export async function removerAcessoGestor(
+  _estadoAnterior: RemoverAcessoEstado,
+  formData: FormData
+): Promise<RemoverAcessoEstado> {
+  let userId: string
+  try {
+    ;({ userId } = await confirmarGestor())
+  } catch (e) {
+    return { erro: e instanceof Error ? e.message : 'Sem permissão.' }
+  }
+
+  const userIdAlvo = String(formData.get('user_id') ?? '')
+  if (!userIdAlvo) {
+    return { erro: 'user_id inválido.' }
+  }
+
+  if (userIdAlvo === userId) {
+    return { erro: 'Você não pode remover o próprio acesso.' }
+  }
+
+  const admin = createSupabaseAdminClient()
+
+  const { count } = await admin
+    .from('perfis')
+    .select('user_id', { count: 'exact', head: true })
+    .eq('perfil', 'gestor')
+
+  if ((count ?? 0) <= 1) {
+    return { erro: 'Não é possível remover o último Gestor com acesso ao sistema.' }
+  }
+
+  const { error: erroDelete } = await admin.auth.admin.deleteUser(userIdAlvo)
   if (erroDelete) {
     return { erro: `Falha ao remover acesso: ${erroDelete.message}` }
   }

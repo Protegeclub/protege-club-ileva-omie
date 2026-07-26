@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { listarTodosConsultores } from '@/lib/ileva/api'
 import { Cartao } from '@/lib/ui/cartao'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { BotaoRemoverGestor } from './botao-remover-gestor'
 import { ConvidarGestorForm } from './convidar-gestor-form'
 import { TabelaAcessos, type LinhaAcesso, type StatusAcesso } from './tabela-acessos'
 
@@ -54,7 +55,7 @@ export default async function GestorAcessosPage() {
   const gestores = await Promise.all(
     (perfisGestores ?? []).map(async (g) => {
       const { data } = await admin.auth.admin.getUserById(g.user_id)
-      return { nome: g.nome, email: data.user?.email ?? '—' }
+      return { userId: g.user_id, nome: g.nome, email: data.user?.email ?? '—' }
     })
   )
 
@@ -95,13 +96,17 @@ export default async function GestorAcessosPage() {
               <tr>
                 <th className="px-3 py-1.5 font-medium">Nome</th>
                 <th className="px-3 py-1.5 font-medium">E-mail</th>
+                <th className="px-3 py-1.5 font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {gestores.map((g) => (
-                <tr key={g.email} className="border-t border-slate-100">
+                <tr key={g.userId} className="border-t border-slate-100">
                   <td className="px-3 py-1.5 text-slate-800">{g.nome}</td>
                   <td className="px-3 py-1.5 text-slate-500">{g.email}</td>
+                  <td className="px-3 py-1.5">
+                    <BotaoRemoverGestor userId={g.userId} nome={g.nome} />
+                  </td>
                 </tr>
               ))}
             </tbody>
