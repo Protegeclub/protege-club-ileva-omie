@@ -7,12 +7,13 @@ import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'reac
 //
 // Regra de contraste (calculada com a fórmula de luminância do WCAG contra os hexadecimais reais
 // da marca — ver CONTEXTO_E_CHECKLIST.md): fundo navy aceita texto branco (14.4:1), mas fundo
-// azul claro ou laranja NUNCA deve levar texto branco (ficam em ~2.4-2.7:1, reprovado até pra
-// texto grande) — por isso "secundaria" e "destaque" usam texto navy, não branco.
+// azul claro NUNCA deve levar texto branco (fica em ~2.4-2.7:1, reprovado até pra texto grande) —
+// por isso "secundaria" usa texto navy. "destaque" (laranja) usa texto branco por pedido explícito
+// do Samuel (26/07/2026, decisão de marca) — mesmo sabendo que isso também fica abaixo do WCAG AA.
 const VARIANTES = {
   primaria: 'bg-brand-navy text-white hover:bg-brand-navy-hover',
   secundaria: 'bg-sky-50 text-brand-navy border border-brand-blue/40 hover:bg-sky-100',
-  destaque: 'bg-brand-orange text-brand-navy hover:bg-brand-orange-hover font-semibold',
+  destaque: 'bg-brand-orange text-white hover:bg-brand-orange-hover font-semibold',
   fantasma: 'border border-slate-300 text-slate-600 hover:bg-slate-50',
   // Mesma ideia do "fantasma", mas pra usar sobre fundo escuro (menu lateral navy) — o
   // "fantasma" normal (border-slate-300/text-slate-600) fica quase invisível ali.
