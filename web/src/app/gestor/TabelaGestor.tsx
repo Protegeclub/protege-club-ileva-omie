@@ -4,13 +4,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { solicitarApuracao } from './gerar/actions'
+import { IconeRelampago } from './gerar/icones'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
 import { CardKpi, calcularTendencia } from '@/lib/ui/card-kpi'
 import {
   IconeAdesao,
   IconeApurado,
-  IconeAtualizar,
   IconeCarteira,
   IconePlaca,
   IconeRecorrencia,
@@ -290,7 +290,6 @@ export function TabelaGestor({
   periodoLabel: string
   ultimaAtualizacao: string | null
 }) {
-  const router = useRouter()
   const [equipe, setEquipe] = useState(equipeInicial)
   const [busca, setBusca] = useState(buscaInicial)
   const [sortCampo, setSortCampo] = useState(sortInicial)
@@ -402,9 +401,9 @@ export function TabelaGestor({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Botao type="button" variante="fantasma" className="h-11" onClick={() => router.refresh()}>
-            <IconeAtualizar className="h-4 w-4" />
-            Atualizar
+          <Botao href="/gestor/gerar" variante="fantasma" className="h-11">
+            <IconeRelampago className="h-4 w-4" />
+            Gerar apuração
           </Botao>
           <Botao href={`/api/relatorios/gestor/todos?${qsFiltros}`} target="_blank" rel="noreferrer" variante="destaque" className="h-11">
             Gerar PDF
