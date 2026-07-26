@@ -536,9 +536,9 @@ export function TabelaGestor({
           Consultores ({linhas.length})
         </h2>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="max-h-96 overflow-auto rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            <thead className="sticky top-0 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               <tr>
                 <ThOrdenavel campo="nome" label="Consultor" direcaoPadrao="asc" />
                 <ThOrdenavel campo="equipe" label="Equipe" direcaoPadrao="asc" />

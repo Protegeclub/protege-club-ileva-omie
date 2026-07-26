@@ -126,9 +126,9 @@ export function TabelaAcessos({
         )}
       </div>
 
-      <div data-testid="tabela-consultores" className="overflow-x-auto rounded-xl bg-white">
+      <div data-testid="tabela-consultores" className="max-h-96 overflow-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="border-b border-slate-200 text-slate-400">
+          <thead className="sticky top-0 border-b border-slate-200 bg-white text-slate-400">
             <tr>
               <th className="px-4 py-3 font-medium">Consultor</th>
               <th className="px-4 py-3 font-medium">Equipe</th>
