@@ -93,12 +93,20 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
   async function acompanharAtePronto() {
     while (!pararPollingRef.current) {
       const statusAtual = await consultarStatusPeriodo(ano, mes)
-      const porConsultor: Record<number, StatusJob> = {}
-      for (const s of statusAtual) porConsultor[s.cod_consultor] = s
-      setStatusPorConsultor((prev) => ({ ...prev, ...porConsultor }))
 
+      // Só os consultores ATIVOS hoje (`consultores`, a mesma lista que já veio pro formulário) —
+      // `consultarStatusPeriodo` devolve TODA linha de apuracao_jobs já criada pra esse ano/mês,
+      // inclusive de consultores que ficaram inativos depois que o lote foi disparado (achado
+      // real, 26/07/2026: um lote de julho/2026 com 195 consultores ativos mostrava "209" no
+      // progresso, porque 14 jobs eram de gente que não está mais ativa hoje). Sem esse filtro, o
+      // "X de Y processados" na tela não bate com o "195 consultores ativos" do resto do sistema.
       const codsDaLista = new Set(consultores.map((c) => c.cod_consultor))
       const relevantes = statusAtual.filter((s) => codsDaLista.has(s.cod_consultor))
+
+      const porConsultor: Record<number, StatusJob> = {}
+      for (const s of relevantes) porConsultor[s.cod_consultor] = s
+      setStatusPorConsultor((prev) => ({ ...prev, ...porConsultor }))
+
       const todosProntos =
         relevantes.length > 0 && relevantes.every((s) => s.status === 'concluido' || s.status === 'erro')
 
