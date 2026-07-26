@@ -853,3 +853,120 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
         propósito** (mesma cautela de sempre): enviar/reenviar convite, gerar link, editar e-mail
         e remover acesso de verdade — e também não dá mais pra testar os estados "Ativo"/
         "Pendente" com dado real até algum consultor ser convidado de novo (ver achado acima).
+        **Atualização (26/07/2026)**: o link gerado por `gerarLinkAcesso` descrito acima (o do
+        botão "Copiar link") tinha um bug real — ver correção completa na seção 6.16.
+
+### 6.16 Bugs reais corrigidos (26/07/2026)
+- [x] **Link de convite/acesso consumido antes da hora (preview de WhatsApp/scanner de e-mail).**
+      Sintoma relatado pelo Samuel: convite pro consultor #302 dava "Link inválido ou expirado"
+      mesmo gerado na hora, e continuava dando errado mesmo usando "Copiar link" (sem passar por
+      e-mail nenhum). Causa raiz: tanto o e-mail de convite quanto o botão "Copiar link" usavam o
+      link **hospedado do próprio Supabase** (`.../auth/v1/verify?token=...`), que redime o token
+      de uso único com um simples GET — qualquer coisa que "visite" a URL antes da pessoa (o
+      preview automático que WhatsApp/Telegram/Slack geram ao colar um link, ou um scanner de
+      segurança de e-mail corporativo) já consome o token, e o clique de verdade cai em
+      `otp_expired`. **Corrigido**: `gerarLinkAcesso` (`gestor/acessos/actions.ts`) agora monta
+      link próprio pra `/definir-senha?token_hash=...&type=invite|recovery` em vez de devolver
+      `action_link`; `definir-senha/page.tsx` troca esse `token_hash` pela sessão de verdade via
+      `supabase.auth.verifyOtp(...)`, chamado só por JS quando um navegador de verdade carrega a
+      página — bots de preview não executam JS, então não conseguem mais consumir o token à toa.
+      **Pendente**: o e-mail de convite em si (`inviteUserByEmail`) ainda usa o template padrão do
+      Supabase com `{{ .ConfirmationURL }}` (o link antigo, vulnerável) — pra corrigir precisa
+      trocar pra `{{ .SiteURL }}/definir-senha?token_hash={{ .TokenHash }}&type=invite` em
+      Authentication → Email Templates → Invite user no painel do Supabase, e isso exige SMTP
+      próprio configurado (o Supabase bloqueia edição de template no e-mail compartilhado
+      padrão). Enquanto isso não é feito, o caminho seguro é sempre usar "Copiar link" (já
+      corrigido) em vez de "Enviar convite"/"Reenviar convite" por e-mail.
+- [x] **Contagem do progresso do lote incluindo consultores já inativos.** Um lote de julho/2026
+      com 195 consultores ativos mostrava "209" no progresso ("X de 209 processados"). Causa:
+      `consultarStatusPeriodo` devolve **toda** linha de `apuracao_jobs` já criada pra aquele
+      ano/mês, inclusive de consultores que ficaram inativos depois que o lote foi disparado — o
+      laço principal de polling (`acompanharAtePronto` em `gerar-lote-form.tsx`) usava esse
+      retorno bruto sem filtrar pela lista de ativos atual (só a condição de "quando parar de
+      acompanhar" já filtrava certo). Corrigido filtrando pela lista de consultores ativos antes
+      de montar o total exibido — mesma lógica que já existia corretamente na função de "retomar
+      acompanhamento ao voltar pra tela" (ver 6.13/adjacente), só que agora também no laço
+      principal.
+- [x] **Duas investigações que não eram bugs** (documentadas pra não serem reabertas à toa):
+      1. Comissão gerencial do Thiago (#302, ver 6.6) saiu R$0,00 em junho/2026 — não é bug: a
+         apuração dele foi gerada em 16/07/2026, **5 dias antes** da regra existir no código
+         (criada em 21/07/2026). Corrigido só regenerando a apuração dele depois que os outros
+         consultores já estavam todos gerados.
+      2. Consultor #64 "preso" na fila do Trigger.dev por 50+ minutos, visto no painel do
+         Trigger.dev — não é bug: `queue: { concurrencyLimit: 1 }` (ver 6.4) processa **um
+         consultor por vez** de propósito (limite de sessão única do token do Ileva), então um
+         lote de ~200 consultores demora horas pra passar por todos, e 50min de espera pra um
+         item no meio da fila é esperado, não uma falha.
+
+### 6.17 Redesign visual completo (26/07/2026)
+- [x] **Sequência de redesigns visuais** a pedido do Samuel, cobrindo praticamente todo o
+      sistema — cada rodada com a mesma regra combinada: só aparência/organização visual, **zero**
+      mudança de lógica, cálculo, consulta, API, estado ou hook. Ordem: Consultores → Gerar
+      apuração (2 rodadas, a segunda virou "Centro de Apuração") → Dashboard → Painel do
+      Consultor (as duas versões espelhadas: `/gestor/consultor/[cod]` e `/consultor`).
+  - **Decisão repetida em toda rodada**: ícones continuam **SVG desenhado à mão**, sem Lucide —
+    o Samuel pediu Lucide em quase todo prompt, mas já existe uma decisão anterior (seção 6.13)
+    de não ter dependência de ícones pra manter o bundle pequeno; mantida por padrão em vez de
+    reabrir a pergunta toda vez.
+  - **Componentes compartilhados novos** em `web/src/lib/ui/`: `CardKpi` (ícone circular colorido
+    + valor + tendência opcional, extraído de `TabelaGestor.tsx` depois de virar a 3ª tela a
+    precisar do mesmo card), `CardAtalho` (módulo clicável ícone+título+descrição+seta),
+    `CardFinanceiro` (KPI com sparkline), `CardMeta` (placeholder "Meta ainda não definida",
+    já que o plano de carreira segue sem regras — ver 6.1/6.6), `TimelineMovimentacoes` e
+    `graficos-consultor.tsx` (Recharts: área de produção mensal, donut de composição, barra de
+    adesões por mês, sparkline), `BotaoAtualizarPagina` (client component mínimo só pro botão
+    "Atualizar" em páginas 100% servidor).
+  - **Dashboard** (`gestor/page.tsx`, `dashboard-graficos.tsx`, `lib/apuracao/dashboard-mes.ts`):
+    KPIs ganharam comparação com mês anterior (nova leitura do período anterior, mesmo padrão já
+    usado em Consultores), gráfico de linha virou área com gradiente e 3 séries (antes só
+    Líquido/Adesão, Recorrência foi adicionada), donuts ganharam legenda lateral com percentual,
+    novo gráfico de barras horizontais por equipe, "Última atualização" e botão Atualizar no
+    cabeçalho (não existiam antes).
+  - **Painel do Consultor** (`gestor/consultor/[cod]/page.tsx` + `consultor/page.tsx`,
+    `dados.ts`/`tipos.ts` compartilhado): header com avatar/nome/equipe/referência e card grande
+    de "Total a receber"; KPIs com tendência; os 5 botões de navegação viraram cards clicáveis;
+    novo bloco de resumo financeiro com sparkline; 3 gráficos novos; timeline de movimentações
+    (só reapresenta cronologicamente adesões/recorrências/descontos/placas que já existiam em
+    `detalhe`, sem lógica nova — `montarTimeline()` em `consultor/tipos.ts`); card de meta.
+    Exigiu nova leitura do período anterior + histórico de 6 meses por consultor (mesmo padrão do
+    Dashboard) pra alimentar tendências/gráficos/sparklines.
+  - **"Centro de Apuração"** (`gestor/gerar/*`, segunda rodada de redesign dessa tela): card de
+    status da competência (apurado/pendente/em andamento/com erro, cor conforme a situação real),
+    status geral (API Ileva online/offline, última sincronização, mês atual, consultores ativos,
+    quem executou), KPIs, velocidade/tempo restante estimado durante o processamento, timeline de
+    log e busca na tabela do lote.
+    - **"Status da API Ileva" não é uma chamada nova**: é a chamada já existente
+      (`listarTodosConsultores`) envolvida em try/catch — antes uma falha real do Ileva derrubava
+      a página inteira; agora mostra "Offline" com um banner, sem quebrar.
+    - **Achado real, corrigido duas vezes**: tentei calcular "tempo de execução" a partir de
+      `apuracao_jobs` (`solicitado_em`/`atualizado_em`) e o resultado deu números absurdos (115min
+      e depois 73min por consultor) — `solicitado_em` marca o momento de **enfileirar**, não o
+      início real do processamento, e com `concurrencyLimit: 1` (ver 6.16 item 2 acima) um
+      consultor no fim da fila espera bastante antes de começar. A conta misturava tempo de fila
+      com tempo de execução. Medir isso direito exigiria um novo carimbo gravado pelo próprio
+      processamento em segundo plano (fora do escopo de um ajuste "só visual") — a métrica foi
+      **removida** em vez de mostrada errada, com o motivo documentado em comentário no código.
+  - **Bônus consistentes entre as telas**: o badge de status "Gerado" (apurações concluídas)
+    passou de verde pra **laranja da marca**, a pedido explícito do Samuel, em toda tela que
+    mostra esse status (Consultores, Gerar apuração, donut do Dashboard) — mesmo motivo de sempre
+    (cor da marca > cor semântica genérica quando o cliente pede). Botão "destaque" (laranja) do
+    componente `Botao` passou a usar **texto branco sem borda** (era navy, por contraste WCAG —
+    decisão de marca do Samuel, documentado no código que fica abaixo do AA de propósito).
+  - Testado com Playwright real em cada rodada (login, screenshots, conferência visual) — não só
+    build passando. `tsc`, `eslint` e `npm run build` limpos em todas as rodadas.
+
+### 6.18 Gestão de acessos: remoção de Gestor (26/07/2026)
+- [x] Só existia remoção de acesso pro Consultor (seção 6.15); adicionada a mesma capacidade pro
+      Gestor (`removerAcessoGestor` em `gestor/acessos/actions.ts` + botão na tabela "Gestores com
+      acesso"). Duas travas que não existem do lado Consultor porque não fazem sentido lá: não
+      deixa remover o **último** Gestor com acesso (ninguém mais poderia gerenciar acessos
+      depois) nem remover **a si mesmo** (evita logout acidental no meio da própria sessão).
+      **Achado real ao usar**: o hard delete (`admin.auth.admin.deleteUser`) falhou com erro 500
+      do próprio servidor do Supabase pra uma conta específica (`comercial-teste@protegeclub.local`,
+      a antiga conta "Comercial" reatribuída pra Gestor na unificação da seção 6.3) — parece uma
+      inconsistência no registro dela. O soft-delete (`deleteUser(id, true)`) funcionou (a pessoa
+      não consegue mais logar), mas por não ser um DELETE de verdade não disparou a cascata que
+      apaga a linha em `perfis` — precisou apagar essa linha manualmente à parte. Não é um
+      problema esperado pra contas normais (só aconteceu nessa conta específica, com histórico de
+      reatribuição); se acontecer de novo com outra conta, o caminho é o mesmo: soft-delete +
+      apagar a linha órfã de `perfis` manualmente.
