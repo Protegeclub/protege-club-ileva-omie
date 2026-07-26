@@ -49,7 +49,7 @@ function calcularStatus(apuracao: ApuracaoResumo | null, job: JobResumo | null):
 }
 
 const CONFIGURACAO_STATUS: Record<StatusApuracao, { label: string; classes: string; ponto: string }> = {
-  gerado: { label: 'Gerado', classes: 'bg-emerald-50 text-emerald-700', ponto: 'bg-emerald-500' },
+  gerado: { label: 'Gerado', classes: 'bg-brand-orange/10 text-brand-orange-hover', ponto: 'bg-brand-orange' },
   pendente: { label: 'Pendente', classes: 'bg-amber-50 text-amber-700', ponto: 'bg-amber-500' },
   processando: { label: 'Processando', classes: 'bg-sky-50 text-sky-700', ponto: 'bg-sky-500' },
   erro: { label: 'Erro', classes: 'bg-red-50 text-red-700', ponto: 'bg-red-500' },

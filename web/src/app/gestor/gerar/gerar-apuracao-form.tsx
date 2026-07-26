@@ -77,7 +77,7 @@ export function GerarApuracaoForm() {
               value={codConsultor}
               disabled={acompanhando}
               onChange={(e) => setCodConsultor(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -93,7 +93,7 @@ export function GerarApuracaoForm() {
               value={mes}
               disabled={acompanhando}
               onChange={(e) => setMes(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -107,12 +107,12 @@ export function GerarApuracaoForm() {
               value={ano}
               disabled={acompanhando}
               onChange={(e) => setAno(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
         </div>
 
-        <Botao type="submit" disabled={acompanhando} variante="destaque" className="w-full sm:w-auto">
+        <Botao type="submit" disabled={acompanhando} variante="destaque" className="h-11 w-full sm:w-auto">
           {acompanhando ? (
             <>
               <IconeSpinner className="h-4 w-4" />

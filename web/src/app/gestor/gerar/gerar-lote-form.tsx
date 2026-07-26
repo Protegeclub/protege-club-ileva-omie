@@ -178,7 +178,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
               value={mes}
               disabled={acompanhando}
               onChange={(e) => setMes(Number(e.target.value))}
-              className="mt-1 w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-24 rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -191,16 +191,16 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
               value={ano}
               disabled={acompanhando}
               onChange={(e) => setAno(Number(e.target.value))}
-              className="mt-1 w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-28 rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
 
           {!acompanhando ? (
-            <Botao onClick={() => dispararLista(consultores)} variante="destaque">
+            <Botao onClick={() => dispararLista(consultores)} variante="destaque" className="h-11">
               Gerar apuração de todos ({consultores.length})
             </Botao>
           ) : (
-            <Botao onClick={pararDeAcompanhar} variante="fantasma">
+            <Botao onClick={pararDeAcompanhar} variante="fantasma" className="h-11">
               Parar de acompanhar
             </Botao>
           )}
@@ -208,7 +208,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
           {!acompanhando && falhas.length > 0 && (
             <button
               onClick={() => dispararLista(falhas)}
-              className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100"
+              className="h-11 rounded-lg border border-amber-300 bg-amber-50 px-4 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100"
             >
               Tentar novamente os {falhas.length} que falharam
             </button>
@@ -223,16 +223,16 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
         ) : null}
 
         {total > 0 && (
-          <div className="space-y-3 rounded-xl bg-slate-50 p-4">
+          <div className="space-y-4 rounded-xl border border-slate-100 bg-slate-50 p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tabular-nums text-brand-navy">{pct}%</span>
+              <div className="flex items-baseline gap-2.5">
+                <span className="text-3xl font-bold tabular-nums text-brand-navy">{pct}%</span>
                 <span className="text-sm text-slate-500">
                   {concluidos} de {total} processados
                 </span>
               </div>
               {acompanhando && (
-                <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
                   <IconeSpinner className="h-3.5 w-3.5" />
                   rodando há {formatarDuracao(segundos)}
                 </span>
@@ -241,21 +241,21 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
 
             <BarraProgresso total={total} ok={okCount} erro={erroCount} emAndamento={acompanhando} />
 
-            <div className="flex flex-wrap gap-4 text-xs text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" /> {okCount} ok
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {okCount} ok
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-red-400" /> {erroCount} erro
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400" /> {erroCount} erro
               </span>
               {processandoCount > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" /> {processandoCount} gerando
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> {processandoCount} gerando
                 </span>
               )}
               {pendenteCount > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-slate-300" /> {pendenteCount} na fila
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> {pendenteCount} na fila
                 </span>
               )}
             </div>
@@ -293,30 +293,40 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
               ))}
             </div>
 
-            <div className="max-h-96 overflow-y-auto rounded-xl border border-slate-100">
+            <div className="max-h-96 overflow-y-auto rounded-xl border border-slate-200 shadow-sm">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-slate-500">
+                <thead className="sticky top-0 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                   <tr>
-                    <th className="px-3 py-2 font-medium">Consultor</th>
-                    <th className="px-3 py-2 font-medium">Equipe</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
+                    <th className="px-4 py-2.5">Consultor</th>
+                    <th className="px-4 py-2.5">Equipe</th>
+                    <th className="px-4 py-2.5">Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {linhasVisiveis.map((c) => (
-                    <tr key={c.cod_consultor} className="border-t border-slate-100">
-                      <td className="px-3 py-2">
-                        {c.nome} <span className="text-slate-400">#{c.cod_consultor}</span>
+                    <tr key={c.cod_consultor} className="transition-colors duration-150 hover:bg-slate-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <AvatarLote nome={c.nome} codConsultor={c.cod_consultor} />
+                          <span>
+                            <span className="text-slate-800">{c.nome}</span>{' '}
+                            <span className="text-slate-400">#{c.cod_consultor}</span>
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-3 py-2 text-slate-500">{c.equipe}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-4 py-3">
+                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
+                          {c.equipe}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
                         <StatusBadge status={statusPorConsultor[c.cod_consultor]} />
                       </td>
                     </tr>
                   ))}
                   {linhasVisiveis.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-3 py-6 text-center text-slate-400">
+                      <td colSpan={3} className="px-4 py-6 text-center text-slate-400">
                         Nenhum consultor nesse status.
                       </td>
                     </tr>
@@ -331,30 +341,66 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
   )
 }
 
+// Avatar circular com as iniciais do consultor — mesmo padrão visual de TabelaGestor.tsx
+// (cor determinística pelo código, só decorativo), duplicado aqui em vez de compartilhado porque
+// as duas telas mantêm listas de consultores com formatos ligeiramente diferentes.
+const CORES_AVATAR = [
+  'bg-blue-100 text-blue-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-violet-100 text-violet-700',
+  'bg-amber-100 text-amber-700',
+  'bg-pink-100 text-pink-700',
+  'bg-cyan-100 text-cyan-700',
+]
+
+function iniciaisNome(nome: string) {
+  const partes = nome.trim().split(/\s+/)
+  const primeira = partes[0]?.[0] ?? ''
+  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : ''
+  return (primeira + ultima).toUpperCase()
+}
+
+function AvatarLote({ nome, codConsultor }: { nome: string; codConsultor: number }) {
+  const cor = CORES_AVATAR[codConsultor % CORES_AVATAR.length]
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${cor}`}
+    >
+      {iniciaisNome(nome)}
+    </span>
+  )
+}
+
+// Badges com as mesmas cores semânticas usadas no resto do sistema (ver CONFIGURACAO_STATUS em
+// TabelaGestor.tsx): concluído=verde, processando=azul, pendente=laranja, erro=vermelho.
 function StatusBadge({ status }: { status: StatusJob }) {
   if (status.status === 'pendente') {
     return (
-      <span className="inline-flex items-center gap-1 text-slate-400">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
         <IconeRelogio className="h-3.5 w-3.5" /> Na fila
       </span>
     )
   }
   if (status.status === 'processando') {
     return (
-      <span className="inline-flex items-center gap-1 text-amber-600">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
         <IconeSpinner className="h-3.5 w-3.5" /> Gerando...
       </span>
     )
   }
   if (status.status === 'concluido') {
     return (
-      <span className="inline-flex items-center gap-1 text-emerald-700">
-        <IconeCheckCircle className="h-3.5 w-3.5" /> OK
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-orange/10 px-2.5 py-1 text-xs font-medium text-brand-orange-hover">
+        <IconeCheckCircle className="h-3.5 w-3.5" /> Gerado
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-red-600" title={status.erro_mensagem ?? undefined}>
+    <span
+      title={status.erro_mensagem ?? undefined}
+      className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600"
+    >
       <IconeXCircle className="h-3.5 w-3.5 shrink-0" />
       <span className="truncate">Erro: {status.erro_mensagem}</span>
     </span>
