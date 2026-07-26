@@ -33,10 +33,15 @@ function formatarDataHora(iso: string) {
     : `${data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} às ${hora}`
 }
 
-export default async function GestorGerarPage() {
+export default async function GestorGerarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ano?: string; mes?: string }>
+}) {
+  const params = await searchParams
   const hoje = new Date()
-  const ano = hoje.getFullYear()
-  const mes = hoje.getMonth() + 1
+  const ano = Number(params.ano) || hoje.getFullYear()
+  const mes = Number(params.mes) || hoje.getMonth() + 1
 
   let consultores: { cod_consultor: number; nome: string; equipe: string }[] = []
   let ilevaOnline = true
@@ -96,6 +101,42 @@ export default async function GestorGerarPage() {
         </Cartao>
       )}
 
+      {/* Filtro de competência — escolhe qual mês/ano checar (o resto da página, abaixo, reflete
+          esse período). Sem isso a tela só mostrava o mês corrente, sem jeito de conferir se um
+          mês passado ficou pendente. */}
+      <Cartao className="flex flex-wrap items-end gap-3 p-4">
+        <form method="GET" className="flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="mes" className="block text-xs font-medium text-slate-500">
+              Mês
+            </label>
+            <select
+              id="mes"
+              name="mes"
+              defaultValue={mes}
+              className="mt-1.5 h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            >
+              {NOMES_MESES.map((nome, i) => (
+                <option key={nome} value={i + 1}>{nome}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="ano" className="block text-xs font-medium text-slate-500">
+              Ano
+            </label>
+            <input
+              id="ano"
+              name="ano"
+              type="number"
+              defaultValue={ano}
+              className="mt-1.5 h-11 w-24 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            />
+          </div>
+          <Botao type="submit" variante="primaria" className="h-11">Ver competência</Botao>
+        </form>
+      </Cartao>
+
       {/* Status geral */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <ChipStatus
@@ -108,7 +149,7 @@ export default async function GestorGerarPage() {
           titulo="Última sincronização"
           valor={statusCompetencia?.ultimaExecucao ? formatarDataHora(statusCompetencia.ultimaExecucao) : '—'}
         />
-        <ChipStatus icone={<IconeCamadas />} titulo="Mês atual" valor={`${NOMES_MESES[mes - 1]} ${ano}`} />
+        <ChipStatus icone={<IconeCamadas />} titulo="Competência" valor={`${NOMES_MESES[mes - 1]} ${ano}`} />
         <ChipStatus
           icone={<IconeUsuarios />}
           titulo="Consultores ativos"
@@ -135,8 +176,8 @@ export default async function GestorGerarPage() {
         </div>
       )}
 
-      <GerarApuracaoForm />
-      <GerarLoteForm consultores={consultores} />
+      <GerarApuracaoForm anoInicial={ano} mesInicial={mes} />
+      <GerarLoteForm consultores={consultores} anoInicial={ano} mesInicial={mes} />
     </div>
   )
 }

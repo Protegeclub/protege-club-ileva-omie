@@ -27,9 +27,17 @@ type Filtro = 'todos' | 'pendente' | 'processando' | 'concluido' | 'erro'
 const hoje = new Date()
 const INTERVALO_POLLING_MS = 3000
 
-export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] }) {
-  const [mes, setMes] = useState(hoje.getMonth() + 1)
-  const [ano, setAno] = useState(hoje.getFullYear())
+export function GerarLoteForm({
+  consultores,
+  anoInicial,
+  mesInicial,
+}: {
+  consultores: ConsultorLote[]
+  anoInicial?: number
+  mesInicial?: number
+}) {
+  const [mes, setMes] = useState(mesInicial ?? hoje.getMonth() + 1)
+  const [ano, setAno] = useState(anoInicial ?? hoje.getFullYear())
   const [acompanhando, setAcompanhando] = useState(false)
   const [statusPorConsultor, setStatusPorConsultor] = useState<Record<number, StatusJob>>({})
   const [filtro, setFiltro] = useState<Filtro>('todos')

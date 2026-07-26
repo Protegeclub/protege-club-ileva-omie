@@ -11,10 +11,16 @@ import { formatarDuracao, useCronometro } from './usar-cronometro'
 const hoje = new Date()
 const INTERVALO_POLLING_MS = 3000
 
-export function GerarApuracaoForm() {
+export function GerarApuracaoForm({
+  anoInicial,
+  mesInicial,
+}: {
+  anoInicial?: number
+  mesInicial?: number
+} = {}) {
   const [codConsultor, setCodConsultor] = useState('')
-  const [mes, setMes] = useState(hoje.getMonth() + 1)
-  const [ano, setAno] = useState(hoje.getFullYear())
+  const [mes, setMes] = useState(mesInicial ?? hoje.getMonth() + 1)
+  const [ano, setAno] = useState(anoInicial ?? hoje.getFullYear())
   const [acompanhando, setAcompanhando] = useState(false)
   const [status, setStatus] = useState<StatusJob | null>(null)
   const [erroEnvio, setErroEnvio] = useState<string | null>(null)
