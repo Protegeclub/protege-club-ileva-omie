@@ -41,7 +41,7 @@ export function GerarApuracaoForm() {
       return
     }
     setErroEnvio(null)
-    setStatus({ cod_consultor: cod, status: 'pendente', erro_mensagem: null })
+    setStatus({ cod_consultor: cod, status: 'pendente', erro_mensagem: null, atualizado_em: new Date().toISOString() })
     setAcompanhando(true)
 
     const resultado = await solicitarApuracao(cod, ano, mes)
@@ -67,7 +67,11 @@ export function GerarApuracaoForm() {
       <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
-            <label htmlFor="cod_consultor" className="block text-xs font-medium text-slate-500">
+            <label
+              htmlFor="cod_consultor"
+              title="O mesmo código que aparece na tela de Consultores, ao lado do nome (ex.: #303)"
+              className="block cursor-help text-xs font-medium text-slate-500 underline decoration-dotted underline-offset-2"
+            >
               Código do consultor
             </label>
             <input

@@ -6,7 +6,14 @@ import { Botao } from '@/lib/ui/botao'
 import { Cartao, CartaoCabecalho } from '@/lib/ui/cartao'
 import { consultarStatusPeriodo, revalidarPaineisAposLote, solicitarApuracaoLote, type StatusJob } from './actions'
 import { BarraProgresso } from './barra-progresso'
-import { IconeCamadas, IconeCheckCircle, IconeRelogio, IconeSpinner, IconeXCircle } from './icones'
+import {
+  IconeCamadas,
+  IconeCheckCircle,
+  IconeRelogio,
+  IconeSpinner,
+  IconeVelocimetro,
+  IconeXCircle,
+} from './icones'
 import { formatarDuracao, useCronometro } from './usar-cronometro'
 
 interface ConsultorLote {
@@ -26,6 +33,7 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
   const [acompanhando, setAcompanhando] = useState(false)
   const [statusPorConsultor, setStatusPorConsultor] = useState<Record<number, StatusJob>>({})
   const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [busca, setBusca] = useState('')
   const [erroDisparo, setErroDisparo] = useState<string | null>(null)
   const pararPollingRef = useRef(false)
   const segundos = useCronometro(acompanhando)
@@ -39,14 +47,44 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
   const pct = total > 0 ? Math.round((concluidos / total) * 100) : 0
   const falhas = consultores.filter((c) => statusPorConsultor[c.cod_consultor]?.status === 'erro')
 
+  // Velocidade (consultores/min) só faz sentido com progresso real acumulado — evita "Infinity"
+  // ou um ETA absurdo nos primeiros segundos, quando `concluidos` ainda é 0 ou 1.
+  const velocidadePorMinuto = acompanhando && segundos >= 5 && concluidos > 0 ? concluidos / (segundos / 60) : null
+  const restantes = total - concluidos
+  const etaSegundos =
+    velocidadePorMinuto && velocidadePorMinuto > 0 && restantes > 0
+      ? Math.round((restantes / velocidadePorMinuto) * 60)
+      : null
+  const codConsultorAtual = Object.values(statusPorConsultor).find((s) => s.status === 'processando')?.cod_consultor
+  const consultorAtual = codConsultorAtual
+    ? (consultores.find((c) => c.cod_consultor === codConsultorAtual)?.nome ?? null)
+    : null
+
   const linhasVisiveis = useMemo(() => {
+    const buscaLower = busca.trim().toLowerCase()
     return consultores.filter((c) => {
       const s = statusPorConsultor[c.cod_consultor]
       if (!s) return false
-      if (filtro === 'todos') return true
-      return s.status === filtro
+      if (filtro !== 'todos' && s.status !== filtro) return false
+      if (buscaLower && !c.nome.toLowerCase().includes(buscaLower) && String(c.cod_consultor) !== buscaLower) {
+        return false
+      }
+      return true
     })
-  }, [consultores, statusPorConsultor, filtro])
+  }, [consultores, statusPorConsultor, filtro, busca])
+
+  // Últimos eventos concluídos/com erro, mais recente primeiro — mesmos dados já rastreados em
+  // `statusPorConsultor` (nenhuma consulta nova), só reapresentados em ordem cronológica.
+  const eventosRecentes = useMemo(() => {
+    return Object.values(statusPorConsultor)
+      .filter((s) => s.status === 'concluido' || s.status === 'erro')
+      .map((s) => ({
+        ...s,
+        nome: consultores.find((c) => c.cod_consultor === s.cod_consultor)?.nome ?? `Consultor #${s.cod_consultor}`,
+      }))
+      .sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em))
+      .slice(0, 12)
+  }, [statusPorConsultor, consultores])
 
   useEffect(() => {
     return () => {
@@ -127,9 +165,12 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
     setFiltro('todos')
     setErroDisparo(null)
 
+    const agora = new Date().toISOString()
     setStatusPorConsultor((prev) => {
       const novo = { ...prev }
-      for (const c of lista) novo[c.cod_consultor] = { cod_consultor: c.cod_consultor, status: 'pendente', erro_mensagem: null }
+      for (const c of lista) {
+        novo[c.cod_consultor] = { cod_consultor: c.cod_consultor, status: 'pendente', erro_mensagem: null, atualizado_em: agora }
+      }
       return novo
     })
 
@@ -154,12 +195,12 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
   }
 
   return (
-    <Cartao className="overflow-hidden p-0">
+    <Cartao id="apuracao-em-lote" className="scroll-mt-6 overflow-hidden p-0">
       <div className="border-b border-slate-100 px-6 py-4">
         <CartaoCabecalho
           icone={<IconeCamadas className="h-5 w-5" />}
-          titulo="Gerar em lote"
-          descricao={`Todos os ${consultores.length} consultores ativos, um por vez.`}
+          titulo="Apuração em lote"
+          descricao="Esta ação sincroniza automaticamente todos os consultores ativos com a API do Ileva."
           tom="azul"
         />
       </div>
@@ -259,6 +300,33 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
                 </span>
               )}
             </div>
+
+            {acompanhando && (
+              <div className="grid grid-cols-2 gap-3 border-t border-slate-200 pt-4 sm:grid-cols-3">
+                <div>
+                  <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-slate-400">
+                    <IconeVelocimetro className="h-3.5 w-3.5" /> Velocidade
+                  </p>
+                  <p className="mt-0.5 text-sm font-semibold text-slate-700">
+                    {velocidadePorMinuto ? `${velocidadePorMinuto.toFixed(1)}/min` : 'calculando...'}
+                  </p>
+                </div>
+                <div>
+                  <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-slate-400">
+                    <IconeRelogio className="h-3.5 w-3.5" /> Tempo restante
+                  </p>
+                  <p className="mt-0.5 text-sm font-semibold text-slate-700">
+                    {etaSegundos != null ? `~${formatarDuracao(etaSegundos)}` : 'calculando...'}
+                  </p>
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <p className="flex items-center gap-1 text-[11px] uppercase tracking-wide text-slate-400">
+                    <IconeSpinner className="h-3.5 w-3.5" /> Processando agora
+                  </p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-slate-700">{consultorAtual ?? '—'}</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -269,6 +337,18 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
 
         {total > 0 && (
           <div className="space-y-3">
+            <div className="relative w-full max-w-xs">
+              <IconeBusca className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                aria-label="Buscar consultor"
+                type="text"
+                placeholder="Buscar por nome ou código..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              />
+            </div>
+
             <div className="flex flex-wrap gap-1.5">
               {(
                 [
@@ -336,8 +416,55 @@ export function GerarLoteForm({ consultores }: { consultores: ConsultorLote[] })
             </div>
           </div>
         )}
+
+        <div id="historico" className="scroll-mt-6 space-y-3 border-t border-slate-100 pt-5">
+          <p className="text-sm font-medium text-slate-700">Histórico desta execução</p>
+          {eventosRecentes.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              Nenhum evento ainda — assim que a geração começar, cada consultor processado aparece aqui.
+            </p>
+          ) : (
+            <ol className="space-y-3">
+              {eventosRecentes.map((evento, i) => (
+                <li key={`${evento.cod_consultor}-${evento.atualizado_em}-${i}`} className="flex items-start gap-3">
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                      evento.status === 'concluido'
+                        ? 'bg-brand-orange/10 text-brand-orange-hover'
+                        : 'bg-red-50 text-red-600'
+                    }`}
+                  >
+                    {evento.status === 'concluido' ? (
+                      <IconeCheckCircle className="h-3.5 w-3.5" />
+                    ) : (
+                      <IconeXCircle className="h-3.5 w-3.5" />
+                    )}
+                  </span>
+                  <p className="text-sm text-slate-600">
+                    <span className="font-mono text-xs text-slate-400">{formatarHora(evento.atualizado_em)}</span>{' '}
+                    <span className="font-medium text-slate-800">{evento.nome}</span>{' '}
+                    {evento.status === 'concluido' ? 'processado com sucesso' : `falhou: ${evento.erro_mensagem}`}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
     </Cartao>
+  )
+}
+
+function formatarHora(iso: string) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function IconeBusca({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M20 20l-4.3-4.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
   )
 }
 

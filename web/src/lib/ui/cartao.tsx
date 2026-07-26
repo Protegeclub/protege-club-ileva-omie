@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 // Generaliza o padrão de card que hoje só existia (com rounded-xl) nos formulários de
 // gestor/gerar — vira o padrão em todo o app, no lugar da mistura de rounded-md/rounded-lg
 // usada sem critério antes.
-export function Cartao({ children, className }: { children: ReactNode; className?: string }) {
+export function Cartao({ children, className, id }: { children: ReactNode; className?: string; id?: string }) {
   return (
-    <div className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className ?? 'p-5'}`}>
+    <div id={id} className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className ?? 'p-5'}`}>
       {children}
     </div>
   )

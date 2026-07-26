@@ -34,6 +34,7 @@ export interface StatusJob {
   cod_consultor: number
   status: 'pendente' | 'processando' | 'concluido' | 'erro'
   erro_mensagem: string | null
+  atualizado_em: string
 }
 
 // Cria (ou reinicia) o acompanhamento de status e dispara a geração em segundo plano no
@@ -203,11 +204,94 @@ export async function consultarStatusPeriodo(ano: number, mes: number): Promise<
   const admin = createSupabaseAdminClient()
   const { data } = await admin
     .from('apuracao_jobs')
-    .select('cod_consultor, status, erro_mensagem')
+    .select('cod_consultor, status, erro_mensagem, atualizado_em')
     .eq('ano', ano)
     .eq('mes', mes)
 
   return (data ?? []) as StatusJob[]
+}
+
+export interface StatusCompetencia {
+  totalAtivos: number
+  processados: number
+  pendentes: number
+  processando: number
+  erros: number
+  situacao: 'apurado' | 'pendente' | 'parcial' | 'erro'
+  ultimaExecucao: string | null
+  executadoPor: string | null
+}
+
+// Resumo server-side da competência (mês/ano) pro card de status principal e a barra "Status
+// geral" — chamado uma vez no carregamento da página (SSR), pra já mostrar a situação certa sem
+// esperar o polling client-side (mesmos dados que consultarStatusPeriodo, só que também cruzados
+// com apuracoes_mensais pra saber quem gerou).
+//
+// De propósito NÃO calcula "tempo médio/total de execução" a partir de apuracao_jobs: testado e
+// descartado — `solicitado_em` é carimbado no ENFILEIRAMENTO, não no início do processamento de
+// verdade, e com concurrencyLimit=1 (ver trigger/gerar-apuracao.ts) um consultor no fim da fila
+// de ~200 espera bastante antes de começar a rodar. `atualizado_em - solicitado_em` mede fila +
+// processamento juntos, não só o processamento — deu valores de "73min"/"115min" por consultor
+// em testes reais, quando o processamento de verdade leva segundos. Medir só o processamento
+// exigiria um novo carimbo de "início real" gravado pelo próprio trigger, o que alteraria o
+// processamento em segundo plano (fora do escopo deste ajuste, só visual).
+export async function buscarStatusCompetencia(
+  ano: number,
+  mes: number,
+  codsAtivos: number[]
+): Promise<StatusCompetencia> {
+  const admin = createSupabaseAdminClient()
+  const codsSet = new Set(codsAtivos)
+
+  const [{ data: jobsData }, { data: apuracoesData }] = await Promise.all([
+    admin
+      .from('apuracao_jobs')
+      .select('cod_consultor, status, solicitado_em, atualizado_em')
+      .eq('ano', ano)
+      .eq('mes', mes),
+    admin.from('apuracoes_mensais').select('gerado_em, gerado_por').eq('ano', ano).eq('mes', mes),
+  ])
+
+  const jobs = (jobsData ?? []).filter((j) => codsSet.has(j.cod_consultor))
+
+  const processados = jobs.filter((j) => j.status === 'concluido').length
+  const erros = jobs.filter((j) => j.status === 'erro').length
+  const processando = jobs.filter((j) => j.status === 'processando').length
+  const pendentes = jobs.filter((j) => j.status === 'pendente').length
+  const totalAtivos = codsAtivos.length
+
+  let situacao: StatusCompetencia['situacao']
+  if (erros > 0) situacao = 'erro'
+  else if (processados >= totalAtivos && totalAtivos > 0) situacao = 'apurado'
+  else if (processados === 0 && processando === 0) situacao = 'pendente'
+  else situacao = 'parcial'
+
+  const apuracoes = apuracoesData ?? []
+  const ultimaApuracao = apuracoes.reduce<{ gerado_em: string; gerado_por: string } | null>(
+    (max, a) => (!max || a.gerado_em > max.gerado_em ? a : max),
+    null
+  )
+
+  let executadoPor: string | null = null
+  if (ultimaApuracao?.gerado_por) {
+    const { data: perfil } = await admin
+      .from('perfis')
+      .select('nome')
+      .eq('user_id', ultimaApuracao.gerado_por)
+      .maybeSingle()
+    executadoPor = perfil?.nome ?? null
+  }
+
+  return {
+    totalAtivos,
+    processados,
+    pendentes,
+    processando,
+    erros,
+    situacao,
+    ultimaExecucao: ultimaApuracao?.gerado_em ?? null,
+    executadoPor,
+  }
 }
 
 // Chamada pelo client quando encerra de acompanhar um lote (todo mundo concluído/erro, ou
