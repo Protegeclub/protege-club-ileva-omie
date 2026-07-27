@@ -45,9 +45,10 @@ Todo consultor tem três fontes de ganho, apuradas mensalmente:
 2. **Recorrência ("Assistência Profissional")** — embutida na mensalidade, só é devida depois que
    o boleto do associado é pago. No Ileva, isso é o benefício `cod_beneficio 65` (existem
    variantes 66/110/121). Confirmado com dados reais.
-3. **Plano de carreira** — bonificação por volume de veículos vendidos no mês, com níveis e
-   bonificação de equipe. **As regras exatas ainda não foram definidas pelo cliente** — é o maior
-   bloqueio para o motor de cálculo completo.
+3. **Plano de carreira** — bonificação por volume de veículos vendidos no mês. **Bônus individual
+   definido e implementado em 26/07/2026** (ver seção 6.6): 10+ adesões pagas no mês = R$50 por
+   placa, em todas as adesões do mês. **Níveis e bonificação de equipe continuam sem regra
+   definida pelo cliente.**
 
 **Dedução**: veículos acima de R$80mil recebem rastreador; o custo de instalação (R$100) é
 descontado do consultor. O corte de R$80mil já vem embutido no nome do plano no Ileva (ex.:
@@ -171,7 +172,8 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 - [x] Montar e enviar proposta comercial
 - [x] Aprovação da proposta pelo cliente
 - [ ] Obter chave de teste da Omie e mapear os endpoints dela
-- [ ] Regras completas do plano de carreira (níveis, faixas, bonificação de equipe) definidas
+- [ ] Regras completas do plano de carreira definidas — bônus individual por volume já veio
+      (26/07/2026, ver seção 6.6); faltam níveis e bonificação de equipe
 - [ ] Confirmar onde o custo de instalação do rastreador (R$100) é lançado no Ileva
 
 ### 6.2 Setup do projeto
@@ -486,9 +488,21 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       exato, inclusive confirmando que a placa do próprio Thiago (ele tinha 1) não entrou na
       conta. **Pendente**: redeploy manual do Trigger.dev em produção (mudou `gerar.ts`, que é
       dependência da tarefa) antes que isso valha em produção de verdade — ver nota na seção 6.4.
-- [ ] Cálculo do plano de carreira / premiação (bloqueado até o cliente definir as regras) —
-      confirmamos com um exemplo real do Power BI (19 adesões → R$1.150 premiação individual)
-      que existe uma fórmula, só falta o cliente detalhar as faixas.
+- [x] **Bônus por Performance (premiação individual) implementado (26/07/2026)** — a partir do
+      PDF `docs/GANHOS E INCETIVOS CORRETO ATUALIZADO.pdf` enviado pelo cliente: 10+ adesões
+      pagas no mês libera R$50 por placa, aplicado a TODAS as adesões daquele mês (não só a
+      partir da 10ª). Confirmado com o Samuel que este documento **substitui** a regra antiga —
+      o exemplo do Power BI (19 adesões → R$1.150) era de um cálculo anterior, já superado; pela
+      regra atual, 19 adesões = 19×R$50 = R$950. Implementado em
+      `lib/apuracao/premiacao-individual.ts` (função pura, testável) + `gerar.ts` (grava
+      `total_premiacao_individual`, que já existia na tabela e já era lido/exibido em todo o
+      sistema — só ficava sempre 0). **Pendente**: redeploy manual do Trigger.dev em produção
+      (mudou `gerar.ts`, mesma pendência já registrada acima pra comissão gerencial) antes que
+      valha em produção — ver nota na seção 6.4. Apurações já geradas ANTES do redeploy precisam
+      ser regeneradas pra ganhar o bônus retroativamente.
+- [ ] "Premiação de equipe" e "níveis" do plano de carreira **continuam sem regra definida** — o
+      PDF acima só cobre o bônus individual, não menciona bonificação de equipe nem níveis/faixas
+      de carreira. `total_premiacao_equipe` continua gravado como 0.
 - [x] Fechamento mensal consolidado por consultor — gravado em `apuracoes_mensais`, com upsert
       por `(cod_consultor, ano, mes)` (gerar de novo sobrescreve o mês)
 

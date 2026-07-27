@@ -150,8 +150,10 @@ function valorBeneficioAssistenciaProfissional(veiculo: Veiculo): number {
  * explícita ("gerar apuração", ver src/app/gestor/gerar) que salva o resultado em
  * `apuracoes_mensais`, não para ser chamada a cada carregamento de tela do consultor.
  *
- * Ainda não calcula: premiação (individual/equipe) do plano de carreira — regras não definidas
- * pelo cliente (ver CONTEXTO_E_CHECKLIST.md).
+ * Não calcula premiação aqui — o Bônus por Performance (individual) é derivado do
+ * `adesoes.length` deste resultado em gerar.ts (ver premiacao-individual.ts). "Premiação de
+ * equipe" e "níveis" do plano de carreira continuam sem regra definida pelo cliente (ver
+ * CONTEXTO_E_CHECKLIST.md).
  */
 export async function apurarConsultorMes(
   codConsultor: number,

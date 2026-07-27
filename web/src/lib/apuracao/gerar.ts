@@ -3,6 +3,7 @@ import {
   calcularComissaoGerencialPlacas,
   COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS,
 } from './comissao-gerencial'
+import { calcularPremiacaoIndividual } from './premiacao-individual'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export interface ResumoGeracao {
@@ -10,6 +11,7 @@ export interface ResumoGeracao {
   totalAdesao: number
   totalRecorrencia: number
   totalDescontoRastreador: number
+  totalPremiacaoIndividual: number
   totalLiquido: number
 }
 
@@ -32,13 +34,16 @@ export async function gerarESalvarApuracao(
       ? await calcularComissaoGerencialPlacas(ano, mes)
       : null
 
-  // Premiação (individual/equipe) segue de fora: as regras do plano de carreira ainda não foram
-  // definidas pelo cliente (ver CONTEXTO_E_CHECKLIST.md, seção 6.1). Gravamos 0 em vez de
-  // inventar uma fórmula.
+  // Bônus por Performance (R$50/placa a partir de 10 adesões pagas no mês) — ver
+  // premiacao-individual.ts pra regra completa e a fonte (PDF "Ganhos e Incentivos" do cliente).
+  // "Premiação de equipe" e "níveis" do plano de carreira continuam sem regra definida.
+  const premiacaoIndividual = calcularPremiacaoIndividual(resultado.adesoes.length)
+
   const totalLiquido =
     resultado.totalAdesao +
     resultado.totalRecorrencia -
     resultado.totalDescontoRastreador +
+    premiacaoIndividual.valorTotal +
     (comissaoGerencial?.valorTotal ?? 0)
 
   const admin = createSupabaseAdminClient()
@@ -51,7 +56,7 @@ export async function gerarESalvarApuracao(
       total_adesao: resultado.totalAdesao,
       total_recorrencia: resultado.totalRecorrencia,
       total_desconto_rastreador: resultado.totalDescontoRastreador,
-      total_premiacao_individual: 0,
+      total_premiacao_individual: premiacaoIndividual.valorTotal,
       total_premiacao_equipe: 0,
       total_comissao_gerencial: comissaoGerencial?.valorTotal ?? 0,
       total_liquido: totalLiquido,
@@ -66,6 +71,7 @@ export async function gerarESalvarApuracao(
         placasAtivadas: resultado.placasAtivadas,
         inadimplentes: resultado.inadimplentes,
         totalRecorrenciaEstimadaInadimplentes: resultado.totalRecorrenciaEstimadaInadimplentes,
+        premiacaoIndividual,
         ...(comissaoGerencial ? { comissaoGerencialPlacas: comissaoGerencial } : {}),
       },
     },
@@ -81,6 +87,7 @@ export async function gerarESalvarApuracao(
     totalAdesao: resultado.totalAdesao,
     totalRecorrencia: resultado.totalRecorrencia,
     totalDescontoRastreador: resultado.totalDescontoRastreador,
+    totalPremiacaoIndividual: premiacaoIndividual.valorTotal,
     totalLiquido,
   }
 }

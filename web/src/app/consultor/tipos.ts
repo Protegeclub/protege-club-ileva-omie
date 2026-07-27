@@ -7,6 +7,7 @@ import type {
   RecorrenciaItem,
   VeiculoRastreadorItem,
 } from '@/lib/apuracao/mensal'
+import type { PremiacaoIndividual } from '@/lib/apuracao/premiacao-individual'
 
 // Formato de `apuracoes_mensais.detalhe` (JSONB) gravado por web/src/app/gestor/gerar/actions.ts.
 export interface ApuracaoDetalhe {
@@ -18,6 +19,9 @@ export interface ApuracaoDetalhe {
   placasAtivadas?: PlacaAtivadaItem[]
   inadimplentes?: InadimplenteItem[]
   totalRecorrenciaEstimadaInadimplentes?: number
+  // Bônus por Performance (R$50/placa a partir de 10 adesões/mês) — ver
+  // lib/apuracao/premiacao-individual.ts.
+  premiacaoIndividual?: PremiacaoIndividual
   // Só presente na apuração do consultor #302 (Thiago) — ver lib/apuracao/comissao-gerencial.ts.
   comissaoGerencialPlacas?: ComissaoGerencialPlacas
 }
