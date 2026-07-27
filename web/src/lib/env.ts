@@ -8,6 +8,14 @@ function required(name: string, value: string | undefined): string {
 }
 
 export const env = {
+  // 'production'/'preview' vêm do Vercel (VERCEL_ENV); fora do Vercel (ex.: `npm run build`
+  // local) cai no NODE_ENV padrão do Next. Usado só pra exibir na tela de login — nunca pra
+  // decisão de negócio.
+  get ambiente(): 'Produção' | 'Homologação' | 'Desenvolvimento' {
+    if (process.env.VERCEL_ENV === 'production') return 'Produção'
+    if (process.env.VERCEL_ENV === 'preview') return 'Homologação'
+    return process.env.NODE_ENV === 'production' ? 'Produção' : 'Desenvolvimento'
+  },
   supabase: {
     get url() {
       return required('NEXT_PUBLIC_SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL)
