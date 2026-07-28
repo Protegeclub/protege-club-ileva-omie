@@ -78,10 +78,13 @@ export async function GET(request: NextRequest) {
           equipe: c.equipe,
           gerado: !!a,
           qtdAdesoes: a?.detalhe?.adesoes?.length ?? 0,
+          qtdPlacasAtivadas: a?.detalhe?.placasAtivadas?.length ?? 0,
+          qtdInadimplentes: a?.detalhe?.inadimplentes?.length ?? 0,
           totalAdesao: a?.total_adesao ?? 0,
           totalRecorrencia: a?.total_recorrencia ?? 0,
           totalDescontoRastreador: a?.total_desconto_rastreador ?? 0,
           totalLiquido: a?.total_liquido ?? 0,
+          placasAtivadas: a?.detalhe?.placasAtivadas ?? [],
         }
       })
       .sort((x, y) => y.totalLiquido - x.totalLiquido)

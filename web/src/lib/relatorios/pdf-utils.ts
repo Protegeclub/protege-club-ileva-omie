@@ -124,6 +124,14 @@ export function desenharTabela<T>(
       align: 'right',
     })
   }
+
+  // Toda célula acima é desenhada com `doc.text(str, x, y, {...})` (posição explícita) — isso
+  // deixa o cursor horizontal do PDFKit parado na última coluna desenhada. Sem resetar aqui,
+  // qualquer `doc.text(...)` sem x explícito logo depois de uma tabela (ex.: o resumo do próximo
+  // consultor em todos-consultores.ts) herda essa posição e quebra em uma coluna estreita à
+  // direita — só se corrige sozinho na próxima quebra de página. Bug real, visto no PDF de
+  // "Todos os Consultores" (26/07/2026).
+  doc.x = MARGEM
 }
 
 export function rodape(doc: PDFKit.PDFDocument) {

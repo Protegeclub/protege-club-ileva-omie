@@ -1,4 +1,5 @@
-import { criarDocumento, desenharCabecalho, formatarMoeda, MARGEM, rodape } from './pdf-utils'
+import type { PlacaAtivadaItem } from '@/lib/apuracao/mensal'
+import { criarDocumento, desenharCabecalho, desenharTabela, formatarMoeda, MARGEM, rodape } from './pdf-utils'
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -11,10 +12,13 @@ export interface ItemTodosConsultores {
   equipe: string
   gerado: boolean
   qtdAdesoes: number
+  qtdPlacasAtivadas: number
+  qtdInadimplentes: number
   totalAdesao: number
   totalRecorrencia: number
   totalDescontoRastreador: number
   totalLiquido: number
+  placasAtivadas: PlacaAtivadaItem[]
 }
 
 // Um PDF só, mas com uma seção separada por consultor (não uma tabela única resumida como
@@ -86,10 +90,31 @@ export async function gerarPdfTodosConsultores(
       doc.moveDown(0.15)
 
       doc.fontSize(9.5).font('Helvetica').fillColor('#222222')
-      doc.text(`Adesões no período: ${item.qtdAdesoes}`)
-      doc.text(`Adesão: ${formatarMoeda(item.totalAdesao)}    Recorrência: ${formatarMoeda(item.totalRecorrencia)}    Desconto rastreador: ${formatarMoeda(item.totalDescontoRastreador)}`)
+      doc.text(
+        `Adesões: ${item.qtdAdesoes}    Placas ativadas: ${item.qtdPlacasAtivadas}    Inadimplentes: ${item.qtdInadimplentes}`
+      )
+      doc.text(
+        `Adesão: ${formatarMoeda(item.totalAdesao)}    Recorrência: ${formatarMoeda(item.totalRecorrencia)}    Desconto rastreador: ${formatarMoeda(item.totalDescontoRastreador)}`
+      )
       doc.font('Helvetica-Bold').fontSize(10.5).text(`Total líquido: ${formatarMoeda(item.totalLiquido)}`)
-      doc.moveDown(0.4)
+      doc.moveDown(0.35)
+
+      // Lista de placas só quando existe alguma — repetir "Nenhum registro encontrado" pra cada
+      // um dos ~200 consultores sem placa no mês poluiria o PDF à toa.
+      if (item.placasAtivadas.length > 0) {
+        doc.fontSize(9).font('Helvetica-Bold').fillColor('#1F3B57').text('Placas ativadas no mês:')
+        doc.moveDown(0.2)
+        desenharTabela(
+          doc,
+          [
+            { titulo: 'Data Contrato', largura: 80, valor: (p: PlacaAtivadaItem) => p.dt_contrato },
+            { titulo: 'Associado', largura: 335, valor: (p: PlacaAtivadaItem) => p.associado },
+            { titulo: 'Placa', largura: 100, valor: (p: PlacaAtivadaItem) => p.placa },
+          ],
+          item.placasAtivadas
+        )
+        doc.moveDown(0.35)
+      }
 
       doc
         .strokeColor('#DCE3EA')
