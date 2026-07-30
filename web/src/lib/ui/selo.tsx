@@ -5,12 +5,14 @@ export function Selo({
   tom = 'sucesso',
 }: {
   children: React.ReactNode
-  tom?: 'sucesso' | 'neutro'
+  tom?: 'sucesso' | 'neutro' | 'erro'
 }) {
   const classes =
     tom === 'sucesso'
       ? 'bg-emerald-50 text-emerald-700'
-      : 'bg-slate-100 text-slate-600'
+      : tom === 'erro'
+        ? 'bg-red-50 text-red-700'
+        : 'bg-slate-100 text-slate-600'
   return (
     <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${classes}`}>
       {children}

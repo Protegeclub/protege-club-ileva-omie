@@ -430,19 +430,48 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Gestor
 
 ### 6.5 Integração com Omie
-- [ ] Chave de teste (sandbox) obtida — **status (18/07/2026)**: Samuel recebeu um convite de
-      acesso à Omie da empresa (conta "ProtegeClub", parece ser produção), mas é só acesso de
-      usuário (login no ERP), não dá a chave de API (App Key + App Secret). Ele já pediu de
-      novo um acesso melhor especificamente pra isso. Continua bloqueado até essa chave chegar.
-- [ ] Autenticação validada
-- [x] Esqueleto do cliente escrito (`web/src/lib/omie/client.ts`, convenção de `call` da API da
-      Omie) — sem credenciais ainda, não testado
-- [ ] Criação automática do título a pagar por consultor (`IncluirContaPagar` — confirmar
-      método/payload exato quando tivermos a chave de teste)
-- [ ] Código interno de integração por lançamento, para evitar duplicidade ao reprocessar
-- [ ] Log de auditoria: quem gerou, quando, valor, consultor, contrato, retorno do Omie
-- [ ] Rotina de validação: alertar títulos sem consultor vinculado antes do fechamento
-- [ ] Troca das credenciais de teste pelas de produção (só após validação completa)
+- [x] **Chave de API obtida e validada (29/07/2026)** — Samuel recebeu App Key + App Secret reais.
+      **Achado importante**: não é uma chave de sandbox/teste — é a conta de produção de
+      verdade da Protege Club (`ListarClientes` retornou 3.908 registros reais, cadastros desde
+      01/2024). Todo cuidado de escrita nessa integração parte do princípio de que é dado real.
+      As chaves estavam só no `.env` da raiz, faltando copiar pra `web/.env.local` (runtime real
+      do app) — corrigido.
+- [x] Autenticação validada (chamada real `ListarClientes`, só leitura, 200 OK)
+- [x] Payload exato de `IncluirContaPagar` conferido contra a documentação real da Omie
+      (developer.omie.com.br) — 3 divergências corrigidas em relação ao que estava só de
+      memória: campo é `id_conta_corrente` (não `codigo_conta_corrente`), `data_previsao` é
+      obrigatório (não só `data_vencimento`), resposta traz `codigo_lancamento_omie` (não
+      `codigo_lancamento`).
+- [x] Criação do título a pagar implementada (`lib/omie/client.ts` incluirContaPagar +
+      `lib/omie/contas-pagar.ts` enviarContaPagar) — **nunca chamada automaticamente**, só por
+      ação explícita do Gestor na nova tela `/gestor/omie`, um consultor por vez, com
+      confirmação visual antes de enviar (decisão do Samuel, 29/07/2026, dado o histórico de
+      erros de vínculo e o fato de ser produção real).
+- [x] Código de integração por lançamento (`apuracao-<apuracao_id>`) — idempotente, reprocessar
+      a mesma apuração nunca duplica o título.
+- [x] Log de auditoria (`auditoria_omie`, já existia desde a migration inicial) — grava
+      'pendente' antes de chamar a Omie, depois 'enviado'/'erro' com o retorno completo.
+- [x] Rotina de validação: a tela `/gestor/omie` mostra quem está sem vínculo confirmado antes
+      de deixar enviar (botão desabilitado sem vínculo + configuração).
+- [ ] **Vínculo consultor↔fornecedor**: o Ileva não devolve CPF/CNPJ do consultor (só aceita
+      como filtro de busca, não retorna no cadastro — confirmado com chamada real). Sem chave
+      confiável pra casar automaticamente, o sistema sugere por nome (`lib/omie/vinculo.ts`,
+      comparando com os ~3.900 clientes/fornecedores da Omie) e o Gestor confirma manualmente na
+      tela, uma vez por consultor (fica salvo em `consultor_omie_vinculo`, nova migration
+      `0006_omie_vinculo.sql`, ainda **não aplicada no banco** — precisa rodar no SQL Editor do
+      Supabase).
+- [ ] **Categoria financeira e conta corrente**: nenhuma categoria de despesa já cadastrada na
+      Omie do cliente parecia feita pra "comissão de consultor" (as 57 existentes são todas de
+      outra natureza — salários, assistências, etc.). Fica pendente o Samuel/financeiro decidir
+      (usar uma existente tipo "Salários" mesmo, ou criar uma nova categoria direto no Omie) e
+      configurar pela tela `/gestor/omie` (nova tabela `omie_configuracao`, também na migration
+      0006). O botão de enviar fica desabilitado até isso ser preenchido.
+- [ ] **Teste real supervisionado**: combinado com o Samuel (29/07/2026) fazer o primeiro envio
+      de verdade acompanhado em tempo real (valor simbólico, conferir no Omie, e permitir
+      excluir se precisar) — ainda não feito, só a leitura (ListarClientes/Categorias/Contas) foi
+      testada de verdade até agora.
+- [ ] Troca das credenciais de teste pelas de produção — não se aplica mais: já é produção desde
+      o início (ver primeiro item acima).
 
 ### 6.6 Motor de apuração de comissão
 - [x] Cálculo da adesão — validado com dado real (consultor 313, maio/2026: R$ 200,00)

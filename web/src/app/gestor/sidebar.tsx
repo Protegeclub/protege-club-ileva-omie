@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
-import { IconeColapsar, IconeDashboard, IconeLista, IconeUsuarios } from '@/lib/ui/icones-sidebar'
+import { IconeCarteira, IconeColapsar, IconeDashboard, IconeLista, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 import { ItemNavSidebar } from '@/lib/ui/item-nav-sidebar'
 import { IconeRelampago } from './gerar/icones'
 
@@ -11,6 +11,7 @@ const ITENS = [
   { href: '/gestor', label: 'Dashboard', icone: <IconeDashboard /> },
   { href: '/gestor/consultores', label: 'Consultores', icone: <IconeLista /> },
   { href: '/gestor/gerar', label: 'Gerar', icone: <IconeRelampago /> },
+  { href: '/gestor/omie', label: 'Omie', icone: <IconeCarteira /> },
   { href: '/gestor/acessos', label: 'Acessos', icone: <IconeUsuarios /> },
 ]
 
