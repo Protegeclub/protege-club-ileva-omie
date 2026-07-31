@@ -53,7 +53,6 @@ export async function gerarPdfDashboard(
     ['Total de adesões', String(resumo.totalAdesoes)],
     ['Total equipe', String(resumo.totalEquipe)],
     ['Premiação individual', formatarMoeda(resumo.totalPremiacaoIndividual)],
-    ['Premiação líder de equipe', formatarMoeda(resumo.totalPremiacaoEquipe)],
     ['Adesão', formatarMoeda(resumo.totalAdesao)],
     ['Recorrência', formatarMoeda(resumo.totalRecorrencia)],
     ['Desconto de rastreadores', formatarMoeda(resumo.totalDescontoRastreador)],

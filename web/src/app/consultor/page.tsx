@@ -91,7 +91,7 @@ export default async function ConsultorDashboardPage({
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <CardKpi
           icone={<IconeAdesao />}
           cor="emerald"
@@ -121,13 +121,6 @@ export default async function ConsultorDashboardPage({
           titulo="Premiação individual"
           valor={formatarMoeda(linhaPropria.total_premiacao_individual)}
           descricao="R$50 por placa a partir de 10 adesões pagas no mês"
-        />
-        <CardKpi
-          icone={<IconeTrofeu />}
-          cor="navy"
-          titulo="Premiação liderança"
-          valor={formatarMoeda(linhaPropria.total_premiacao_equipe)}
-          descricao="Não faz parte do plano de carreira"
         />
       </div>
 
