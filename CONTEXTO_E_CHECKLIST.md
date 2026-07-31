@@ -45,10 +45,11 @@ Todo consultor tem três fontes de ganho, apuradas mensalmente:
 2. **Recorrência ("Assistência Profissional")** — embutida na mensalidade, só é devida depois que
    o boleto do associado é pago. No Ileva, isso é o benefício `cod_beneficio 65` (existem
    variantes 66/110/121). Confirmado com dados reais.
-3. **Plano de carreira** — bonificação por volume de veículos vendidos no mês. **Bônus individual
-   definido e implementado em 26/07/2026** (ver seção 6.6): 10+ adesões pagas no mês = R$50 por
-   placa, em todas as adesões do mês. **Níveis e bonificação de equipe continuam sem regra
-   definida pelo cliente.**
+3. **Plano de carreira** — bonificação por volume de veículos vendidos no mês. **Definido e
+   implementado em 26/07/2026** (ver seção 6.6): 10+ adesões pagas no mês = R$50 por placa, em
+   todas as adesões do mês. **Confirmado pelo cliente (30/07/2026): não existem níveis nem
+   bonificação de equipe — o PDF "Ganhos e Incentivos" é o plano de carreira completo e final.**
+   `total_premiacao_equipe` permanece 0 permanentemente (não é mais um placeholder pendente).
 
 **Dedução**: veículos acima de R$80mil recebem rastreador; o custo de instalação (R$100) é
 descontado do consultor. O corte de R$80mil já vem embutido no nome do plano no Ileva (ex.:
@@ -58,14 +59,15 @@ regra do nosso sistema — R$100 fixo por veículo com `possui_rastreador = Sim`
 cai no mês apurado (confirmado batendo com os totais reais do Power BI que o cliente usa hoje,
 ver pasta `Telas Cosultores/`).
 
-**Pergunta em aberto pro cliente (achada em 12/07/2026, dado real do teste de stress)**: líquido
-= adesão + recorrência − desconto de rastreador, sem piso em zero — então dá pra um consultor
-fechar o mês com **líquido negativo** se vender veículo(s) com rastreador mas não tiver
-adesão/recorrência suficiente no mesmo mês pra cobrir o desconto (casos reais: consultor #69
-Laura Vitoria, -R$100 em 06/2026; consultor #80 André Gouveia, -R$90 em 06/2026). Ainda não
-decidido com o cliente o que deveria acontecer nesse caso: (1) mostrar negativo mesmo (é o que o
-sistema faz hoje), (2) zerar (a associação absorve o prejuízo daquele mês), ou (3) carregar o
-saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
+**RESOLVIDO (30/07/2026)**: líquido = adesão + recorrência − desconto de rastreador, sem piso em
+zero — um consultor pode fechar o mês com **líquido negativo** se vender veículo(s) com
+rastreador mas não tiver adesão/recorrência suficiente no mesmo mês pra cobrir o desconto (casos
+reais: consultor #69 Laura Vitoria, -R$100 em 06/2026; consultor #80 André Gouveia, -R$90 em
+06/2026). **Decisão do cliente: manter como está, sem piso em zero e sem carregar pro mês
+seguinte** — o valor negativo funciona como aviso pro próprio consultor de que não teve comissão
+naquele mês por causa do desconto do rastreador; consultores com desempenho ruim recorrente
+serão removidos da base do Ileva pela associação, então não é tratado como um caso especial no
+sistema.
 
 ## 3. Documentos do projeto (onde está cada detalhe)
 
@@ -171,10 +173,13 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 - [x] Mapear e validar a API real do Ileva
 - [x] Montar e enviar proposta comercial
 - [x] Aprovação da proposta pelo cliente
-- [ ] Obter chave de teste da Omie e mapear os endpoints dela
-- [ ] Regras completas do plano de carreira definidas — bônus individual por volume já veio
-      (26/07/2026, ver seção 6.6); faltam níveis e bonificação de equipe
-- [ ] Confirmar onde o custo de instalação do rastreador (R$100) é lançado no Ileva
+- [x] Chave de API da Omie obtida e endpoints mapeados (29/07/2026 — ver seção 6.5: ListarClientes,
+      ListarCategorias, ListarContasCorrentes, IncluirContaPagar, todos testados/conferidos)
+- [x] Regras completas do plano de carreira definidas — bônus individual por volume (26/07/2026)
+      + confirmado pelo cliente (30/07/2026) que não há níveis nem bonificação de equipe (ver
+      seção 6.6)
+- [x] Custo de instalação do rastreador — resolvido (ver seção 2, "Dedução"): não é lançamento
+      específico no Ileva, é regra do nosso sistema (R$100 fixo por veículo com rastreador)
 
 ### 6.2 Setup do projeto
 - [x] Repositório criado no **GitHub**: `Protegeclub/protege-club-ileva-omie` (conta do cliente),
@@ -189,9 +194,8 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
 - [x] `.gitignore` revisado (raiz + `web/`, cobrindo `.env*`, `node_modules/`, `.next/`, `*.mp4`)
 
 ### 6.3 Autenticação e controle de acesso
-- [ ] Login (Supabase Auth) — página e Server Action escritos, redirecionamentos testados; falta
-      testar o login em si com sessão real (precisa da senha do usuário de teste, que só o
-      Samuel tem)
+- [x] Login (Supabase Auth) testado de ponta a ponta com sessão real (Playwright,
+      `gestor-teste@protegeclub.local`), inclusive redesign completo da tela (26/07/2026)
 - [x] Usuário Gestor de teste criado (`marketing@artha.srv.br`) e vinculado em `perfis`
 - [x] Usuário Consultor de teste criado (`consultor-teste@protegeclub.local`, vinculado ao
       `cod_consultor 11` real do Ileva — trocado do 313 original em 12/07/2026 pra testar o caso
@@ -425,8 +429,17 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
         uma vez por mês, com o mês anterior já esvaziado há tempo), fica bem abaixo do limite.
         **Cuidado pra não repetir em teste**: não clicar "Gerar apuração de todos" várias vezes
         seguidas sem esperar o lote anterior esvaziar.
-- [ ] Identificar em produção qual variante de "Assistência Profissional" cada plano/regional usa
-      (65 confirmado funcionando; 66/110/121 ainda não vistos em dado real)
+- [x] **Variantes de "Assistência Profissional" identificadas e validadas (30/07/2026)** —
+      consultado `/veiculo/listar-beneficios`: código 65 é o principal (ativo); 66 e 110 estão
+      **inativos** no próprio Ileva (sem risco real); 121 é uma variante regional ativa
+      ("Assistência Profissional Senador Canedo"). Achado real ao testar boletos pagos de
+      veículos com o benefício 121 (consultores #261 Lucas Ferreira Nunes e #119 Josué Lira
+      Dias): o sistema **já reconhece o código 121 corretamente**, mas o valor desse lançamento
+      vem cadastrado como **R$0,00 direto no Ileva** em todos os 7 boletos conferidos — não é bug
+      do nosso cálculo, é o dado de origem. **Decisão do cliente (30/07/2026): manter só o que o
+      Ileva fornece, sem correção manual/hardcoded** — se o valor lá é R$0,00, o sistema mostra
+      R$0,00 pra esses consultores, mesmo que pareça uma configuração incompleta no Ileva (fora
+      do escopo deste sistema corrigir o cadastro de benefícios de origem).
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Gestor
 
 ### 6.5 Integração com Omie
@@ -453,25 +466,21 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       'pendente' antes de chamar a Omie, depois 'enviado'/'erro' com o retorno completo.
 - [x] Rotina de validação: a tela `/gestor/omie` mostra quem está sem vínculo confirmado antes
       de deixar enviar (botão desabilitado sem vínculo + configuração).
-- [ ] **Vínculo consultor↔fornecedor**: o Ileva não devolve CPF/CNPJ do consultor (só aceita
+- [x] **Vínculo consultor↔fornecedor**: o Ileva não devolve CPF/CNPJ do consultor (só aceita
       como filtro de busca, não retorna no cadastro — confirmado com chamada real). Sem chave
       confiável pra casar automaticamente, o sistema sugere por nome (`lib/omie/vinculo.ts`,
       comparando com os ~3.900 clientes/fornecedores da Omie) e o Gestor confirma manualmente na
-      tela, uma vez por consultor (fica salvo em `consultor_omie_vinculo`, nova migration
-      `0006_omie_vinculo.sql`, ainda **não aplicada no banco** — precisa rodar no SQL Editor do
-      Supabase).
-- [ ] **Categoria financeira e conta corrente**: nenhuma categoria de despesa já cadastrada na
-      Omie do cliente parecia feita pra "comissão de consultor" (as 57 existentes são todas de
-      outra natureza — salários, assistências, etc.). Fica pendente o Samuel/financeiro decidir
-      (usar uma existente tipo "Salários" mesmo, ou criar uma nova categoria direto no Omie) e
-      configurar pela tela `/gestor/omie` (nova tabela `omie_configuracao`, também na migration
-      0006). O botão de enviar fica desabilitado até isso ser preenchido.
+      tela, uma vez por consultor (fica salvo em `consultor_omie_vinculo`). Migration
+      `0006_omie_vinculo.sql` **aplicada no Supabase em 29/07/2026** (tabelas confirmadas).
+- [ ] **Conta corrente**: categoria financeira já definida (**2.06.99 — Salários**), mas a conta
+      corrente ainda não — Samuel vai confirmar com o financeiro. Configurar pela tela
+      `/gestor/omie` assim que souber (tabela `omie_configuracao`, coluna de categoria já pode
+      ser preenchida, falta só `codigo_conta_corrente`). O botão de enviar fica desabilitado até
+      as duas estarem preenchidas.
 - [ ] **Teste real supervisionado**: combinado com o Samuel (29/07/2026) fazer o primeiro envio
       de verdade acompanhado em tempo real (valor simbólico, conferir no Omie, e permitir
       excluir se precisar) — ainda não feito, só a leitura (ListarClientes/Categorias/Contas) foi
-      testada de verdade até agora.
-- [ ] Troca das credenciais de teste pelas de produção — não se aplica mais: já é produção desde
-      o início (ver primeiro item acima).
+      testada de verdade até agora. **Bloqueado pela conta corrente acima.**
 
 ### 6.6 Motor de apuração de comissão
 - [x] Cálculo da adesão — validado com dado real (consultor 313, maio/2026: R$ 200,00)
@@ -525,13 +534,12 @@ saldo negativo pro mês seguinte, abatendo do próximo líquido positivo.
       regra atual, 19 adesões = 19×R$50 = R$950. Implementado em
       `lib/apuracao/premiacao-individual.ts` (função pura, testável) + `gerar.ts` (grava
       `total_premiacao_individual`, que já existia na tabela e já era lido/exibido em todo o
-      sistema — só ficava sempre 0). **Pendente**: redeploy manual do Trigger.dev em produção
-      (mudou `gerar.ts`, mesma pendência já registrada acima pra comissão gerencial) antes que
-      valha em produção — ver nota na seção 6.4. Apurações já geradas ANTES do redeploy precisam
-      ser regeneradas pra ganhar o bônus retroativamente.
-- [ ] "Premiação de equipe" e "níveis" do plano de carreira **continuam sem regra definida** — o
-      PDF acima só cobre o bônus individual, não menciona bonificação de equipe nem níveis/faixas
-      de carreira. `total_premiacao_equipe` continua gravado como 0.
+      sistema — só ficava sempre 0). **Redeploy do Trigger.dev feito com sucesso em 27/07/2026**
+      (versão `20260727.3`, task `gerar-apuracao` detectada) — já vale em produção.
+- [x] **Confirmado pelo cliente (30/07/2026): não existem "níveis" nem "premiação de equipe"** —
+      o PDF "Ganhos e Incentivos" é o plano de carreira completo e final, só com o bônus
+      individual acima. `total_premiacao_equipe` fica permanentemente 0 (decisão de negócio, não
+      lacuna técnica).
 - [x] Fechamento mensal consolidado por consultor — gravado em `apuracoes_mensais`, com upsert
       por `(cod_consultor, ano, mes)` (gerar de novo sobrescreve o mês)
 

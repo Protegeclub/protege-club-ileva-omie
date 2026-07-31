@@ -9,7 +9,6 @@ import { Botao } from '@/lib/ui/botao'
 import { CardAtalho } from '@/lib/ui/card-atalho'
 import { CardFinanceiro } from '@/lib/ui/card-financeiro'
 import { CardKpi, calcularTendencia } from '@/lib/ui/card-kpi'
-import { CardMeta } from '@/lib/ui/card-meta'
 import { AreaProducaoMensal, BarraAdesoesPorMes, DonutComposicaoConsultor } from '@/lib/ui/graficos-consultor'
 import {
   IconeAdesao,
@@ -139,14 +138,14 @@ export default async function GestorConsultorDetalhePage({
           cor="navy"
           titulo="Premiação individual"
           valor={formatarMoeda(linhaPropria.total_premiacao_individual)}
-          descricao="Regras do plano de carreira ainda não definidas"
+          descricao="R$50 por placa a partir de 10 adesões pagas no mês"
         />
         <CardKpi
           icone={<IconeTrofeu />}
           cor="navy"
           titulo="Premiação liderança"
           valor={formatarMoeda(linhaPropria.total_premiacao_equipe)}
-          descricao="Regras do plano de carreira ainda não definidas"
+          descricao="Não faz parte do plano de carreira"
         />
       </div>
 
@@ -244,11 +243,7 @@ export default async function GestorConsultorDetalhePage({
         <BarraAdesoesPorMes evolucao={evolucao} />
       </div>
 
-      {/* Histórico + Metas */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <TimelineMovimentacoes itens={timeline} />
-        <CardMeta />
-      </div>
+      <TimelineMovimentacoes itens={timeline} />
 
       <Botao
         href={`/api/relatorios/consultor?tipo=dashboard&cod_consultor=${codConsultor}&${qs}`}

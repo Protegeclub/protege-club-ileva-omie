@@ -36,7 +36,8 @@ export async function gerarESalvarApuracao(
 
   // Bônus por Performance (R$50/placa a partir de 10 adesões pagas no mês) — ver
   // premiacao-individual.ts pra regra completa e a fonte (PDF "Ganhos e Incentivos" do cliente).
-  // "Premiação de equipe" e "níveis" do plano de carreira continuam sem regra definida.
+  // Não existe "premiação de equipe" nem "níveis" — confirmado pelo cliente (30/07/2026) que
+  // este é o plano de carreira completo e final.
   const premiacaoIndividual = calcularPremiacaoIndividual(resultado.adesoes.length)
 
   const totalLiquido =

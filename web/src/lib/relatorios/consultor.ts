@@ -65,15 +65,6 @@ export async function gerarPdfDashboard(
     doc.text(`${rotulo}: `, { continued: true }).font('Helvetica-Bold').text(valor).font('Helvetica')
   }
 
-  doc.moveDown(0.5)
-  doc
-    .fontSize(9)
-    .fillColor('#92400E')
-    .text(
-      'Premiação (individual e de líder de equipe) ainda depende da definição das regras do ' +
-        'plano de carreira com o cliente.'
-    )
-
   rodape(doc)
   doc.end()
   return fim

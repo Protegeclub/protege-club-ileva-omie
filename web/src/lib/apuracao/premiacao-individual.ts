@@ -14,8 +14,8 @@
 // (dt_contrato), que é uma métrica operacional diferente e não entra em comissão (ver nota em
 // mensal.ts sobre ativação vs. pagamento).
 //
-// Ainda NÃO cobre "premiação de equipe" nem "níveis" do plano de carreira — o PDF não define
-// nenhum dos dois; `total_premiacao_equipe` continua 0 até o cliente detalhar essa parte.
+// Não existe "premiação de equipe" nem "níveis" — confirmado pelo cliente (30/07/2026) que este
+// PDF é o plano de carreira completo e final; `total_premiacao_equipe` fica 0 permanentemente.
 export const LIMITE_ADESOES_BONUS_PERFORMANCE = 10
 export const VALOR_BONUS_PERFORMANCE_POR_PLACA = 50
 
