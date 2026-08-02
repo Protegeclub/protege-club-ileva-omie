@@ -3,11 +3,12 @@
 import Image from 'next/image'
 import { useActionState, useState } from 'react'
 import { Banner } from '@/lib/ui/banner'
-import { IconeApurado, IconeAtualizar } from '@/lib/ui/icones-sidebar'
+import { IconeAtualizar, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 import { IconeSpinner } from '../gestor/gerar/icones'
 import { entrar } from './actions'
 import {
   IconeCadeado,
+  IconeCheck,
   IconeEmail,
   IconeEntrar,
   IconeEscudo,
@@ -18,136 +19,127 @@ import {
 
 const estadoInicial = { erro: '' }
 
-const BENEFICIOS = [
-  {
-    icone: <IconeAtualizar className="h-4 w-4" />,
-    titulo: 'Sincronização automática',
-    descricao: 'Integração em tempo real com a API da Ileva.',
-  },
-  {
-    icone: <IconeEscudo className="h-4 w-4" />,
-    titulo: 'Dados protegidos',
-    descricao: 'Segurança e criptografia para todas as informações.',
-  },
-  {
-    icone: <IconeGraficoBarras className="h-4 w-4" />,
-    titulo: 'Dashboard executivo',
-    descricao: 'Indicadores financeiros e comerciais em tempo real.',
-  },
-  {
-    icone: <IconeApurado className="h-4 w-4" />,
-    titulo: 'Histórico completo',
-    descricao: 'Acompanhe todas as apurações já realizadas.',
-  },
+// Redesign "estilo software corporativo" (pedido do Samuel, 03/08/2026) — abandona o tom de
+// landing page (texto longo, lista com bullet) por 4 cards minimalistas, ícone + rótulo curto.
+const CARDS = [
+  { icone: <IconeAtualizar className="h-4 w-4" />, titulo: 'API iLeva', descricao: 'Sincronização automática' },
+  { icone: <IconeGraficoBarras className="h-4 w-4" />, titulo: 'Dashboard', descricao: 'Indicadores em tempo real' },
+  { icone: <IconeUsuarios className="h-4 w-4" />, titulo: 'Consultores', descricao: 'Gestão centralizada' },
+  { icone: <IconeEscudo className="h-4 w-4" />, titulo: 'Segurança', descricao: 'Ambiente protegido' },
 ]
 
-const CORES_AMBIENTE: Record<string, string> = {
-  Produção: 'bg-emerald-50 text-emerald-700',
-  Homologação: 'bg-amber-50 text-amber-700',
-  Desenvolvimento: 'bg-slate-100 text-slate-500',
-}
-
-export function LoginForm({ versao, ambiente }: { versao: string; ambiente: string }) {
+export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
   const [estado, formAction, pendente] = useActionState(entrar, estadoInicial)
   const [mostrarSenha, setMostrarSenha] = useState(false)
 
   return (
-    <main className="flex min-h-screen bg-white">
-      {/* Painel institucional — some no mobile (só logo+login+botão lá), reduzido em telas
-          médias (só logo+headline, sem benefícios/mockup) e completo em telas grandes. */}
-      <div className="relative hidden shrink-0 flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-navy via-brand-navy to-brand-navy-hover px-10 py-8 text-white md:flex md:w-2/5 lg:w-[45%] lg:px-14 lg:py-8">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage:
-              'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)',
-            backgroundSize: '36px 36px',
-          }}
-        />
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/5" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-40 -left-20 h-96 w-96 rounded-full bg-brand-orange/10 blur-[2px]" />
-        <IconeEscudo className="pointer-events-none absolute -right-6 top-[28%] hidden h-64 w-64 text-white/[0.04] lg:block" />
-        <svg
-          aria-hidden
-          viewBox="0 0 300 150"
-          fill="none"
-          className="pointer-events-none absolute bottom-16 left-0 hidden h-40 w-72 text-brand-blue/10 lg:block"
-        >
-          <path d="M-10 100C60 40 140 160 220 60S340 20 400 80" stroke="currentColor" strokeWidth="3" />
-        </svg>
-
-        <div className="animar-entrada relative z-10 flex items-center gap-3">
+    <main className="flex h-screen w-full overflow-hidden bg-white">
+      {/* Painel institucional — 48% em telas grandes, reduzido em tablet, escondido no mobile (só
+          o card de login aparece). Layout e arte totalmente separados (pedido do Samuel,
+          02/08/2026): a arte de fundo é UM único asset estático (public/images/login-left.png),
+          aplicado com object-cover. Nada aqui é desenhado em CSS/SVG — só a imagem + os elementos
+          HTML (logo/título/descrição/benefícios/rodapé) por cima. Pra trocar a arte no futuro,
+          basta substituir o arquivo — nenhuma linha de código muda.
+          `temArteFundo` (checado em disco por page.tsx) só existe pra não renderizar a tag
+          <Image> antes do arquivo existir — sem ela, o navegador mostra o ícone de "imagem
+          quebrada" no canto. Sem o asset, cai no fallback bg-brand-navy (cor sólida, nunca uma
+          composição tentando simular a arte). */}
+      <div className="relative hidden shrink-0 overflow-hidden bg-brand-navy md:block md:w-[43%] lg:w-[48%]">
+        {temArteFundo && (
+          // unoptimized: sem isso, o Next re-comprime a imagem no próprio pipeline de otimização
+          // (webp/avif, qualidade 75 por padrão) por cima do arquivo que o Samuel já forneceu —
+          // foi exatamente essa recompressão dupla que deixou a arte borrada e com a cor
+          // alterada. `unoptimized` serve o arquivo exatamente como está em public/images/,
+          // byte a byte, sem nenhum reprocessamento.
+          // object-position 35% (evoluiu de 25%, pedido do Samuel, 03/08/2026 — "mais um pouco
+          // pra esquerda"): a arte concentra os elementos "cheios" (carro, ícone de escudo) do
+          // lado direito — testei até 60% e a partir de ~45% o retrovisor/ícone do escudo já
+          // cruzam por cima do texto dos benefícios; 35% é o ponto mais à direita que ainda fica
+          // limpo. Ainda é só posicionamento, não redesenho.
           <Image
-            src="/Logo Protege Club.png"
-            alt="Protege Club"
-            width={40}
-            height={40}
+            src="/images/login-left.png"
+            alt=""
+            fill
             priority
-            className="h-10 w-10 shrink-0"
+            unoptimized
+            className="object-cover"
+            style={{ objectPosition: '0% center' }}
           />
-          <span className="text-sm font-semibold tracking-wide">Protege Club</span>
-        </div>
+        )}
+        <div aria-hidden className="absolute inset-0 bg-black/25" />
 
-        <div className="relative z-10 space-y-4 pl-3">
-          <div className="animar-entrada max-w-md" style={{ animationDelay: '100ms' }}>
+        {/* Conteúdo colado no topo (não mais espalhado com justify-between) — deixa a metade de
+            baixo do painel livre pra arte (o carro) respirar, em vez de competir com texto
+            (pedido do Samuel, 03/08/2026: "o carro vira protagonista"). Rodapé simplificado,
+            empurrado pro final via mt-auto. */}
+        <div className="relative z-10 flex h-full flex-col p-12 text-white">
+          <div className="animar-entrada flex items-center gap-3">
+            <Image
+              src="/Logo Protege Club.png"
+              alt="Protege Club"
+              width={80}
+              height={80}
+              priority
+              className="h-20 w-20 shrink-0"
+            />
+            <span className="text-sm font-semibold tracking-wide">Protege Club</span>
+          </div>
+
+          <div className="animar-entrada mt-12 max-w-[420px] pl-3" style={{ animationDelay: '100ms' }}>
             <span className="mb-3 inline-block h-1 w-10 rounded-full bg-brand-orange" aria-hidden />
-            <h1 className="text-[32px] font-bold leading-[1.15] lg:text-[42px]">
-              Apuração de comissões,
-              <br />
-              <span className="text-brand-orange">do jeito certo.</span>
-            </h1>
-            <p className="mt-3 text-sm text-white/60 lg:text-base">
-              Sincronização automática com a API da Ileva, cálculo de adesão, recorrência,
-              descontos, equipes e todo o histórico em uma única plataforma.
+            <h1 className="text-2xl font-semibold leading-[1.2] lg:text-[32px]">Central de Apuração Comercial</h1>
+            <p className="mt-3 text-sm text-white/65 lg:text-base">
+              Plataforma exclusiva para gestão de comissões, desempenho comercial e
+              acompanhamento operacional.
             </p>
-          </div>
 
-          <div className="animar-entrada hidden grid-cols-1 gap-2.5 lg:grid" style={{ animationDelay: '200ms' }}>
-            {BENEFICIOS.map((b) => (
-              <div key={b.titulo} className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-brand-orange">
-                  {b.icone}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-white">{b.titulo}</p>
-                  <p className="text-xs text-white/55">{b.descricao}</p>
+            <div className="animar-entrada mt-8 hidden grid-cols-2 gap-3 lg:grid" style={{ animationDelay: '200ms' }}>
+              {CARDS.map((c) => (
+                <div key={c.titulo} className="rounded-xl border border-white/10 bg-white/5 p-3.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-blue/15 text-brand-orange">
+                    {c.icone}
+                  </span>
+                  <p className="mt-2.5 text-sm font-semibold text-white">{c.titulo}</p>
+                  <p className="text-xs text-white/55">{c.descricao}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-center gap-2 text-xs text-white/50">
-            <IconeEscudo className="h-3.5 w-3.5" />
-            Segurança em primeiro lugar
+          <div className="mt-auto flex items-center gap-2 text-xs text-white/40">
+            <IconeEscudo className="h-3.5 w-3.5 shrink-0" />
+            Ambiente protegido
           </div>
-          <p className="text-xs text-white/30">© {new Date().getFullYear()} Protege Club</p>
         </div>
       </div>
 
-      {/* Painel do formulário */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 bg-gradient-to-b from-slate-50 to-white px-4 py-10">
-        <div className="animar-entrada w-full max-w-[500px] rounded-[24px] bg-white p-8 shadow-[0_20px_60px_-15px_rgba(0,42,84,0.18)] sm:p-12">
+      {/* Painel do formulário — SEM cartão flutuante (pedido do Samuel, 04/08/2026: "sem cartões
+          dentro de cartões" — o painel em si já é branco liso, então um cartão branco com sombra
+          por cima só duplicava a mesma superfície). Logo/título/form ficam direto sobre o fundo,
+          largura máxima de 480px, bastante espaço em branco ao redor. */}
+      <div className="flex flex-1 items-center justify-center overflow-y-auto bg-white px-4 py-10">
+        <div className="animar-entrada w-full max-w-[480px] p-8 sm:p-14">
           <div className="mb-8 space-y-3 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-navy">
+            {/* O ícone do logo (carro+wifi) é traçado em linha bem clara — some se colocado
+                direto no branco. Mantém um selo navy pra ficar visível, mas bem menor e mais
+                discreto que antes (só o essencial, não um "ícone enorme"). */}
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-brand-navy">
               <Image
                 src="/Logo Protege Club.png"
                 alt="Protege Club"
-                width={40}
-                height={40}
+                width={28}
+                height={28}
                 priority
-                className="h-10 w-10"
+                className="h-7 w-7"
               />
             </div>
-            <h2 className="text-2xl font-bold text-brand-navy">Bem-vindo de volta!</h2>
+            <h2 className="text-3xl font-bold text-brand-navy">Bem-vindo de volta!</h2>
             <p className="text-base text-slate-500">
               Faça login para acessar o painel de apuração de comissões.
             </p>
           </div>
 
-          <form action={formAction} className="space-y-5">
+          <form action={formAction} className="space-y-5 border-t border-slate-100 pt-8">
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium text-slate-700">
                 E-mail
@@ -161,7 +153,7 @@ export function LoginForm({ versao, ambiente }: { versao: string; ambiente: stri
                   autoComplete="email"
                   placeholder="voce@protegeclub.com.br"
                   required
-                  className="h-14 w-full rounded-[14px] border border-slate-300 pl-11 pr-4 text-base outline-none transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
+                  className="h-12 w-full rounded-[14px] border border-[#DCE3EC] bg-white pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-blue focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
                 />
               </div>
             </div>
@@ -179,7 +171,7 @@ export function LoginForm({ versao, ambiente }: { versao: string; ambiente: stri
                   autoComplete="current-password"
                   placeholder="••••••••"
                   required
-                  className="h-14 w-full rounded-[14px] border border-slate-300 pl-11 pr-11 text-base outline-none transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
+                  className="h-12 w-full rounded-[14px] border border-[#DCE3EC] bg-white pl-11 pr-11 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-blue focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
                 />
                 <button
                   type="button"
@@ -193,8 +185,12 @@ export function LoginForm({ versao, ambiente }: { versao: string; ambiente: stri
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <label className="flex shrink-0 items-center gap-2 text-sm text-slate-600">
-                <input type="checkbox" className="h-4 w-4 shrink-0 rounded border-slate-300 accent-brand-orange" />
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-600">
+                <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+                  <input type="checkbox" className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                  <span className="pointer-events-none absolute inset-0 rounded-[6px] border border-slate-300 bg-white transition-colors peer-checked:border-brand-orange peer-checked:bg-brand-orange peer-focus-visible:ring-2 peer-focus-visible:ring-brand-blue/30 peer-focus-visible:ring-offset-1" />
+                  <IconeCheck className="pointer-events-none relative h-2.5 w-2.5 text-white opacity-0 transition-opacity peer-checked:opacity-100" />
+                </span>
                 Manter conectado
               </label>
               {/* Sem fluxo de recuperação de senha implementado ainda — texto informativo, não
@@ -212,10 +208,10 @@ export function LoginForm({ versao, ambiente }: { versao: string; ambiente: stri
             <button
               type="submit"
               disabled={pendente}
-              className="flex h-14 w-full items-center justify-center gap-2 rounded-[14px] bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              {pendente ? <IconeSpinner className="h-5 w-5" /> : <IconeEntrar className="h-5 w-5" />}
               {pendente ? 'Entrando...' : 'Entrar'}
+              {pendente ? <IconeSpinner className="h-5 w-5" /> : <IconeEntrar className="h-5 w-5" />}
             </button>
 
             <div className="flex items-center justify-center gap-1.5 border-t border-slate-100 pt-4 text-xs text-slate-400">
@@ -223,16 +219,6 @@ export function LoginForm({ versao, ambiente }: { versao: string; ambiente: stri
               Sistema protegido
             </div>
           </form>
-        </div>
-
-        <div
-          className="animar-entrada flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs text-slate-400"
-          style={{ animationDelay: '100ms' }}
-        >
-          <span>Versão {versao}</span>
-          <span className={`rounded-full px-2.5 py-0.5 font-medium ${CORES_AMBIENTE[ambiente] ?? 'bg-slate-100 text-slate-500'}`}>
-            Ambiente: {ambiente}
-          </span>
         </div>
       </div>
     </main>

@@ -81,6 +81,14 @@ export function IconeGraficoBarras({ className }: { className?: string }) {
   )
 }
 
+export function IconeCheck({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className={className}>
+      <path d="M3 8.2 6.2 11.4 13 4.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function IconeEntrar({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
