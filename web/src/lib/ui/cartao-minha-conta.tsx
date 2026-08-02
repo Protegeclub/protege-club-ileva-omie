@@ -45,6 +45,7 @@ export function CartaoMinhaConta({
           <div>
             <label htmlFor="nome" className="block text-xs font-medium text-slate-500">Nome</label>
             <input
+              key={nomeAtual}
               id="nome"
               name="nome"
               type="text"
