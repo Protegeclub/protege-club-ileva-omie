@@ -188,7 +188,9 @@ sistema.
       lint passando
 - [x] Projeto Supabase criado, variáveis preenchidas em `.env` e `web/.env.local`, e migration
       `0001_init.sql` aplicada com sucesso (tabelas `perfis`, `apuracoes_mensais`,
-      `auditoria_omie`, `plano_carreira_niveis`, `ileva_token_cache` confirmadas em 11/07/2026)
+      `auditoria_omie`, `plano_carreira_niveis`, `ileva_token_cache` confirmadas em 11/07/2026).
+      **`plano_carreira_niveis` removida em 30/07/2026** (migration `0007`) — nunca foi usada por
+      nenhum código, e o cliente confirmou que não existem níveis no plano de carreira.
 - [x] Deploy em produção na Vercel: `protege-club-ileva-omie.vercel.app` — testado de ponta a
       ponta (login, painel do Consultor, geração de apuração pelo Comercial) direto em produção
 - [x] `.gitignore` revisado (raiz + `web/`, cobrindo `.env*`, `node_modules/`, `.next/`, `*.mp4`)

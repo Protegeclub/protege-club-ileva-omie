@@ -7,6 +7,7 @@ import {
   IconeAdesao,
   IconeAlerta,
   IconeColapsar,
+  IconeConfiguracoes,
   IconeDashboard,
   IconePlaca,
   IconeRastreador,
@@ -53,6 +54,12 @@ export function SidebarConsultor({ nome, children }: { nome: string | null; chil
       href: '/consultor/inadimplentes',
       label: 'Inadimplentes',
       icone: <IconeAlerta />,
+    },
+    {
+      rota: '/consultor/configuracoes',
+      href: '/consultor/configuracoes',
+      label: 'Configurações',
+      icone: <IconeConfiguracoes />,
     },
   ]
 

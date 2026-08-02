@@ -206,3 +206,37 @@ export function IconeAtualizar({ className }: { className?: string }) {
     </svg>
   )
 }
+
+// "Sliders" de preferências — usado como ícone de "Configurações" no menu lateral dos dois
+// painéis, mais fácil de desenhar com precisão do que uma engrenagem de verdade.
+export function IconeConfiguracoes({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M4 6h8M16 6h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="13" cy="6" r="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4 12h4M12 12h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="9" cy="12" r="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4 18h10M18 18h2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="15" cy="18" r="2" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  )
+}
+
+export function IconeUsuario({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4.5 19.5c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function IconeCadeado({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <rect x="4.5" y="10.5" width="15" height="10" rx="2" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="12" cy="15" r="1.4" fill="currentColor" />
+    </svg>
+  )
+}
