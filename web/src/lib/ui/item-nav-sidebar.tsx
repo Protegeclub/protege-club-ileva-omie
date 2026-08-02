@@ -23,8 +23,8 @@ export function ItemNavSidebar({
       href={href}
       title={colapsado ? label : undefined}
       aria-current={ativo ? 'page' : undefined}
-      className={`flex items-center gap-3.5 rounded-xl border-l-2 px-3.5 py-3 text-xs font-medium tracking-wide transition-colors ${
-        colapsado ? 'justify-center' : ''
+      className={`flex items-center gap-3.5 rounded-xl border-l-2 px-3.5 py-3 text-xs font-medium tracking-wide transition-all hover:translate-x-1 ${
+        colapsado ? 'justify-center hover:translate-x-0' : ''
       } ${
         ativo
           ? 'border-brand-orange bg-white/10 text-white shadow-sm'

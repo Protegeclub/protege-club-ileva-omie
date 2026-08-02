@@ -4,7 +4,7 @@ import { NOMES_MESES } from '@/app/consultor/tipos'
 import { montarDashboardMes, type DashboardMes } from '@/lib/apuracao/dashboard-mes'
 import { Botao } from '@/lib/ui/botao'
 import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
-import { CardKpi, calcularTendencia } from '@/lib/ui/card-kpi'
+import { CardKpi, calcularProgresso, calcularTendencia } from '@/lib/ui/card-kpi'
 import { Cartao } from '@/lib/ui/cartao'
 import {
   IconeAdesao,
@@ -58,25 +58,33 @@ export default async function GestorDashboardPage({
   const evolucaoRecorrencia = dados.evolucao.map((p) => p.totalRecorrencia)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header "hero" (pedido do Samuel, 04/08/2026: "precisa respirar") — competência/última
+          atualização viram dois blocos rotulados separados por um traço vertical, em vez do
+          pill+ponto+texto espremido numa linha só. */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold tracking-tight text-brand-navy">Dashboard Comercial</h1>
           <p className="mt-1 text-sm text-slate-500">Resumo executivo da operação comercial.</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
-              {NOMES_MESES[mes - 1]} / {ano}
-            </span>
-            <span className="text-slate-300">·</span>
-            <span className="text-slate-400">
-              {dados.ultimaAtualizacao
-                ? `Última atualização: ${formatarUltimaAtualizacao(dados.ultimaAtualizacao)}`
-                : 'Nenhuma apuração gerada neste período ainda'}
-            </span>
+          <div className="mt-5 flex flex-wrap items-center gap-6">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Competência</p>
+              <p className="mt-0.5 text-sm font-medium text-slate-700">{NOMES_MESES[mes - 1]} {ano}</p>
+            </div>
+            <span className="h-8 w-px bg-slate-200" aria-hidden />
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Última atualização</p>
+              <p className="mt-0.5 text-sm font-medium text-slate-700">
+                {dados.ultimaAtualizacao ? formatarUltimaAtualizacao(dados.ultimaAtualizacao) : 'Nenhuma apuração ainda'}
+              </p>
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <BotaoAtualizarPagina />
+          <Botao href="/gestor/gerar" variante="secundaria" className="h-11">
+            Gerar
+          </Botao>
           <Botao href="/gestor/consultores" variante="destaque" className="h-11">
             Ver Consultores
           </Botao>
@@ -123,16 +131,22 @@ export default async function GestorDashboardPage({
           que a página já buscava (evolução de 6 meses / total do mês anterior / apurados-ativos).
           Desconto rastreador não mostra seta de tendência de propósito: é um valor descontado dos
           consultores, então "subir" não é necessariamente bom — mostrar "▲ verde" seria enganoso. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <CardKpi
-          icone={<IconeCarteira />}
-          cor="blue"
-          titulo="Comissão líquida"
-          valor={formatarMoeda(dados.totalLiquido)}
-          tendenciaPct={calcularTendencia(dados.totalLiquido, dados.anterior.totalLiquido)}
-          valorAnterior={formatarMoeda(dados.anterior.totalLiquido)}
-          sparkline={evolucaoLiquido}
-        />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+        {/* Comissão líquida em destaque (~1.4x maior) — é o número que mais importa pro Gestor,
+            os outros 5 tinham exatamente o mesmo peso visual antes (pedido do Samuel, 04/08/2026). */}
+        <div className="col-span-2 sm:col-span-3 lg:col-span-2">
+          <CardKpi
+            icone={<IconeCarteira />}
+            cor="blue"
+            titulo="Comissão líquida"
+            valor={formatarMoeda(dados.totalLiquido)}
+            tendenciaPct={calcularTendencia(dados.totalLiquido, dados.anterior.totalLiquido)}
+            valorAnterior={formatarMoeda(dados.anterior.totalLiquido)}
+            sparkline={evolucaoLiquido}
+            progresso={calcularProgresso(dados.totalLiquido, dados.anterior.totalLiquido) ?? undefined}
+            destaque
+          />
+        </div>
         <CardKpi
           icone={<IconeAdesao />}
           cor="emerald"
@@ -141,6 +155,7 @@ export default async function GestorDashboardPage({
           tendenciaPct={calcularTendencia(dados.totalAdesao, dados.anterior.totalAdesao)}
           valorAnterior={formatarMoeda(dados.anterior.totalAdesao)}
           sparkline={evolucaoAdesao}
+          progresso={calcularProgresso(dados.totalAdesao, dados.anterior.totalAdesao) ?? undefined}
         />
         <CardKpi
           icone={<IconeRecorrencia />}
@@ -150,6 +165,7 @@ export default async function GestorDashboardPage({
           tendenciaPct={calcularTendencia(dados.totalRecorrencia, dados.anterior.totalRecorrencia)}
           valorAnterior={formatarMoeda(dados.anterior.totalRecorrencia)}
           sparkline={evolucaoRecorrencia}
+          progresso={calcularProgresso(dados.totalRecorrencia, dados.anterior.totalRecorrencia) ?? undefined}
         />
         <CardKpi
           icone={<IconeRastreador />}
@@ -186,7 +202,7 @@ export default async function GestorDashboardPage({
           antigo donut "Status das apurações" saiu daqui por pedido do Samuel (01/08/2026): é
           quase sempre ~100% gerado, então não rendia gráfico — o número de erros/pendentes
           continua disponível em texto no Resumo operacional/Insights, só não como gráfico. */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         <DonutComposicao
           totalLiquido={dados.totalLiquido}
           totalAdesao={dados.totalAdesao}
@@ -199,7 +215,7 @@ export default async function GestorDashboardPage({
       {/* Terceira linha — Top 5 por líquido (mesmo total já calculado por linha.total_liquido
           na apuração, só reordenado pra exibição) + insights derivados só dos números já
           exibidos acima, sem IA nem chamada nova. */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         <RankingLista
           titulo="Top 5 consultores — por líquido"
           itens={dados.rankingConsultoresPorLiquido.map((c) => ({
@@ -260,10 +276,18 @@ function RankingLista({
   return (
     <Cartao className="p-5 transition-shadow hover:shadow-md">
       <p className="text-sm font-medium text-slate-700">{titulo}</p>
-      <div className="mt-4 space-y-1">
-        {itens.length === 0 && (
-          <p className="text-sm text-slate-400">Nenhuma apuração gerada neste período.</p>
-        )}
+      {itens.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-300">
+            <IconeTrofeu className="h-6 w-6" />
+          </span>
+          <p className="mt-3 text-sm font-medium text-slate-600">Nenhum ranking disponível</p>
+          <p className="mt-1 max-w-[220px] text-xs text-slate-400">
+            Realize a primeira apuração para visualizar os consultores com maior comissão.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 space-y-1">
         {itens.map((item, i) => {
           const medalha = medalhaPosicao(i)
           return (
@@ -297,7 +321,8 @@ function RankingLista({
             </Link>
           )
         })}
-      </div>
+        </div>
+      )}
     </Cartao>
   )
 }
@@ -386,27 +411,43 @@ function gerarInsights(dados: DashboardMes): Insight[] {
   return insights.slice(0, 5)
 }
 
+// "há Xh"/"há Xd" a partir do timestamp real da última apuração gerada (dados.ultimaAtualizacao)
+// — todos os insights vêm do mesmo conjunto de dados gerado naquele momento, então o mesmo
+// relativo vale pra cada item. Nunca um horário fabricado por item.
+function formatarRelativo(iso: string | null): string {
+  if (!iso) return ''
+  const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+  if (diffMin < 1) return 'agora mesmo'
+  if (diffMin < 60) return `há ${diffMin} min`
+  const horas = Math.round(diffMin / 60)
+  if (horas < 24) return `há ${horas}h`
+  return `há ${Math.round(horas / 24)}d`
+}
+
 function InsightsDoMes({ dados }: { dados: DashboardMes }) {
   const insights = gerarInsights(dados)
+  const relativo = formatarRelativo(dados.ultimaAtualizacao)
   return (
     <Cartao className="p-5 transition-shadow hover:shadow-md">
       <p className="text-sm font-medium text-slate-700">Insights do mês</p>
-      <div className="mt-4 space-y-1">
-        {insights.length === 0 && (
-          <p className="text-sm text-slate-400">Sem dados suficientes neste período para gerar insights.</p>
-        )}
-        {insights.map((insight) => (
-          <div key={insight.titulo} className="-mx-2 flex items-start gap-3 rounded-xl p-2">
-            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${TOM_INSIGHT[insight.tom]}`}>
-              {insight.icone}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-800">{insight.titulo}</p>
-              <p className="text-xs text-slate-400">{insight.descricao}</p>
+      {insights.length === 0 ? (
+        <p className="mt-4 text-sm text-slate-400">Sem dados suficientes neste período para gerar insights.</p>
+      ) : (
+        <div className="mt-3 divide-y divide-slate-100">
+          {insights.map((insight) => (
+            <div key={insight.titulo} className="flex items-start gap-3 py-3 first:pt-1 last:pb-1">
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${TOM_INSIGHT[insight.tom]}`}>
+                {insight.icone}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-800">{insight.titulo}</p>
+                <p className="text-xs text-slate-400">{insight.descricao}</p>
+              </div>
+              {relativo && <span className="shrink-0 text-[11px] text-slate-300">{relativo}</span>}
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </Cartao>
   )
 }
@@ -452,7 +493,10 @@ function ResumoOperacional({ dados, ano, mes }: { dados: DashboardMes; ano: numb
   ]
 
   return (
-    <Cartao className="p-0 transition-shadow hover:shadow-md">
+    // sticky (pedido do Samuel, 04/08/2026: "eu deixaria ela fixa. Sempre.") — vira um rodapé de
+    // status sempre visível, como já é o caso na maioria dos dashboards de referência (Stripe,
+    // Linear). Conteúdo inalterado por enquanto (ver observação sobre API/Tempo).
+    <Cartao className="sticky bottom-0 z-10 p-0 shadow-[0_-8px_24px_-12px_rgba(15,23,42,0.12)]">
       <div className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-5">
         {itens.map((item) => (
           <div key={item.titulo} className="flex items-start gap-3 p-4">

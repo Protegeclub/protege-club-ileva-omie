@@ -30,6 +30,15 @@ export function calcularTendencia(atual: number, anterior: number): number | nul
   return ((atual - anterior) / anterior) * 100
 }
 
+// Pra BarraProgresso do CardKpi: proporção do mês atual sobre (atual + anterior) — mesma
+// comparação que calcularTendencia já expressa como seta, só que como barra. Nunca uma
+// meta/quota (este sistema não tem nenhuma cadastrada) — null quando não há base real.
+export function calcularProgresso(atual: number, anterior: number): number | null {
+  const total = atual + anterior
+  if (!total) return null
+  return Math.max(4, Math.min(100, Math.round((atual / total) * 100)))
+}
+
 // Mini gráfico de linha 100% SVG estático (sem Recharts/client) — só desenha a forma, os
 // valores continuam vindo prontos de quem chama (ex.: dashboard-mes.ts:evolucao). Precisa de
 // pelo menos 2 pontos pra ter uma linha.
@@ -79,6 +88,18 @@ function AnelProgresso({ atual, total, cor }: { atual: number; total: number; co
   )
 }
 
+// Barrinha de 3px no rodapé do card — só pros KPIs que têm um "mês anterior" real pra comparar
+// (líquido/adesão/recorrência). Mostra a proporção do mês atual sobre (atual + anterior) — é só
+// outra forma visual da mesma tendência que a seta já mostra, nunca uma meta/quota inventada
+// (este sistema não tem meta cadastrada em lugar nenhum, ver dashboard-mes.ts).
+function BarraProgresso({ pct, cor }: { pct: number; cor: string }) {
+  return (
+    <div className="mt-2.5 h-[3px] w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: cor }} />
+    </div>
+  )
+}
+
 // Estilo "Stripe" — ícone circular colorido, rótulo em caixa alta ao lado, valor em destaque e,
 // quando dá pra comparar com o mês anterior, uma linha de tendência (verde subindo / vermelho
 // descendo); sem tendência, uma descrição curta no lugar (ex.: "Total de consultores"). Card de
@@ -93,6 +114,8 @@ export function CardKpi({
   descricao,
   sparkline,
   anelProgresso,
+  progresso,
+  destaque = false,
 }: {
   icone: ReactNode
   titulo: string
@@ -105,19 +128,27 @@ export function CardKpi({
   sparkline?: number[]
   /** Alternativa ao sparkline pra KPI de proporção (ex.: consultores apurados/ativos). */
   anelProgresso?: { atual: number; total: number }
+  /** 0-100 já calculado por quem chama (ex.: atual/(atual+anterior)) — nunca uma meta inventada. */
+  progresso?: number
+  /** KPI "hero" da tela (ex.: Comissão líquida no Dashboard) — maior, com mais peso visual. */
+  destaque?: boolean
 }) {
   const subiu = (tendenciaPct ?? 0) >= 0
   const corHex = ACENTOS_HEX[cor]
 
   return (
-    <Cartao className="p-4 transition-shadow hover:shadow-md">
+    <Cartao className={`transition-shadow hover:shadow-md ${destaque ? 'p-5' : 'p-4'}`}>
       <div className="flex items-center gap-2.5">
-        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full [&>svg]:h-4 [&>svg]:w-4 ${ACENTOS_CARD[cor]}`}>
+        <div
+          className={`flex shrink-0 items-center justify-center rounded-full ${
+            destaque ? 'h-11 w-11 [&>svg]:h-5 [&>svg]:w-5' : 'h-9 w-9 [&>svg]:h-4 [&>svg]:w-4'
+          } ${ACENTOS_CARD[cor]}`}
+        >
           {icone}
         </div>
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{titulo}</p>
+        <p className={`font-semibold uppercase tracking-wide text-slate-400 ${destaque ? 'text-xs' : 'text-[11px]'}`}>{titulo}</p>
       </div>
-      <p className="mt-3 text-xl font-semibold text-slate-900">{valor}</p>
+      <p className={`mt-3 font-semibold text-slate-900 ${destaque ? 'text-3xl' : 'text-xl'}`}>{valor}</p>
       {tendenciaPct != null ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs">
           <span className={`inline-flex items-center gap-0.5 font-medium ${subiu ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -131,6 +162,7 @@ export function CardKpi({
       ) : null}
       {sparkline && sparkline.length >= 2 ? <Sparkline dados={sparkline} cor={corHex} /> : null}
       {anelProgresso ? <AnelProgresso {...anelProgresso} cor={corHex} /> : null}
+      {progresso != null ? <BarraProgresso pct={progresso} cor={corHex} /> : null}
     </Cartao>
   )
 }

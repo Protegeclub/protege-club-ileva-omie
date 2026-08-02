@@ -63,7 +63,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
             priority
             unoptimized
             className="object-cover"
-            style={{ objectPosition: '0% center' }}
+            style={{ objectPosition: '50% center' }}
           />
         )}
         <div aria-hidden className="absolute inset-0 bg-black/25" />
@@ -85,10 +85,28 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
             <span className="text-sm font-semibold tracking-wide">Protege Club</span>
           </div>
 
-          <div className="animar-entrada mt-12 max-w-[420px] pl-3" style={{ animationDelay: '100ms' }}>
-            <span className="mb-3 inline-block h-1 w-10 rounded-full bg-brand-orange" aria-hidden />
-            <h1 className="text-2xl font-semibold leading-[1.2] lg:text-[32px]">Central de Apuração Comercial</h1>
-            <p className="mt-3 text-sm text-white/65 lg:text-base">
+          <div
+            className="animar-entrada mt-16 max-w-[470px] pl-3"
+            style={{ animationDelay: "100ms" }}
+          >
+            <span
+              className="mb-6 inline-block h-1 w-12 rounded-full bg-brand-orange"
+              aria-hidden
+            />
+
+            <h1 className="text-[36px] font-bold leading-[1.05] tracking-[-0.03em] text-white lg:text-[56px]">
+              <span className="whitespace-nowrap">
+                Central de Apuração
+              </span>
+
+              <br />
+
+              <span className="text-brand-orange">
+                Comercial
+              </span>
+            </h1>
+
+            <p className="mt-8 max-w-[390px] text-[17px] leading-8 text-white/70">
               Plataforma exclusiva para gestão de comissões, desempenho comercial e
               acompanhamento operacional.
             </p>
@@ -113,33 +131,28 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
         </div>
       </div>
 
-      {/* Painel do formulário — SEM cartão flutuante (pedido do Samuel, 04/08/2026: "sem cartões
-          dentro de cartões" — o painel em si já é branco liso, então um cartão branco com sombra
-          por cima só duplicava a mesma superfície). Logo/título/form ficam direto sobre o fundo,
-          largura máxima de 480px, bastante espaço em branco ao redor. */}
+      {/* Painel do formulário — fundo branco liso, sem elemento decorativo (pedido explícito do
+          Samuel, 02/08/2026: "nenhum elemento decorativo" nesta coluna). */}
       <div className="flex flex-1 items-center justify-center overflow-y-auto bg-white px-4 py-10">
-        <div className="animar-entrada w-full max-w-[480px] p-8 sm:p-14">
+        <div className="animar-entrada w-full max-w-[520px] rounded-[28px] bg-white p-8 shadow-[0_35px_100px_-25px_rgba(0,42,84,0.32)] sm:p-12">
           <div className="mb-8 space-y-3 text-center">
-            {/* O ícone do logo (carro+wifi) é traçado em linha bem clara — some se colocado
-                direto no branco. Mantém um selo navy pra ficar visível, mas bem menor e mais
-                discreto que antes (só o essencial, não um "ícone enorme"). */}
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-brand-navy">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] bg-brand-navy">
               <Image
                 src="/Logo Protege Club.png"
                 alt="Protege Club"
-                width={28}
-                height={28}
+                width={40}
+                height={40}
                 priority
-                className="h-7 w-7"
+                className="h-10 w-10"
               />
             </div>
-            <h2 className="text-3xl font-bold text-brand-navy">Bem-vindo de volta!</h2>
+            <h2 className="text-4xl font-bold text-brand-navy">Bem-vindo de volta!</h2>
             <p className="text-base text-slate-500">
               Faça login para acessar o painel de apuração de comissões.
             </p>
           </div>
 
-          <form action={formAction} className="space-y-5 border-t border-slate-100 pt-8">
+          <form action={formAction} className="space-y-5">
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium text-slate-700">
                 E-mail
@@ -153,7 +166,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
                   autoComplete="email"
                   placeholder="voce@protegeclub.com.br"
                   required
-                  className="h-12 w-full rounded-[14px] border border-[#DCE3EC] bg-white pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-blue focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
+                  className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
                 />
               </div>
             </div>
@@ -171,7 +184,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
                   autoComplete="current-password"
                   placeholder="••••••••"
                   required
-                  className="h-12 w-full rounded-[14px] border border-[#DCE3EC] bg-white pl-11 pr-11 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-blue focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
+                  className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
                 />
                 <button
                   type="button"
@@ -208,10 +221,10 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
             <button
               type="submit"
               disabled={pendente}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
-              {pendente ? 'Entrando...' : 'Entrar'}
               {pendente ? <IconeSpinner className="h-5 w-5" /> : <IconeEntrar className="h-5 w-5" />}
+              {pendente ? 'Entrando...' : 'Entrar'}
             </button>
 
             <div className="flex items-center justify-center gap-1.5 border-t border-slate-100 pt-4 text-xs text-slate-400">

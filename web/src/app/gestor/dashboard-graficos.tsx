@@ -144,20 +144,28 @@ export function AreaEvolucao({ evolucao }: { evolucao: DashboardMes['evolucao'] 
   return (
     <Cartao className="p-5 transition-shadow hover:shadow-md">
       <p className="text-sm font-medium text-slate-700">Evolução financeira — últimos 6 meses</p>
-      <div className="mt-2 h-72">
+      {/* h-[350px] (~+20% sobre os 288px de antes) — é o gráfico principal do dashboard, pedido
+          do Samuel (04/08/2026) pra dar mais destaque a ele. */}
+      <div className="mt-2 h-[350px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={evolucao} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <defs>
               {Object.entries(CORES_AREA).map(([campo, cor]) => (
                 <linearGradient key={campo} id={`gradiente-${campo}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={cor} stopOpacity={0.28} />
+                  <stop offset="5%" stopColor={cor} stopOpacity={0.16} />
                   <stop offset="95%" stopColor={cor} stopOpacity={0} />
                 </linearGradient>
               ))}
+              {/* Sombra discreta sob a linha — só nas Area, não no grid/eixos. */}
+              <filter id="sombra-linha" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#0f172a" floodOpacity="0.12" />
+              </filter>
             </defs>
-            <CartesianGrid vertical={false} stroke="#f1f5f9" />
+            {/* tickCount baixo (eixo já é hide, só afeta quantas linhas o grid desenha) — menos
+                linhas horizontais, mais limpo. */}
+            <CartesianGrid vertical={false} stroke="#f1f5f9" strokeDasharray="0" />
             <XAxis dataKey="rotulo" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-            <YAxis hide />
+            <YAxis hide tickCount={4} />
             <Tooltip
               formatter={(valor, nome) => [formatarMoeda(Number(valor)), ROTULOS_AREA[String(nome)] ?? String(nome)]}
               {...ESTILO_TOOLTIP}
@@ -176,8 +184,9 @@ export function AreaEvolucao({ evolucao }: { evolucao: DashboardMes['evolucao'] 
                 dataKey={campo}
                 name={campo}
                 stroke={CORES_AREA[campo]}
-                strokeWidth={3}
+                strokeWidth={3.5}
                 fill={`url(#gradiente-${campo})`}
+                style={{ filter: 'url(#sombra-linha)' }}
                 dot={{ r: 3, strokeWidth: 0, fill: CORES_AREA[campo] }}
                 activeDot={{ r: 5 }}
               />
