@@ -13,6 +13,7 @@ import {
   IconeRastreador,
   IconeRecorrencia,
 } from '@/lib/ui/icones-sidebar'
+import { FundoDecorativoSidebar } from '@/lib/ui/fundo-decorativo-sidebar'
 import { ItemNavSidebar } from '@/lib/ui/item-nav-sidebar'
 
 // Client Component pelo mesmo motivo do SidebarGestor (usePathname + useState de colapso), e
@@ -69,6 +70,7 @@ export function SidebarConsultor({ nome, children }: { nome: string | null; chil
         colapsado ? 'w-[76px]' : 'w-60'
       }`}
     >
+      <FundoDecorativoSidebar />
       <div className="flex items-center gap-3 px-4 py-6">
         <Image
           src="/Logo Protege Club.png"

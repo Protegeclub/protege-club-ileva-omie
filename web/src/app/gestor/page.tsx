@@ -1,12 +1,24 @@
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { NOMES_MESES } from '@/app/consultor/tipos'
-import { montarDashboardMes } from '@/lib/apuracao/dashboard-mes'
+import { montarDashboardMes, type DashboardMes } from '@/lib/apuracao/dashboard-mes'
 import { Botao } from '@/lib/ui/botao'
 import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
 import { CardKpi, calcularTendencia } from '@/lib/ui/card-kpi'
 import { Cartao } from '@/lib/ui/cartao'
-import { IconeApurado, IconeCarteira, IconeAdesao, IconePlaca, IconeRastreador, IconeRecorrencia } from '@/lib/ui/icones-sidebar'
-import { AreaEvolucao, BarraEquipes, DonutComposicao, DonutStatus } from './dashboard-graficos'
+import {
+  IconeAdesao,
+  IconeAlerta,
+  IconeApurado,
+  IconeCarteira,
+  IconePlaca,
+  IconeRastreador,
+  IconeRecorrencia,
+  IconeTrofeu,
+  IconeUsuarios,
+} from '@/lib/ui/icones-sidebar'
+import { AreaEvolucao, DonutComposicao, GraficoDescontoRastreador, GraficoPlacasAtivadas } from './dashboard-graficos'
+import { IconeRelogio } from './gerar/icones'
 
 function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -26,6 +38,10 @@ function formatarUltimaAtualizacao(iso: string) {
 // Home do painel Gestor — visão geral do mês (KPIs + gráficos), separada da lista de
 // consultores (que agora mora em /gestor/consultores, com filtros/ordenação/tabela). Tudo aqui é
 // leitura/agregação do que já está calculado e salvo — ver lib/apuracao/dashboard-mes.ts.
+//
+// Redesign visual (pedido do Samuel, 01/08/2026, referência: Stripe/Linear/Attio) — nenhum
+// número novo foi calculado aqui, só reorganização/estilo. Ver dashboard-mes.ts pra saber de
+// onde cada valor exibido vem.
 export default async function GestorDashboardPage({
   searchParams,
 }: {
@@ -37,18 +53,27 @@ export default async function GestorDashboardPage({
   const mes = Number(params.mes) || hoje.getMonth() + 1
 
   const dados = await montarDashboardMes(ano, mes)
+  const evolucaoLiquido = dados.evolucao.map((p) => p.totalLiquido)
+  const evolucaoAdesao = dados.evolucao.map((p) => p.totalAdesao)
+  const evolucaoRecorrencia = dados.evolucao.map((p) => p.totalRecorrencia)
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-brand-navy">Dashboard</h1>
+          <h1 className="text-[28px] font-bold tracking-tight text-brand-navy">Dashboard Comercial</h1>
           <p className="mt-1 text-sm text-slate-500">Resumo executivo da operação comercial.</p>
-          <p className="mt-3 text-xs text-slate-400">
-            {dados.ultimaAtualizacao
-              ? `Última atualização: ${formatarUltimaAtualizacao(dados.ultimaAtualizacao)}`
-              : 'Nenhuma apuração gerada neste período ainda'}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+              {NOMES_MESES[mes - 1]} / {ano}
+            </span>
+            <span className="text-slate-300">·</span>
+            <span className="text-slate-400">
+              {dados.ultimaAtualizacao
+                ? `Última atualização: ${formatarUltimaAtualizacao(dados.ultimaAtualizacao)}`
+                : 'Nenhuma apuração gerada neste período ainda'}
+            </span>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <BotaoAtualizarPagina />
@@ -58,25 +83,27 @@ export default async function GestorDashboardPage({
         </div>
       </div>
 
-      <Cartao className="flex flex-wrap items-end gap-3 p-4">
-        <form method="GET" className="flex flex-wrap items-end gap-3">
-          <div>
-            <label htmlFor="mes" className="block text-xs font-medium text-slate-500">
+      {/* Toolbar de período — mesmo form GET de sempre (name="mes"/"ano"), só menos "formulário"
+          e mais barra de filtro de uma linha só. */}
+      <Cartao className="flex flex-wrap items-center gap-3 p-3.5">
+        <form method="GET" className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label htmlFor="mes" className="text-xs font-medium text-slate-400">
               Mês
             </label>
             <select
               id="mes"
               name="mes"
               defaultValue={mes}
-              className="mt-1.5 h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="h-9 rounded-lg border border-transparent bg-slate-50 px-3 text-sm text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue"
             >
               {NOMES_MESES.map((nome, i) => (
                 <option key={nome} value={i + 1}>{nome}</option>
               ))}
             </select>
           </div>
-          <div>
-            <label htmlFor="ano" className="block text-xs font-medium text-slate-500">
+          <div className="flex items-center gap-2">
+            <label htmlFor="ano" className="text-xs font-medium text-slate-400">
               Ano
             </label>
             <input
@@ -84,14 +111,16 @@ export default async function GestorDashboardPage({
               name="ano"
               type="number"
               defaultValue={ano}
-              className="mt-1.5 h-11 w-24 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="h-9 w-20 rounded-lg border border-transparent bg-slate-50 px-3 text-sm text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue"
             />
           </div>
-          <Botao type="submit" variante="primaria" className="h-11">Ver período</Botao>
+          <Botao type="submit" variante="primaria" tamanho="sm" className="h-9">Ver período</Botao>
         </form>
       </Cartao>
 
       {/* KPIs — mesmo card compartilhado com Consultores/Gerar apuração (ver lib/ui/card-kpi.tsx).
+          Sparkline/anel são só decoração adicional (props novas, opcionais) reaproveitando dados
+          que a página já buscava (evolução de 6 meses / total do mês anterior / apurados-ativos).
           Desconto rastreador não mostra seta de tendência de propósito: é um valor descontado dos
           consultores, então "subir" não é necessariamente bom — mostrar "▲ verde" seria enganoso. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -102,6 +131,7 @@ export default async function GestorDashboardPage({
           valor={formatarMoeda(dados.totalLiquido)}
           tendenciaPct={calcularTendencia(dados.totalLiquido, dados.anterior.totalLiquido)}
           valorAnterior={formatarMoeda(dados.anterior.totalLiquido)}
+          sparkline={evolucaoLiquido}
         />
         <CardKpi
           icone={<IconeAdesao />}
@@ -110,6 +140,7 @@ export default async function GestorDashboardPage({
           valor={formatarMoeda(dados.totalAdesao)}
           tendenciaPct={calcularTendencia(dados.totalAdesao, dados.anterior.totalAdesao)}
           valorAnterior={formatarMoeda(dados.anterior.totalAdesao)}
+          sparkline={evolucaoAdesao}
         />
         <CardKpi
           icone={<IconeRecorrencia />}
@@ -118,6 +149,7 @@ export default async function GestorDashboardPage({
           valor={formatarMoeda(dados.totalRecorrencia)}
           tendenciaPct={calcularTendencia(dados.totalRecorrencia, dados.anterior.totalRecorrencia)}
           valorAnterior={formatarMoeda(dados.anterior.totalRecorrencia)}
+          sparkline={evolucaoRecorrencia}
         />
         <CardKpi
           icone={<IconeRastreador />}
@@ -125,6 +157,7 @@ export default async function GestorDashboardPage({
           titulo="Desconto rastreador"
           valor={formatarMoeda(dados.totalDescontoRastreador)}
           descricao="Descontado dos consultores"
+          sparkline={[dados.anterior.totalDescontoRastreador, dados.totalDescontoRastreador]}
         />
         <CardKpi
           icone={<IconePlaca />}
@@ -132,6 +165,7 @@ export default async function GestorDashboardPage({
           titulo="Placas ativadas"
           valor={String(dados.qtdPlacasAtivadas)}
           descricao="Este mês"
+          sparkline={[dados.anterior.qtdPlacasAtivadas, dados.qtdPlacasAtivadas]}
         />
         <CardKpi
           icone={<IconeApurado />}
@@ -139,41 +173,46 @@ export default async function GestorDashboardPage({
           titulo="Apurados"
           valor={`${dados.qtdConsultoresApurados}/${dados.qtdConsultoresAtivos}`}
           descricao="Consultores apurados"
+          anelProgresso={{ atual: dados.qtdConsultoresApurados, total: dados.qtdConsultoresAtivos }}
         />
       </div>
 
-      {/* Gráficos — leves de propósito: donuts finos e área com gradiente sutil, sem poluir */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <AreaEvolucao evolucao={dados.evolucao} />
-        <DonutStatus statusContagem={dados.statusContagem} />
+      {/* Gráfico principal — sozinho na linha, de propósito (era dividido com os donuts antes;
+          agora cada bloco tem seu próprio espaço, mais fácil de ler). */}
+      <AreaEvolucao evolucao={dados.evolucao} />
+
+      {/* Segunda linha — composição do líquido + os dois indicadores mensais que antes só
+          apareciam como tendência no card de KPI (agora com o próprio gráfico de 6 meses). O
+          antigo donut "Status das apurações" saiu daqui por pedido do Samuel (01/08/2026): é
+          quase sempre ~100% gerado, então não rendia gráfico — o número de erros/pendentes
+          continua disponível em texto no Resumo operacional/Insights, só não como gráfico. */}
+      <div className="grid gap-4 lg:grid-cols-3">
         <DonutComposicao
           totalLiquido={dados.totalLiquido}
           totalAdesao={dados.totalAdesao}
           totalRecorrencia={dados.totalRecorrencia}
         />
-        <BarraEquipes rankingEquipes={dados.rankingEquipes} />
+        <GraficoPlacasAtivadas evolucao={dados.evolucao} atual={dados.qtdPlacasAtivadas} />
+        <GraficoDescontoRastreador evolucao={dados.evolucao} atual={dados.totalDescontoRastreador} />
       </div>
 
+      {/* Terceira linha — Top 5 por líquido (mesmo total já calculado por linha.total_liquido
+          na apuração, só reordenado pra exibição) + insights derivados só dos números já
+          exibidos acima, sem IA nem chamada nova. */}
       <div className="grid gap-4 lg:grid-cols-2">
         <RankingLista
-          titulo="Top consultores — adesões no mês"
-          itens={dados.rankingConsultores.map((c) => ({
+          titulo="Top 5 consultores — por líquido"
+          itens={dados.rankingConsultoresPorLiquido.map((c) => ({
             label: c.nomeConsultor,
-            sub: c.equipe,
-            valor: c.qtdAdesoes,
+            valor: c.totalLiquido,
             href: `/gestor/consultor/${c.cod_consultor}`,
           }))}
+          formatarValor={formatarMoeda}
         />
-        <RankingLista
-          titulo="Top equipes — adesões no mês"
-          itens={dados.rankingEquipes.map((e) => ({
-            label: e.equipe,
-            sub: `${e.qtdConsultores} consultor(es)`,
-            valor: e.qtdAdesoes,
-            href: `/gestor/consultores?equipe=${encodeURIComponent(e.equipe)}`,
-          }))}
-        />
+        <InsightsDoMes dados={dados} />
       </div>
+
+      <ResumoOperacional dados={dados} ano={ano} mes={mes} />
     </div>
   )
 }
@@ -207,16 +246,19 @@ function medalhaPosicao(indice: number) {
 // Ranking sem Recharts de propósito — barrinha proporcional em CSS puro (mesmo espírito da
 // barra da coluna Líquido em TabelaGestor.tsx), mais leve que montar mais um gráfico. Cada item
 // ganha avatar com iniciais + badge de posição (medalha nos 3 primeiros, número nos demais).
+// `sub` é opcional: o Top 5 por líquido, por pedido, mostra só avatar/nome/valor/barra/ranking.
 function RankingLista({
   titulo,
   itens,
+  formatarValor = (v) => String(v),
 }: {
   titulo: string
-  itens: { label: string; sub: string; valor: number; href: string }[]
+  itens: { label: string; sub?: string; valor: number; href: string }[]
+  formatarValor?: (v: number) => string
 }) {
   const max = Math.max(1, ...itens.map((i) => i.valor))
   return (
-    <Cartao className="p-5">
+    <Cartao className="p-5 transition-shadow hover:shadow-md">
       <p className="text-sm font-medium text-slate-700">{titulo}</p>
       <div className="mt-4 space-y-1">
         {itens.length === 0 && (
@@ -242,9 +284,9 @@ function RankingLista({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-medium text-slate-800 group-hover:underline">{item.label}</span>
-                  <span className="shrink-0 text-sm font-semibold text-slate-700">{item.valor}</span>
+                  <span className="shrink-0 text-sm font-semibold text-slate-700">{formatarValor(item.valor)}</span>
                 </div>
-                <p className="truncate text-xs text-slate-400">{item.sub}</p>
+                {item.sub ? <p className="truncate text-xs text-slate-400">{item.sub}</p> : null}
                 <div className="mt-1.5 h-1.5 rounded-full bg-slate-100">
                   <div
                     className="h-full rounded-full bg-brand-navy transition-all duration-500"
@@ -255,6 +297,174 @@ function RankingLista({
             </Link>
           )
         })}
+      </div>
+    </Cartao>
+  )
+}
+
+interface Insight {
+  icone: ReactNode
+  titulo: string
+  descricao: string
+  tom: 'positivo' | 'negativo' | 'neutro'
+}
+
+const TOM_INSIGHT: Record<Insight['tom'], string> = {
+  positivo: 'bg-emerald-50 text-emerald-600',
+  negativo: 'bg-red-50 text-red-600',
+  neutro: 'bg-brand-navy/10 text-brand-navy',
+}
+
+// Só deriva texto a partir de números que a própria página já buscou (dashboard-mes.ts) — sem
+// IA, sem API nova, sem tabela nova. Mostra só os insights com base de comparação real (ex.:
+// sem apuração do mês anterior, não inventa "▲/▼ 100%").
+function gerarInsights(dados: DashboardMes): Insight[] {
+  const insights: Insight[] = []
+
+  const tendLiquido = calcularTendencia(dados.totalLiquido, dados.anterior.totalLiquido)
+  if (tendLiquido != null) {
+    const subiu = tendLiquido >= 0
+    insights.push({
+      icone: <IconeCarteira className="h-4 w-4" />,
+      titulo: `Comissão líquida ${subiu ? 'maior' : 'menor'} que o mês anterior`,
+      descricao: `${subiu ? '+' : '-'}${Math.abs(Math.round(tendLiquido))}% em relação ao período anterior`,
+      tom: subiu ? 'positivo' : 'negativo',
+    })
+  }
+
+  insights.push(
+    dados.statusContagem.erro === 0
+      ? {
+          icone: <IconeApurado className="h-4 w-4" />,
+          titulo: 'Nenhum erro encontrado na apuração',
+          descricao: 'Todos os dados foram processados com sucesso.',
+          tom: 'positivo',
+        }
+      : {
+          icone: <IconeAlerta className="h-4 w-4" />,
+          titulo: `${dados.statusContagem.erro} erro(s) encontrado(s) na apuração`,
+          descricao: 'Revise os consultores com falha antes de fechar o mês.',
+          tom: 'negativo',
+        }
+  )
+
+  if (dados.rankingEquipes[0]) {
+    // Sem prefixo "Equipe" fixo: o nome já vem do Ileva e algumas equipes já incluem a palavra
+    // "Equipe" no próprio nome (ex.: "Protege Club - Equipe") — prefixar de novo duplicava.
+    insights.push({
+      icone: <IconeTrofeu className="h-4 w-4" />,
+      titulo: `${dados.rankingEquipes[0].equipe} lidera o mês em adesões`,
+      descricao: `${dados.rankingEquipes[0].qtdAdesoes} adesões no período`,
+      tom: 'neutro',
+    })
+  }
+
+  const tendRecorrencia = calcularTendencia(dados.totalRecorrencia, dados.anterior.totalRecorrencia)
+  if (tendRecorrencia != null) {
+    const subiu = tendRecorrencia >= 0
+    insights.push({
+      icone: <IconeRecorrencia className="h-4 w-4" />,
+      titulo: `Recorrência ${subiu ? 'aumentou' : 'caiu'} em relação ao mês anterior`,
+      descricao: `${subiu ? '+' : '-'}${Math.abs(Math.round(tendRecorrencia))}% vs mês anterior`,
+      tom: subiu ? 'positivo' : 'negativo',
+    })
+  }
+
+  const tendRastreador = calcularTendencia(dados.totalDescontoRastreador, dados.anterior.totalDescontoRastreador)
+  if (tendRastreador != null) {
+    const subiu = tendRastreador >= 0
+    insights.push({
+      icone: <IconeRastreador className="h-4 w-4" />,
+      // Desconto de rastreador é descontado do consultor — cair é bom pra eles, por isso o tom
+      // é invertido em relação às outras tendências.
+      titulo: `Desconto de rastreador ${subiu ? 'aumentou' : 'caiu'}`,
+      descricao: `${subiu ? '+' : '-'}${Math.abs(Math.round(tendRastreador))}% vs mês anterior`,
+      tom: subiu ? 'negativo' : 'positivo',
+    })
+  }
+
+  return insights.slice(0, 5)
+}
+
+function InsightsDoMes({ dados }: { dados: DashboardMes }) {
+  const insights = gerarInsights(dados)
+  return (
+    <Cartao className="p-5 transition-shadow hover:shadow-md">
+      <p className="text-sm font-medium text-slate-700">Insights do mês</p>
+      <div className="mt-4 space-y-1">
+        {insights.length === 0 && (
+          <p className="text-sm text-slate-400">Sem dados suficientes neste período para gerar insights.</p>
+        )}
+        {insights.map((insight) => (
+          <div key={insight.titulo} className="-mx-2 flex items-start gap-3 rounded-xl p-2">
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${TOM_INSIGHT[insight.tom]}`}>
+              {insight.icone}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-slate-800">{insight.titulo}</p>
+              <p className="text-xs text-slate-400">{insight.descricao}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Cartao>
+  )
+}
+
+// Substitui o antigo card lateral de status da API iLeva (fila/tempo médio/erros — informação
+// operacional de baixo nível, não executiva) por um resumo horizontal com só o que interessa pro
+// Gestor: se a competência fechou, quantos consultores entraram, e se sobrou alguma pendência.
+function ResumoOperacional({ dados, ano, mes }: { dados: DashboardMes; ano: number; mes: number }) {
+  const completo = dados.qtdConsultoresAtivos > 0 && dados.qtdConsultoresApurados === dados.qtdConsultoresAtivos
+  const pctApurado =
+    dados.qtdConsultoresAtivos > 0 ? Math.round((dados.qtdConsultoresApurados / dados.qtdConsultoresAtivos) * 100) : 0
+  const tendRecorrencia = calcularTendencia(dados.totalRecorrencia, dados.anterior.totalRecorrencia)
+
+  const itens: { icone: ReactNode; titulo: string; descricao: string }[] = [
+    {
+      icone: completo ? <IconeApurado className="h-4 w-4" /> : <IconeRelogio className="h-4 w-4" />,
+      titulo: `Competência ${NOMES_MESES[mes - 1]}/${ano}`,
+      descricao: completo ? 'Processada com sucesso' : 'Apuração em andamento',
+    },
+    {
+      icone: <IconeUsuarios className="h-4 w-4" />,
+      titulo: 'Consultores apurados',
+      descricao: `${dados.qtdConsultoresApurados} de ${dados.qtdConsultoresAtivos} (${pctApurado}%)`,
+    },
+    {
+      icone: dados.statusContagem.erro === 0 ? <IconeApurado className="h-4 w-4" /> : <IconeAlerta className="h-4 w-4" />,
+      titulo: 'Inconsistências',
+      descricao: dados.statusContagem.erro === 0 ? 'Nenhuma encontrada' : `${dados.statusContagem.erro} encontrada(s)`,
+    },
+    {
+      icone: <IconeRecorrencia className="h-4 w-4" />,
+      titulo: 'Recorrência',
+      descricao:
+        tendRecorrencia == null
+          ? 'Sem histórico para comparar'
+          : `${tendRecorrencia >= 0 ? 'Cresceu' : 'Caiu'} ${Math.abs(Math.round(tendRecorrencia))}% vs mês anterior`,
+    },
+    {
+      icone: <IconeRelogio className="h-4 w-4" />,
+      titulo: 'Última atualização',
+      descricao: dados.ultimaAtualizacao ? formatarUltimaAtualizacao(dados.ultimaAtualizacao) : 'Nenhuma apuração gerada',
+    },
+  ]
+
+  return (
+    <Cartao className="p-0 transition-shadow hover:shadow-md">
+      <div className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-5">
+        {itens.map((item) => (
+          <div key={item.titulo} className="flex items-start gap-3 p-4">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-navy/10 text-brand-navy">
+              {item.icone}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-slate-800">{item.titulo}</p>
+              <p className="text-xs text-slate-400">{item.descricao}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </Cartao>
   )

@@ -30,6 +30,7 @@ export interface RankingConsultorItem {
   nomeConsultor: string
   equipe: string
   qtdAdesoes: number
+  totalLiquido: number
 }
 
 export interface RankingEquipeItem {
@@ -45,6 +46,8 @@ export interface PontoEvolucao {
   totalLiquido: number
   totalAdesao: number
   totalRecorrencia: number
+  totalDescontoRastreador: number
+  qtdPlacasAtivadas: number
 }
 
 // Mesmos totais do mês, mas do período anterior — só pra calcular a tendência dos cards de KPI
@@ -72,6 +75,7 @@ export interface DashboardMes {
   anterior: TotaisPeriodo
   statusContagem: StatusContagem
   rankingConsultores: RankingConsultorItem[]
+  rankingConsultoresPorLiquido: RankingConsultorItem[]
   rankingEquipes: RankingEquipeItem[]
   evolucao: PontoEvolucao[]
 }
@@ -111,11 +115,15 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
       .eq('ano', ano)
       .eq('mes', mes),
     admin.from('apuracao_jobs').select('cod_consultor, status').eq('ano', ano).eq('mes', mes),
+    // `total_desconto_rastreador` e `detalhe` (só pra contar placasAtivadas.length) entraram no
+    // select pra alimentar os gráficos de "Placas ativadas"/"Desconto rastreador" do dashboard
+    // (pedido do Samuel, 01/08/2026) — mesma query, sem tabela nova, só mais 2 colunas já
+    // existentes na mesma linha.
     Promise.all(
       periodos.map(({ ano: a, mes: m }) =>
         admin
           .from('apuracoes_mensais')
-          .select('total_liquido, total_adesao, total_recorrencia')
+          .select('total_liquido, total_adesao, total_recorrencia, total_desconto_rastreador, detalhe')
           .eq('ano', a)
           .eq('mes', m)
       )
@@ -161,6 +169,7 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
       nomeConsultor: nomePorConsultor.get(linha.cod_consultor) ?? `Consultor #${linha.cod_consultor}`,
       equipe,
       qtdAdesoes,
+      totalLiquido: linha.total_liquido,
     })
 
     const acumuladoEquipe = porEquipe.get(equipe) ?? { qtdAdesoes: 0, qtdConsultores: 0 }
@@ -193,6 +202,8 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
       total_liquido: number
       total_adesao: number
       total_recorrencia: number
+      total_desconto_rastreador: number
+      detalhe: ApuracaoDetalhe | null
     }[]
     return {
       ano: a,
@@ -201,6 +212,8 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
       totalLiquido: linhasPeriodo.reduce((soma, l) => soma + l.total_liquido, 0),
       totalAdesao: linhasPeriodo.reduce((soma, l) => soma + l.total_adesao, 0),
       totalRecorrencia: linhasPeriodo.reduce((soma, l) => soma + l.total_recorrencia, 0),
+      totalDescontoRastreador: linhasPeriodo.reduce((soma, l) => soma + l.total_desconto_rastreador, 0),
+      qtdPlacasAtivadas: linhasPeriodo.reduce((soma, l) => soma + (l.detalhe?.placasAtivadas?.length ?? 0), 0),
     }
   })
 
@@ -248,6 +261,10 @@ export async function montarDashboardMes(ano: number, mes: number): Promise<Dash
     anterior,
     statusContagem,
     rankingConsultores: [...rankingConsultores].sort((a, b) => b.qtdAdesoes - a.qtdAdesoes).slice(0, TOP_N),
+    // Top 5 por líquido (pedido do Samuel no redesign do dashboard, 01/08/2026) — mesmo array
+    // de rankingConsultores, já com totalLiquido copiado de linha.total_liquido (valor que a
+    // apuração já calculou), só reordenado pra exibição. Não recalcula nada.
+    rankingConsultoresPorLiquido: [...rankingConsultores].sort((a, b) => b.totalLiquido - a.totalLiquido).slice(0, 5),
     rankingEquipes,
     evolucao,
   }

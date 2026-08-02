@@ -333,6 +333,7 @@ export function TabelaGestor({
   const totalLiquidoAnterior = linhas.reduce((soma, l) => soma + (l.apuracaoAnterior?.total_liquido ?? 0), 0)
   const totalAdesaoAnterior = linhas.reduce((soma, l) => soma + (l.apuracaoAnterior?.total_adesao ?? 0), 0)
   const totalRecorrenciaAnterior = linhas.reduce((soma, l) => soma + (l.apuracaoAnterior?.total_recorrencia ?? 0), 0)
+  const totalPlacasAtivadasAnterior = linhas.reduce((soma, l) => soma + (l.apuracaoAnterior?.qtd_placas_ativadas ?? 0), 0)
 
   const qsFiltros = new URLSearchParams({
     ano: String(ano),
@@ -423,6 +424,7 @@ export function TabelaGestor({
           valor={formatarMoeda(totalLiquidoGeral)}
           tendenciaPct={calcularTendencia(totalLiquidoGeral, totalLiquidoAnterior)}
           valorAnterior={formatarMoeda(totalLiquidoAnterior)}
+          sparkline={[totalLiquidoAnterior, totalLiquidoGeral]}
         />
         <CardKpi
           icone={<IconeAdesao />}
@@ -431,6 +433,7 @@ export function TabelaGestor({
           valor={formatarMoeda(totalAdesaoGeral)}
           tendenciaPct={calcularTendencia(totalAdesaoGeral, totalAdesaoAnterior)}
           valorAnterior={formatarMoeda(totalAdesaoAnterior)}
+          sparkline={[totalAdesaoAnterior, totalAdesaoGeral]}
         />
         <CardKpi
           icone={<IconeRecorrencia />}
@@ -439,6 +442,7 @@ export function TabelaGestor({
           valor={formatarMoeda(totalRecorrenciaGeral)}
           tendenciaPct={calcularTendencia(totalRecorrenciaGeral, totalRecorrenciaAnterior)}
           valorAnterior={formatarMoeda(totalRecorrenciaAnterior)}
+          sparkline={[totalRecorrenciaAnterior, totalRecorrenciaGeral]}
         />
         <CardKpi
           icone={<IconePlaca />}
@@ -446,6 +450,7 @@ export function TabelaGestor({
           titulo="Placas ativadas"
           valor={String(totalPlacasAtivadasGeral)}
           descricao="Este mês"
+          sparkline={[totalPlacasAtivadasAnterior, totalPlacasAtivadasGeral]}
         />
         <CardKpi
           icone={<IconeApurado />}
@@ -453,6 +458,7 @@ export function TabelaGestor({
           titulo="Apurados"
           valor={String(geradosCount)}
           descricao="Consultores apurados"
+          anelProgresso={{ atual: geradosCount, total: linhas.length }}
         />
         <CardKpi
           icone={<IconeUsuarios />}

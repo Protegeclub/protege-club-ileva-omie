@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Area,
   AreaChart,
@@ -7,8 +8,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  LabelList,
   Legend,
+  LabelList,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -18,19 +19,10 @@ import {
 } from 'recharts'
 import { Cartao } from '@/lib/ui/cartao'
 import type { DashboardMes } from '@/lib/apuracao/dashboard-mes'
-import { IconeCheckCircle, IconeRelogio, IconeSpinner, IconeXCircle } from './gerar/icones'
 
 // Client Component isolado (única peça do dashboard que usa Recharts) — o resto da página
 // (gestor/page.tsx) é Server Component puro. Next.js separa o JS por rota, então o bundle do
 // Recharts só pesa em /gestor, sem afetar nenhuma outra página do sistema.
-const CORES_STATUS = {
-  // Mesmo laranja da marca usado no badge "Gerado" de TabelaGestor.tsx/gerar-lote-form.tsx —
-  // mantém a mesma cor pro mesmo status em qualquer lugar do app.
-  gerado: '#f19100',
-  pendente: '#f59e0b',
-  processando: '#0ea5e9',
-  erro: '#ef4444',
-} as const
 
 function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
@@ -49,56 +41,6 @@ const ESTILO_TOOLTIP = {
   itemStyle: { fontSize: 13, fontWeight: 600 },
 }
 
-export function DonutStatus({ statusContagem }: { statusContagem: DashboardMes['statusContagem'] }) {
-  const dados = [
-    { nome: 'Gerado', valor: statusContagem.gerado, cor: CORES_STATUS.gerado, classes: 'bg-brand-orange/10 text-brand-orange-hover', Icone: IconeCheckCircle },
-    { nome: 'Pendente', valor: statusContagem.pendente, cor: CORES_STATUS.pendente, classes: 'bg-amber-50 text-amber-700', Icone: IconeRelogio },
-    { nome: 'Processando', valor: statusContagem.processando, cor: CORES_STATUS.processando, classes: 'bg-sky-50 text-sky-700', Icone: IconeSpinner },
-    { nome: 'Erro', valor: statusContagem.erro, cor: CORES_STATUS.erro, classes: 'bg-red-50 text-red-700', Icone: IconeXCircle },
-  ].filter((d) => d.valor > 0)
-  const total = dados.reduce((soma, d) => soma + d.valor, 0)
-
-  return (
-    <Cartao className="p-5">
-      <p className="text-sm font-medium text-slate-700">Status das apurações</p>
-      <div className="mt-3 flex flex-col items-center gap-5 sm:flex-row">
-        <div className="relative h-44 w-44 shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={dados} dataKey="valor" nameKey="nome" innerRadius={52} outerRadius={72} paddingAngle={3} stroke="none">
-                {dados.map((d) => (
-                  <Cell key={d.nome} fill={d.cor} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(valor) => [`${valor} consultor(es)`, '']} {...ESTILO_TOOLTIP} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-2xl font-semibold text-slate-900">{total}</p>
-            <p className="text-xs text-slate-400">consultores</p>
-          </div>
-        </div>
-        <div className="w-full space-y-2.5">
-          {dados.map((d) => {
-            const pct = total > 0 ? Math.round((d.valor / total) * 100) : 0
-            return (
-              <div key={d.nome} className="flex items-center justify-between gap-2">
-                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${d.classes}`}>
-                  <d.Icone className="h-3 w-3" />
-                  {d.nome}
-                </span>
-                <span className="text-sm text-slate-500">
-                  {d.valor} <span className="font-medium text-slate-700">· {pct}%</span>
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </Cartao>
-  )
-}
-
 export function DonutComposicao({
   totalLiquido,
   totalAdesao,
@@ -114,31 +56,62 @@ export function DonutComposicao({
   ].filter((d) => d.valor > 0)
   const totalComposicao = totalAdesao + totalRecorrencia
 
+  // Sem <Tooltip> de propósito: como o valor de cada fatia já fica sempre visível na legenda ao
+  // lado, um tooltip flutuante só duplicava a informação — e, seguindo o cursor, acabava
+  // aparecendo em cima do rótulo central (mesma caixa de 176px), com os dois textos sobrepostos
+  // e ilegíveis. No lugar, o hover na fatia OU na linha da legenda troca o próprio rótulo
+  // central pro valor daquele item — mesma informação, sem colisão possível.
+  const [indiceAtivo, setIndiceAtivo] = useState<number | null>(null)
+  const itemAtivo = indiceAtivo != null ? dados[indiceAtivo] : null
+
   return (
-    <Cartao className="p-5">
+    <Cartao className="p-5 transition-shadow hover:shadow-md">
       <p className="text-sm font-medium text-slate-700">Composição do líquido</p>
       <div className="mt-3 flex flex-col items-center gap-5 sm:flex-row">
         <div className="relative h-44 w-44 shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={dados} dataKey="valor" nameKey="nome" innerRadius={52} outerRadius={72} paddingAngle={3} stroke="none">
-                {dados.map((d) => (
-                  <Cell key={d.nome} fill={d.cor} />
+              <Pie
+                data={dados}
+                dataKey="valor"
+                nameKey="nome"
+                innerRadius={52}
+                outerRadius={72}
+                paddingAngle={3}
+                stroke="none"
+                onMouseEnter={(_, i) => setIndiceAtivo(i)}
+                onMouseLeave={() => setIndiceAtivo(null)}
+              >
+                {dados.map((d, i) => (
+                  <Cell
+                    key={d.nome}
+                    fill={d.cor}
+                    opacity={indiceAtivo === null || indiceAtivo === i ? 1 : 0.35}
+                    className="transition-opacity duration-200"
+                  />
                 ))}
               </Pie>
-              <Tooltip formatter={(valor) => [formatarMoeda(Number(valor)), '']} {...ESTILO_TOOLTIP} />
             </PieChart>
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2 text-center">
-            <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Total líquido</p>
-            <p className="text-sm font-semibold text-slate-900">{formatarMoeda(totalLiquido)}</p>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+              {itemAtivo?.nome ?? 'Total líquido'}
+            </p>
+            <p className="text-sm font-semibold text-slate-900">{formatarMoeda(itemAtivo?.valor ?? totalLiquido)}</p>
           </div>
         </div>
-        <div className="w-full space-y-2.5">
-          {dados.map((d) => {
+        <div className="w-full space-y-1">
+          {dados.map((d, i) => {
             const pct = totalComposicao > 0 ? Math.round((d.valor / totalComposicao) * 100) : 0
             return (
-              <div key={d.nome} className="flex items-center justify-between gap-2">
+              <div
+                key={d.nome}
+                onMouseEnter={() => setIndiceAtivo(i)}
+                onMouseLeave={() => setIndiceAtivo(null)}
+                className={`-mx-1.5 flex items-center justify-between gap-2 rounded-lg px-1.5 py-1.5 transition-colors ${
+                  indiceAtivo === i ? 'bg-slate-50' : ''
+                }`}
+              >
                 <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: d.cor }} aria-hidden />
                   {d.nome}
@@ -169,9 +142,9 @@ const CORES_AREA: Record<string, string> = {
 
 export function AreaEvolucao({ evolucao }: { evolucao: DashboardMes['evolucao'] }) {
   return (
-    <Cartao className="p-5 lg:col-span-2">
-      <p className="text-sm font-medium text-slate-700">Evolução — últimos 6 meses</p>
-      <div className="mt-2 h-64">
+    <Cartao className="p-5 transition-shadow hover:shadow-md">
+      <p className="text-sm font-medium text-slate-700">Evolução financeira — últimos 6 meses</p>
+      <div className="mt-2 h-72">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={evolucao} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <defs>
@@ -203,7 +176,7 @@ export function AreaEvolucao({ evolucao }: { evolucao: DashboardMes['evolucao'] 
                 dataKey={campo}
                 name={campo}
                 stroke={CORES_AREA[campo]}
-                strokeWidth={2.5}
+                strokeWidth={3}
                 fill={`url(#gradiente-${campo})`}
                 dot={{ r: 3, strokeWidth: 0, fill: CORES_AREA[campo] }}
                 activeDot={{ r: 5 }}
@@ -216,22 +189,85 @@ export function AreaEvolucao({ evolucao }: { evolucao: DashboardMes['evolucao'] 
   )
 }
 
-export function BarraEquipes({ rankingEquipes }: { rankingEquipes: DashboardMes['rankingEquipes'] }) {
+// Base compartilhada dos dois gráficos de barra mensais abaixo — mesmos 6 pontos de
+// dashboard-mes.ts:evolucao (já estendido com totalDescontoRastreador/qtdPlacasAtivadas), só
+// muda a cor/campo/formatação. Não exportado: só existe pra não duplicar as duas variações.
+function GraficoBarraMensal({
+  titulo,
+  valorAtual,
+  evolucao,
+  campo,
+  cor,
+  formatarTooltip,
+  formatarRotulo,
+}: {
+  titulo: string
+  valorAtual: string
+  evolucao: DashboardMes['evolucao']
+  campo: 'qtdPlacasAtivadas' | 'totalDescontoRastreador'
+  cor: string
+  formatarTooltip: (valor: number) => string
+  formatarRotulo: (valor: number) => string
+}) {
+  // A métrica só passou a ser registrada a partir de um certo mês (o resto da história do
+  // sistema é zero de verdade, não "sem dado") — corta os meses iniciais zerados pra não
+  // desperdiçar a largura do gráfico com barras vazias. Se TODOS os meses forem zero, mantém a
+  // janela cheia (não faz sentido cortar tudo).
+  const inicio = evolucao.findIndex((p) => p[campo] > 0)
+  const evolucaoExibida = inicio <= 0 ? evolucao : evolucao.slice(inicio)
+
   return (
-    <Cartao className="p-5 lg:col-span-2">
-      <p className="text-sm font-medium text-slate-700">Top equipes — adesões no mês</p>
-      <div className="mt-2" style={{ height: Math.max(220, rankingEquipes.length * 34) }}>
+    <Cartao className="p-5 transition-shadow hover:shadow-md">
+      <p className="text-sm font-medium text-slate-700">{titulo}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-900">{valorAtual}</p>
+      <div className="mt-3 h-36">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rankingEquipes} layout="vertical" margin={{ top: 4, right: 28, left: 8, bottom: 4 }}>
-            <XAxis type="number" hide />
-            <YAxis type="category" dataKey="equipe" width={150} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
-            <Tooltip formatter={(valor) => [`${valor} adesões`, '']} cursor={{ fill: '#f8fafc' }} {...ESTILO_TOOLTIP} />
-            <Bar dataKey="qtdAdesoes" fill="#002a54" radius={[0, 6, 6, 0]} barSize={16} animationDuration={600}>
-              <LabelList dataKey="qtdAdesoes" position="right" style={{ fill: '#475569', fontSize: 12, fontWeight: 600 }} />
+          <BarChart data={evolucaoExibida} margin={{ top: 20, right: 8, left: 8, bottom: 0 }} barCategoryGap="30%">
+            <XAxis dataKey="rotulo" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+            <YAxis hide />
+            <Tooltip formatter={(valor) => [formatarTooltip(Number(valor)), '']} cursor={{ fill: '#f8fafc' }} {...ESTILO_TOOLTIP} />
+            <Bar dataKey={campo} radius={[6, 6, 0, 0]} fill={cor} maxBarSize={48} animationDuration={500}>
+              <LabelList
+                dataKey={campo}
+                position="top"
+                formatter={(valor: unknown) => {
+                  const numero = Number(valor)
+                  return numero > 0 ? formatarRotulo(numero) : ''
+                }}
+                style={{ fill: '#475569', fontSize: 11, fontWeight: 600 }}
+              />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
     </Cartao>
+  )
+}
+
+export function GraficoPlacasAtivadas({ evolucao, atual }: { evolucao: DashboardMes['evolucao']; atual: number }) {
+  return (
+    <GraficoBarraMensal
+      titulo="Placas ativadas no mês"
+      valorAtual={String(atual)}
+      evolucao={evolucao}
+      campo="qtdPlacasAtivadas"
+      cor="#f19100"
+      formatarTooltip={(valor) => `${valor} placa(s)`}
+      formatarRotulo={(valor) => String(valor)}
+    />
+  )
+}
+
+export function GraficoDescontoRastreador({ evolucao, atual }: { evolucao: DashboardMes['evolucao']; atual: number }) {
+  return (
+    <GraficoBarraMensal
+      titulo="Desconto rastreador no mês"
+      valorAtual={formatarMoeda(atual)}
+      evolucao={evolucao}
+      campo="totalDescontoRastreador"
+      cor="#002a54"
+      formatarTooltip={formatarMoeda}
+      formatarRotulo={formatarMoeda}
+    />
   )
 }

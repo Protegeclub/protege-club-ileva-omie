@@ -11,6 +11,7 @@ import {
   IconeLista,
   IconeUsuarios,
 } from '@/lib/ui/icones-sidebar'
+import { FundoDecorativoSidebar } from '@/lib/ui/fundo-decorativo-sidebar'
 import { ItemNavSidebar } from '@/lib/ui/item-nav-sidebar'
 import { IconeRelampago } from './gerar/icones'
 
@@ -49,6 +50,7 @@ export function SidebarGestor({ nome, children }: { nome: string | null; childre
         colapsado ? 'w-[76px]' : 'w-60'
       }`}
     >
+      <FundoDecorativoSidebar />
       <div className="flex items-center gap-3 px-4 py-6">
         <Image
           src="/Logo Protege Club.png"

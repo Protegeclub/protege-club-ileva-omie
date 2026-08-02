@@ -13,11 +13,70 @@ const ACENTOS_CARD: Record<CorAcentoCard, string> = {
   navy: 'bg-brand-navy/10 text-brand-navy',
 }
 
+// Mesma cor de cada acento, em hex — usado no traço do sparkline/anel (SVG não lê classes do
+// Tailwind, precisa do valor literal).
+const ACENTOS_HEX: Record<CorAcentoCard, string> = {
+  blue: '#2563eb',
+  emerald: '#059669',
+  violet: '#7c3aed',
+  orange: '#f19100',
+  navy: '#002a54',
+}
+
 // null = sem base de comparação (mês anterior zerado ou sem nenhuma apuração) — nesse caso o
 // card não mostra tendência nenhuma, pra não inventar um "+100%"/"-100%" sem sentido.
 export function calcularTendencia(atual: number, anterior: number): number | null {
   if (!anterior) return null
   return ((atual - anterior) / anterior) * 100
+}
+
+// Mini gráfico de linha 100% SVG estático (sem Recharts/client) — só desenha a forma, os
+// valores continuam vindo prontos de quem chama (ex.: dashboard-mes.ts:evolucao). Precisa de
+// pelo menos 2 pontos pra ter uma linha.
+function Sparkline({ dados, cor }: { dados: number[]; cor: string }) {
+  const largura = 100
+  const altura = 28
+  const min = Math.min(...dados)
+  const max = Math.max(...dados)
+  const amplitude = max - min || 1
+  const passo = largura / (dados.length - 1)
+  const linha = dados.map((v, i) => `${i * passo},${altura - ((v - min) / amplitude) * altura}`).join(' ')
+  const area = `0,${altura} ${linha} ${largura},${altura}`
+
+  return (
+    <svg viewBox={`0 0 ${largura} ${altura}`} preserveAspectRatio="none" className="mt-2.5 h-7 w-full">
+      <polyline points={area} fill={cor} opacity={0.12} stroke="none" />
+      <polyline points={linha} fill="none" stroke={cor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// Anel de progresso (ex.: "191 de 192 apurados") — alternativa ao sparkline pra KPI que é uma
+// proporção, não uma série no tempo.
+function AnelProgresso({ atual, total, cor }: { atual: number; total: number; cor: string }) {
+  const pct = total > 0 ? Math.min(100, Math.round((atual / total) * 100)) : 0
+  const raio = 12
+  const circunferencia = 2 * Math.PI * raio
+
+  return (
+    <div className="mt-2.5 flex items-center gap-2">
+      <svg viewBox="0 0 28 28" className="h-6 w-6 shrink-0 -rotate-90">
+        <circle cx="14" cy="14" r={raio} fill="none" stroke="#f1f5f9" strokeWidth="3.5" />
+        <circle
+          cx="14"
+          cy="14"
+          r={raio}
+          fill="none"
+          stroke={cor}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeDasharray={circunferencia}
+          strokeDashoffset={circunferencia - (pct / 100) * circunferencia}
+        />
+      </svg>
+      <span className="text-xs font-medium text-slate-400">{pct}% apurado</span>
+    </div>
+  )
 }
 
 // Estilo "Stripe" — ícone circular colorido, rótulo em caixa alta ao lado, valor em destaque e,
@@ -32,6 +91,8 @@ export function CardKpi({
   tendenciaPct,
   valorAnterior,
   descricao,
+  sparkline,
+  anelProgresso,
 }: {
   icone: ReactNode
   titulo: string
@@ -40,8 +101,13 @@ export function CardKpi({
   tendenciaPct?: number | null
   valorAnterior?: string
   descricao?: string
+  /** Série de valores já existentes (ex.: evolução de 6 meses) — opcional, sem uso hoje fora do Dashboard. */
+  sparkline?: number[]
+  /** Alternativa ao sparkline pra KPI de proporção (ex.: consultores apurados/ativos). */
+  anelProgresso?: { atual: number; total: number }
 }) {
   const subiu = (tendenciaPct ?? 0) >= 0
+  const corHex = ACENTOS_HEX[cor]
 
   return (
     <Cartao className="p-4 transition-shadow hover:shadow-md">
@@ -63,6 +129,8 @@ export function CardKpi({
       ) : descricao ? (
         <p className="mt-1.5 text-xs text-slate-400">{descricao}</p>
       ) : null}
+      {sparkline && sparkline.length >= 2 ? <Sparkline dados={sparkline} cor={corHex} /> : null}
+      {anelProgresso ? <AnelProgresso {...anelProgresso} cor={corHex} /> : null}
     </Cartao>
   )
 }

@@ -58,7 +58,7 @@ export default async function GestorConsultoresPage({
       .eq('mes', mes),
     createSupabaseAdminClient()
       .from('apuracoes_mensais')
-      .select('cod_consultor, total_adesao, total_recorrencia, total_desconto_rastreador, total_liquido, gerado_em')
+      .select('cod_consultor, total_adesao, total_recorrencia, total_desconto_rastreador, total_liquido, gerado_em, detalhe')
       .eq('ano', anoAnterior)
       .eq('mes', mesAnterior),
     // Status de geração em segundo plano (mesma tabela que /gestor/gerar usa pra acompanhar o
@@ -81,7 +81,15 @@ export default async function GestorConsultoresPage({
   }))
   const apuracaoPorConsultor = new Map(apuracoes.map((a) => [a.cod_consultor, a]))
 
-  const apuracoesAnterior = (apuracoesAnteriorResult.data ?? []) as ApuracaoResumo[]
+  // Mesmo tratamento do mês atual (linha 78) — só extrai a contagem de placas do `detalhe` do
+  // mês anterior, pra alimentar o sparkline "Placas ativadas" do KPI (mesmo padrão do Dashboard,
+  // pedido do Samuel em 02/08/2026). Não é recalculado: o número já está gravado desde a
+  // apuração daquele mês.
+  const apuracoesAnteriorComDetalhe = (apuracoesAnteriorResult.data ?? []) as ApuracaoRowComDetalhe[]
+  const apuracoesAnterior: ApuracaoResumo[] = apuracoesAnteriorComDetalhe.map(({ detalhe, ...resto }) => ({
+    ...resto,
+    qtd_placas_ativadas: detalhe?.placasAtivadas?.length ?? 0,
+  }))
   const apuracaoAnteriorPorConsultor = new Map(apuracoesAnterior.map((a) => [a.cod_consultor, a]))
 
   const jobs = (jobsResult.data ?? []) as (JobResumo & { cod_consultor: number })[]
