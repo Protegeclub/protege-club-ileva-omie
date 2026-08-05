@@ -63,13 +63,22 @@ async function getToken(): Promise<string> {
   return fetchToken()
 }
 
+function esperar(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// Backoff entre tentativas de 401 — dá tempo pra quem quer que esteja invalidando o token (outro
+// processo nosso, ou alguém logado direto no site do Ileva com a mesma credencial) terminar de
+// fazer o que estava fazendo, em vez de brigar pelo token de novo imediatamente.
+const ESPERA_ENTRE_TENTATIVAS_MS = [300, 800, 1500]
+
 // `params` aceita qualquer objeto simples de query params (cada endpoint em lib/ileva/api.ts
 // declara seu próprio shape) — por isso o tipo aqui é propositalmente frouxo, em vez de forçar
 // todo objeto concreto a ter um index signature.
 export async function ilevaGet<T>(
   path: string,
   params: Record<string, unknown> = {},
-  tentandoDeNovo = false
+  tentativa = 0
 ): Promise<T> {
   const token = await getToken()
   const url = new URL(`${env.ileva.baseUrl}${path}`)
@@ -82,12 +91,29 @@ export async function ilevaGet<T>(
     cache: 'no-store',
   })
 
-  if (res.status === 401 && !tentandoDeNovo) {
-    // Token único por usuário (ver comentário acima do cache): se outro processo logou nesse
-    // meio tempo, nosso token em cache foi invalidado remotamente sem que a gente saiba. Busca
-    // um token novo uma vez e tenta de novo, em vez de falhar direto.
-    cachedToken = null
-    return ilevaGet<T>(path, params, true)
+  if (res.status === 401 && tentativa < ESPERA_ENTRE_TENTATIVAS_MS.length) {
+    // Token único por usuário (ver comentário acima do cache): se outro processo (ou alguém
+    // logado direto no site do Ileva) logou nesse meio tempo, nosso token em cache foi
+    // invalidado remotamente sem que a gente saiba. Busca um token novo e tenta de novo, em vez
+    // de falhar direto.
+    //
+    // Bug real corrigido (04-05/08/2026, achado reprocessando o consultor #19 — 871 veículos,
+    // concorrência 5): zerar `cachedToken` sem checar se ele já mudou causava uma cascata. Com
+    // várias chamadas em voo usando o mesmo token, se ele invalida, várias recebem 401 quase
+    // juntas; a primeira renova certinho (via fetchToken/loginEmAndamento), mas as próximas,
+    // ao chegar aqui, apagavam esse token NOVO e válido incondicionalmente e forçavam outro
+    // login — que invalida o token que a chamada anterior tinha acabado de conseguir. Só zera
+    // se `cachedToken` ainda for o mesmo token que falhou (ninguém renovou nesse meio-tempo);
+    // se já é outro, alguém já resolveu — só tenta de novo com o que já está em cache.
+    if (cachedToken?.value === token) {
+      cachedToken = null
+    }
+    // Virou contador (não mais um booleano "tentandoDeNovo") — uma única tentativa extra não
+    // bastava quando algo continua invalidando o token repetidamente num curto intervalo (ex.:
+    // alguém navegando ativamente no site do Ileva com a mesma credencial). Até 3 tentativas
+    // extras, com espera crescente entre elas.
+    await esperar(ESPERA_ENTRE_TENTATIVAS_MS[tentativa])
+    return ilevaGet<T>(path, params, tentativa + 1)
   }
 
   if (!res.ok) {

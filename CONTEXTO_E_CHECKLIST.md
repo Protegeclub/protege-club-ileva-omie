@@ -641,7 +641,53 @@ sistema.
 
 ### 6.9 Testes e validação
 - [ ] Testes com dados reais via API de teste (sem afetar produção)
-- [ ] Validação prática com o cliente (comparar com o fechamento manual de um mês já apurado)
+- [x] **Validação prática com o cliente — feita e bateu (04/08/2026)**: o cliente comparou o
+      fechamento de Julho/2026 (apurado manualmente do lado dele) com os números do sistema, e
+      confirmou que bateu. Esse era o maior bloqueador de processo pro lançamento — resolvido.
+      Um ponto levantado durante a validação: existem veículos com valor abaixo de R$80mil que
+      mesmo assim têm rastreador instalado (`possui_rastreador = "Sim"` no Ileva). **Conferido no
+      código (mensal.ts, tela de Desconto de Rastreadores nos dois painéis, e o PDF) — nenhum dos
+      três filtra por valor do veículo em nenhum momento**; o desconto de R$100 e a listagem
+      sempre usam só `possui_rastreador = "Sim"`, independente do preço. O corte de R$80mil é uma
+      regra de elegibilidade do lado do Ileva/associação (o valor decide quem *recebe* o
+      rastreador lá), nunca um filtro do nosso sistema — coerente com a decisão de sempre confiar
+      no dado que o Ileva fornece (ver seção 2). Nenhuma mudança de código foi necessária.
+- [x] **Investigação: 2 associados "faltando" nas adesões de julho do consultor #19 (04-05/08/2026)**
+      — o Samuel reportou (com prints do Ileva) que Marcelo de Moraes Oliveira Cintra e LG
+      Mangueiras e Parafusos Ltda apareciam como ativos/pagos em julho no Ileva mas não na aba
+      Adesões do nosso sistema pro consultor #19. Duas causas bem diferentes:
+      - **Marcelo — staleness pura, resolvido.** A apuração salva era de 31/07 02:03; o boleto de
+        Adesão dele foi pago no mesmo dia às 09:27, depois da apuração ter sido gerada. Uma
+        regeneração (`gerarESalvarApuracao`) resolveu — passou a aparecer, `total_adesao` foi de
+        R$4.113,10 pra R$4.463,10 (19→20 itens).
+      - **LG Mangueiras — não é staleness, não é bug, é ausência real de dado no Ileva.**
+        Mesmo numa apuração fresquíssima (gerada pelo lote de 211 consultores que o próprio Samuel
+        disparou depois) o associado continua sem aparecer. Investigação direta na API do Ileva
+        (`veiculo/listar` + `cobranca/listar-associado-veiculo`) achou o veículo do mês certo
+        (cod_veiculo 4017, BYD Dolphin Mini, placa "0KM" — carro novo, sem placa definitiva ainda,
+        `dt_contrato` 20/07/2026) e confirmou: ele tem **uma única cobrança no Ileva, tipo
+        "Fechamento" (mensalidade), ainda "Aberto"** (não pago, vencimento 20/08/2026) — **não
+        existe boleto tipo "Adesão" pra esse veículo**. Comparando com os outros 8 veículos do
+        mesmo associado (todos ativados entre 11/2025 e 06/2026): em **todos eles** o padrão é
+        Adesão paga ~1 semana após `dt_contrato`, só depois começando os Fechamentos mensais — só
+        esse veículo de julho quebrou o padrão e pulou direto pro Fechamento, sem Adesão nenhuma.
+        Nosso sistema conta adesão pelo pagamento do boleto tipo "Adesão" (regra confirmada com o
+        cliente em 13/07 — ver seção 2); como esse boleto nunca foi gerado/pago no Ileva, não há
+        nada pra aparecer em julho. **Não é um bug do nosso lado** — é uma cobrança que falta (ou
+        está atrasada) no Ileva, possivelmente porque o veículo ainda está "0KM" sem placa
+        definitiva (hipótese, não confirmada). Ação recomendada: o Samuel confirmar com o
+        financeiro/Ileva se a Adesão desse veículo será cobrada (aí aparece no mês em que for paga,
+        normalmente) ou foi esquecida/perdida.
+      - **Efeito colateral real e útil da investigação**: achado e corrigido um bug de concorrência
+        genuíno no cliente do Ileva (`lib/ileva/client.ts`) — zerar o token em cache sem checar se
+        ele já tinha sido renovado por outra chamada concorrente causava uma cascata de 401 em
+        lotes grandes; virou um retry com contador + backoff (300/800/1500ms). **Reimplantado no
+        Trigger.dev em produção (05/08/2026)** — versão `20260805.1`, task `gerar-apuracao`
+        detectada (1 task), deploy feito a partir de `C:\deploy-temp\web` (workaround de sempre
+        pro caminho com espaço/acento, ver seção 6.4). **Ainda não commitado no git** — o deploy do
+        Trigger.dev empacota os arquivos locais direto, não depende de commit; falta só o `git
+        commit` pra manter o histórico do repositório coerente com o que já está rodando em
+        produção.
 - [ ] Ajustes finais de acordo com o feedback
 - [x] **Descartada (12/07/2026)**: usar o Power BI antigo do cliente como fonte de validação
       cruzada ao vivo. O Samuel confirmou que o Power BI tem dados incompletos e o cliente já
