@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     const { data: linhaPropria } = await admin
       .from('apuracoes_mensais')
       .select(
-        'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_liquido, cod_equipe, gerado_em, detalhe'
+        'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_bonus_nivel, total_liquido, cod_equipe, gerado_em, detalhe'
       )
       .eq('cod_consultor', codConsultor)
       .eq('ano', ano)
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
       const { data } = await admin
         .from('apuracoes_mensais')
         .select(
-          'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_liquido, cod_equipe, gerado_em, detalhe'
+          'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_bonus_nivel, total_liquido, cod_equipe, gerado_em, detalhe'
         )
         .eq('cod_equipe', consultor.cod_equipe)
         .eq('ano', ano)
@@ -123,6 +123,7 @@ export async function GET(request: NextRequest) {
         totalRecorrencia: linhaPropria.total_recorrencia,
         totalDescontoRastreador: linhaPropria.total_desconto_rastreador,
         totalComissaoGerencial: linhaPropria.total_comissao_gerencial,
+        totalBonusNivel: linhaPropria.total_bonus_nivel,
       })
       return responderPdf(pdf, `apuracao-${codConsultor}-${ano}-${mes}`)
     }

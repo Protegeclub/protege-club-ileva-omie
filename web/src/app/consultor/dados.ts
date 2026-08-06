@@ -59,7 +59,7 @@ export async function carregarContextoConsultor(searchParams: {
   }
 
   const SELECT_APURACAO =
-    'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_liquido, cod_equipe, gerado_em, detalhe'
+    'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_bonus_nivel, total_liquido, cod_equipe, gerado_em, detalhe'
 
   const periodoAnt = periodoAnterior(ano, mes)
   const periodos: { ano: number; mes: number }[] = []

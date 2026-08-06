@@ -8,6 +8,7 @@ import type {
   VeiculoRastreadorItem,
 } from '@/lib/apuracao/mensal'
 import type { PremiacaoIndividual } from '@/lib/apuracao/premiacao-individual'
+import type { BonusNivel } from '@/lib/apuracao/bonus-nivel'
 
 // Formato de `apuracoes_mensais.detalhe` (JSONB) gravado por web/src/app/gestor/gerar/actions.ts.
 export interface ApuracaoDetalhe {
@@ -24,6 +25,9 @@ export interface ApuracaoDetalhe {
   premiacaoIndividual?: PremiacaoIndividual
   // Só presente na apuração do consultor #302 (Thiago) — ver lib/apuracao/comissao-gerencial.ts.
   comissaoGerencialPlacas?: ComissaoGerencialPlacas
+  // Bônus por Nível do plano de carreira (placas ativadas no mês) — ver
+  // lib/apuracao/bonus-nivel.ts.
+  bonusNivel?: BonusNivel
 }
 
 export interface ApuracaoRow {
@@ -35,6 +39,7 @@ export interface ApuracaoRow {
   total_premiacao_individual: number
   total_premiacao_equipe: number
   total_comissao_gerencial: number
+  total_bonus_nivel: number
   total_liquido: number
   cod_equipe: number | null
   gerado_em: string
@@ -50,7 +55,8 @@ export function calcularTotalReceber(linha: ApuracaoRow): number {
     linha.total_desconto_rastreador +
     linha.total_premiacao_individual +
     linha.total_premiacao_equipe +
-    linha.total_comissao_gerencial
+    linha.total_comissao_gerencial +
+    linha.total_bonus_nivel
   )
 }
 

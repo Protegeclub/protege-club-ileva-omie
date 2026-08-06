@@ -47,9 +47,12 @@ Todo consultor tem três fontes de ganho, apuradas mensalmente:
    variantes 66/110/121). Confirmado com dados reais.
 3. **Plano de carreira** — bonificação por volume de veículos vendidos no mês. **Definido e
    implementado em 26/07/2026** (ver seção 6.6): 10+ adesões pagas no mês = R$50 por placa, em
-   todas as adesões do mês. **Confirmado pelo cliente (30/07/2026): não existem níveis nem
-   bonificação de equipe — o PDF "Ganhos e Incentivos" é o plano de carreira completo e final.**
-   `total_premiacao_equipe` permanece 0 permanentemente (não é mais um placeholder pendente).
+   todas as adesões do mês. ~~Confirmado pelo cliente (30/07/2026): não existem níveis nem
+   bonificação de equipe~~ — **revertido em 05/08/2026**: o cliente trouxe um novo documento
+   ("Plano de Carreira Protegeclub.pdf") numa reunião nova, com um bônus por nível baseado em
+   **placas ativadas no mês** (não adesões pagas — métrica diferente). Ver seção 6.6 pra regra
+   completa. `total_premiacao_equipe` continua 0 (isso não mudou — o novo bônus é individual, não
+   de equipe).
 
 **Dedução**: veículos acima de R$80mil recebem rastreador; o custo de instalação (R$100) é
 descontado do consultor. O corte de R$80mil já vem embutido no nome do plano no Ileva (ex.:
@@ -539,10 +542,49 @@ sistema.
       `total_premiacao_individual`, que já existia na tabela e já era lido/exibido em todo o
       sistema — só ficava sempre 0). **Redeploy do Trigger.dev feito com sucesso em 27/07/2026**
       (versão `20260727.3`, task `gerar-apuracao` detectada) — já vale em produção.
-- [x] **Confirmado pelo cliente (30/07/2026): não existem "níveis" nem "premiação de equipe"** —
-      o PDF "Ganhos e Incentivos" é o plano de carreira completo e final, só com o bônus
-      individual acima. `total_premiacao_equipe` fica permanentemente 0 (decisão de negócio, não
-      lacuna técnica).
+- [x] ~~Confirmado pelo cliente (30/07/2026): não existem "níveis" nem "premiação de equipe"~~ —
+      decisão **revertida em 05/08/2026** (ver bullet "Bônus por Nível" abaixo). O bônus
+      individual por adesões (acima) continua igual; `total_premiacao_equipe` fica permanentemente
+      0 (o novo bônus por nível é individual, não é a "premiação de equipe" que foi descartada).
+- [x] **Bônus por Nível do plano de carreira, implementado (05/08/2026)** — a partir do PDF
+      "Plano de Carreira Protegeclub.pdf" enviado pelo cliente numa reunião nova. Duas escalas
+      **independentes**, ambas usando a contagem de **placas ativadas no mês** (mesma métrica de
+      `dt_contrato` já usada na aba Placas Ativadas — não é "adesão paga"; confirmado com o
+      Samuel em 05/08/2026 depois de eu ter lido o PDF errado numa primeira passada e ele ter
+      corrigido item por item em vez de eu deduzir):
+      1. **Bônus em R$** (soma na comissão líquida) — tabela de 19 patamares (25 placas→R$600 até
+         720 placas→R$18.600), paga o valor do **maior patamar atingido** (não soma patamares
+         menores); abaixo de 25 placas ativadas no mês, R$0. Constantes em
+         `lib/apuracao/bonus-nivel.ts` (`PATAMARES_BONUS_NIVEL`, `calcularBonusNivel`), somado ao
+         `totalLiquido` em `gerar.ts` e persistido em `apuracoes_mensais.total_bonus_nivel`
+         (migration `0009_bonus_nivel.sql`, aplicada em produção).
+      2. **Nível de gestão** (só título/tag de exibição, não afeta valor) — os 8 nomes do PDF
+         (Líder Júnior, Líder, Líder Senior, Líder Master, Coordenador, Gerente, Gestor Senior,
+         Gestor Master), cada um com seu próprio patamar de placas ativadas (15/30/45/60/90/240/
+         360/720) — **patamares diferentes dos do bônus em R$ acima**, de propósito (confirmado
+         com o Samuel: são duas escalas que não coincidem, ex. 100 placas ainda é "Coordenador"
+         mas já paga R$4.500, não R$3.600). `calcularNivelGestao()` em `bonus-nivel.ts`, calculado
+         em tela (não precisa de coluna própria — deriva de `detalhe.placasAtivadas.length`, que
+         já existia). Tag exibida ao lado do nome do consultor, só em
+         `/gestor/consultor/[cod]` e `/consultor` (espelhados) — não aparece na lista
+         `/gestor/consultores`, a pedido do Samuel.
+      - `calcularTotalReceber()` (`consultor/tipos.ts`), o PDF do dashboard individual
+        (`lib/relatorios/consultor.ts` + `api/relatorios/consultor/route.ts`) e os dois
+        `SELECT_APURACAO` (`consultor/dados.ts` + `gestor/consultor/[cod]/dados.ts`) atualizados
+        pra incluir `total_bonus_nivel` — mesmo padrão dos outros componentes de comissão
+        (premiação individual, comissão gerencial). Relatórios agregados
+        (`gestor/consultores`, `gestor/dashboard-mes.ts`, PDFs "Todos os Consultores" e
+        "Consolidado") **não precisaram de mudança** — só leem `total_liquido` já persistido.
+      - Testado de ponta a ponta com dado real: consultor #303 (julho/2026, 29 placas ativadas)
+        regenerado de verdade — bateu no patamar de 25 placas (R$600), tag "Líder Júnior"
+        aparecendo certinho nos dois painéis (screenshot conferido), `total_liquido` reconciliando
+        (R$2.490 adesão + R$286 recorrência − R$600 rastreador + R$700 premiação individual +
+        R$600 bônus de nível = R$3.476,00), PDF do dashboard gerando normalmente. `tsc`, `eslint`
+        e `npm run build` limpos. Conta de teste temporária (`teste-nivel-303@...`) criada e
+        removida ao final, sem deixar rastro.
+      - **Redeploy do Trigger.dev feito (06/08/2026)** — versão `20260806.1`, task `gerar-apuracao`
+        detectada, deploy de `C:\deploy-temp\web` (mesmo workaround de sempre pro caminho com
+        espaço/acento). Já vale em produção.
 - [x] Fechamento mensal consolidado por consultor — gravado em `apuracoes_mensais`, com upsert
       por `(cod_consultor, ano, mes)` (gerar de novo sobrescreve o mês)
 

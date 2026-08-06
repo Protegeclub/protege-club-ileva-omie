@@ -15,6 +15,7 @@ import {
   IconeUsuarios,
 } from '@/lib/ui/icones-sidebar'
 import { TimelineMovimentacoes } from '@/lib/ui/timeline-movimentacoes'
+import { calcularNivelGestao } from '@/lib/apuracao/bonus-nivel'
 import { carregarContextoConsultor } from './dados'
 import { calcularTotalReceber, formatarMoeda, montarTimeline, NOMES_MESES } from './tipos'
 
@@ -51,6 +52,7 @@ export default async function ConsultorDashboardPage({
 
   const totalAdesoes = linhaPropria.detalhe?.adesoes?.length ?? 0
   const totalPlacasAtivadas = linhaPropria.detalhe?.placasAtivadas?.length ?? 0
+  const nivelGestao = calcularNivelGestao(totalPlacasAtivadas)
   const totalEquipe = linhasEquipe
     .filter((l) => l.cod_equipe === linhaPropria.cod_equipe)
     .reduce((soma, l) => soma + (l.detalhe?.adesoes?.length ?? 0), 0) - totalAdesoes
@@ -70,7 +72,14 @@ export default async function ConsultorDashboardPage({
             {iniciaisNome(nomeConsultor)}
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-brand-navy">{nomeConsultor}</h1>
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold tracking-tight text-brand-navy">
+              {nomeConsultor}
+              {nivelGestao && (
+                <span className="rounded-full bg-brand-orange/10 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-brand-orange">
+                  {nivelGestao.titulo}
+                </span>
+              )}
+            </h1>
             <p className="mt-1 text-sm text-slate-500">
               {equipeNome ? `${equipeNome} · ` : ''}Referência {NOMES_MESES[mes - 1]}/{ano}
             </p>

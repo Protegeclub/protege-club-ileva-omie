@@ -25,6 +25,7 @@ export interface ResumoDashboard {
   totalRecorrencia: number
   totalDescontoRastreador: number
   totalComissaoGerencial: number
+  totalBonusNivel: number
 }
 
 export async function gerarPdfDashboard(
@@ -42,7 +43,8 @@ export async function gerarPdfDashboard(
     resumo.totalDescontoRastreador +
     resumo.totalPremiacaoIndividual +
     resumo.totalPremiacaoEquipe +
-    resumo.totalComissaoGerencial
+    resumo.totalComissaoGerencial +
+    resumo.totalBonusNivel
 
   doc.fontSize(12).fillColor('#1F3B57').font('Helvetica-Bold').text('Total a receber')
   doc.fontSize(22).fillColor('#111111').text(formatarMoeda(totalReceber))
@@ -58,6 +60,9 @@ export async function gerarPdfDashboard(
     ['Desconto de rastreadores', formatarMoeda(resumo.totalDescontoRastreador)],
     ...(resumo.totalComissaoGerencial > 0
       ? ([['Comissão de gerência', formatarMoeda(resumo.totalComissaoGerencial)]] as [string, string][])
+      : []),
+    ...(resumo.totalBonusNivel > 0
+      ? ([['Bônus por nível', formatarMoeda(resumo.totalBonusNivel)]] as [string, string][])
       : []),
   ]
   for (const [rotulo, valor] of linhas) {

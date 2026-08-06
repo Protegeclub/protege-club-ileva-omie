@@ -21,6 +21,7 @@ import {
   IconeUsuarios,
 } from '@/lib/ui/icones-sidebar'
 import { TimelineMovimentacoes } from '@/lib/ui/timeline-movimentacoes'
+import { calcularNivelGestao } from '@/lib/apuracao/bonus-nivel'
 import { carregarContextoGestorConsultor } from './dados'
 
 function iniciaisNome(nome: string) {
@@ -67,6 +68,7 @@ export default async function GestorConsultorDetalhePage({
 
   const totalAdesoes = linhaPropria.detalhe?.adesoes?.length ?? 0
   const totalPlacasAtivadas = linhaPropria.detalhe?.placasAtivadas?.length ?? 0
+  const nivelGestao = calcularNivelGestao(totalPlacasAtivadas)
   const totalEquipe = linhasEquipe
     .filter((l) => l.cod_equipe === linhaPropria.cod_equipe)
     .reduce((soma, l) => soma + (l.detalhe?.adesoes?.length ?? 0), 0) - totalAdesoes
@@ -86,8 +88,13 @@ export default async function GestorConsultorDetalhePage({
             {iniciaisNome(nomeConsultor)}
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-brand-navy">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold tracking-tight text-brand-navy">
               {nomeConsultor} <span className="text-slate-400">#{codConsultor}</span>
+              {nivelGestao && (
+                <span className="rounded-full bg-brand-orange/10 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-brand-orange">
+                  {nivelGestao.titulo}
+                </span>
+              )}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               {equipeNome ? `${equipeNome} · ` : ''}Referência {NOMES_MESES[mes - 1]}/{ano}

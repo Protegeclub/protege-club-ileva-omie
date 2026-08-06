@@ -1,4 +1,5 @@
 import { apurarConsultorMes } from './mensal'
+import { calcularBonusNivel } from './bonus-nivel'
 import {
   calcularComissaoGerencialPlacas,
   COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS,
@@ -12,6 +13,7 @@ export interface ResumoGeracao {
   totalRecorrencia: number
   totalDescontoRastreador: number
   totalPremiacaoIndividual: number
+  totalBonusNivel: number
   totalLiquido: number
 }
 
@@ -40,11 +42,16 @@ export async function gerarESalvarApuracao(
   // este é o plano de carreira completo e final.
   const premiacaoIndividual = calcularPremiacaoIndividual(resultado.adesoes.length)
 
+  // Bônus por Nível do plano de carreira (placas ativadas no mês, não adesões pagas) — ver
+  // bonus-nivel.ts pra regra completa e a fonte (PDF "Plano de Carreira Protegeclub", 05/08/2026).
+  const bonusNivel = calcularBonusNivel(resultado.placasAtivadas.length)
+
   const totalLiquido =
     resultado.totalAdesao +
     resultado.totalRecorrencia -
     resultado.totalDescontoRastreador +
     premiacaoIndividual.valorTotal +
+    bonusNivel.valor +
     (comissaoGerencial?.valorTotal ?? 0)
 
   const admin = createSupabaseAdminClient()
@@ -59,6 +66,7 @@ export async function gerarESalvarApuracao(
       total_desconto_rastreador: resultado.totalDescontoRastreador,
       total_premiacao_individual: premiacaoIndividual.valorTotal,
       total_premiacao_equipe: 0,
+      total_bonus_nivel: bonusNivel.valor,
       total_comissao_gerencial: comissaoGerencial?.valorTotal ?? 0,
       total_liquido: totalLiquido,
       gerado_por: geradoPorUserId,
@@ -73,6 +81,7 @@ export async function gerarESalvarApuracao(
         inadimplentes: resultado.inadimplentes,
         totalRecorrenciaEstimadaInadimplentes: resultado.totalRecorrenciaEstimadaInadimplentes,
         premiacaoIndividual,
+        bonusNivel,
         ...(comissaoGerencial ? { comissaoGerencialPlacas: comissaoGerencial } : {}),
       },
     },
@@ -89,6 +98,7 @@ export async function gerarESalvarApuracao(
     totalRecorrencia: resultado.totalRecorrencia,
     totalDescontoRastreador: resultado.totalDescontoRastreador,
     totalPremiacaoIndividual: premiacaoIndividual.valorTotal,
+    totalBonusNivel: bonusNivel.valor,
     totalLiquido,
   }
 }

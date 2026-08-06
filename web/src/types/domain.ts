@@ -134,6 +134,7 @@ export interface ApuracaoConsultorMes {
   total_desconto_rastreador: number
   total_premiacao_individual: number
   total_premiacao_equipe: number
+  total_bonus_nivel: number
   total_liquido: number
   gerado_em: string
 }
