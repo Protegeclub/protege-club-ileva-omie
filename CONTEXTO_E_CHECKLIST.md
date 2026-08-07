@@ -446,6 +446,46 @@ sistema.
       Ileva fornece, sem correção manual/hardcoded** — se o valor lá é R$0,00, o sistema mostra
       R$0,00 pra esses consultores, mesmo que pareça uma configuração incompleta no Ileva (fora
       do escopo deste sistema corrigir o cadastro de benefícios de origem).
+- [x] **Incidente real em produção: sistema inteiro fora do ar por App Key do Ileva morta
+      (06/08/2026), causa raiz era um usuário de API esquecido desde julho.** `/gestor` (e
+      qualquer tela que chama o Ileva) começou a devolver 500 ("This page couldn't load").
+      Investigação completa via `vercel logs --query 'status:500' --json` (não `vercel logs`
+      sozinho, que só mostra build log) revelou a causa real, escondida atrás de um erro genérico
+      do Next em produção ("Server Components render... digest omitido"):
+      `Falha ao autenticar na API do Ileva (401): "App key expirada"`.
+      - **Causa raiz de verdade**: o usuário de integração que estava rodando produção o tempo
+        todo era `Testes API - sistema de apuração - somente leitura` — o usuário **só-leitura
+        criado em 05/07/2026** (`docs/PLANO_TESTES_API.md`) pra mapear endpoints em segurança,
+        com plano explícito de trocar por um "usuário definitivo" antes de ir pra produção. Essa
+        troca nunca foi feita — ficou rodando produção mais de um mês, e a App Key dele (com
+        expiração configurada desde a criação) expirou em 05/08/2026.
+      - **Gerar uma chave nova pro mesmo usuário não resolveu** (tentado 2x, com o Samuel gerando
+        e salvando corretamente no painel do Ileva) — o Ileva agora tem uma **API V3** que exige
+        um **usuário criado especificamente pra ela** (aviso só visível dentro do painel de
+        Integrações: "Para acessar a API V3 é necessário criar um usuário no sistema"). O usuário
+        antigo, mesmo com chave nova, não é reconhecido pela V3 — o erro genérico "App key
+        inválida ou expirada" não diferencia isso de uma chave errada, o que custou tempo real de
+        diagnóstico (cheguei a suspeitar de bloqueio de conta/rate limit antes de achar o aviso).
+      - **Resolvido de verdade**: Samuel criou um usuário novo (`Sistema Ileva + Omie V3`, cod 76,
+        mesmas permissões, mesmo e-mail/senha de sempre) pelo fluxo novo da V3, gerou a App Key
+        pra esse usuário — funcionou de primeira (autenticação + `/consultor/listar` reais,
+        confirmado local antes de tocar em produção).
+      - **Achado extra, bug real do processo de deploy**: `npx vercel redeploy <url> --target
+        production` builda uma versão nova e marca "Ready", mas **não promove automaticamente**
+        pro domínio de produção — o domínio continuava servindo o deployment antigo mesmo depois
+        do redeploy "funcionar". Precisa de `npx vercel promote <deployment-id>` explícito depois
+        (confirmado: só resolveu de vez com esse comando). Isso pode ter mascarado falsos
+        negativos em qualquer redeploy anterior feito só por CLI (os feitos pelo botão "Redeploy"
+        do painel da Vercel, direto, não têm esse problema — só o CLI).
+      - **Antes de achar a causa real**, o `.env.local` e o `total_bonus_nivel` (seção acima)
+        chegaram a ser suspeitos por engano (coincidência de timing com o redeploy do bônus por
+        nível) — descartado rápido comparando local (`next start`, mesmo build) vs. produção, que
+        não reproduziu nada.
+      - **Lição prática pra não repetir**: `usuarioapi`/usuários de API do Ileva não têm um jeito
+        óbvio de saber "qual está realmente em uso pela produção" só olhando o painel — o
+        `.env`/`.env.local` é a fonte de verdade de qual usuário/chave está configurado. Vale
+        eventualmente criar uma checagem periódica (ou só lembrar visualmente na próxima renovação
+        de chave) de que o usuário de API em uso não é mais o de teste do início do projeto.
 - [ ] Rotina periódica de atualização (cron/job) em vez de gerar manualmente pelo Gestor
 
 ### 6.5 Integração com Omie
