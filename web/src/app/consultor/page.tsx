@@ -52,6 +52,7 @@ export default async function ConsultorDashboardPage({
 
   const totalAdesoes = linhaPropria.detalhe?.adesoes?.length ?? 0
   const totalPlacasAtivadas = linhaPropria.detalhe?.placasAtivadas?.length ?? 0
+  const totalRecorrencias = linhaPropria.detalhe?.recorrencias?.length ?? 0
   const nivelGestao = calcularNivelGestao(totalPlacasAtivadas)
   const totalEquipe = linhasEquipe
     .filter((l) => l.cod_equipe === linhaPropria.cod_equipe)
@@ -62,6 +63,7 @@ export default async function ConsultorDashboardPage({
 
   const adesoesAnterior = anterior?.detalhe?.adesoes?.length ?? 0
   const placasAnterior = anterior?.detalhe?.placasAtivadas?.length ?? 0
+  const recorrenciasAnterior = anterior?.detalhe?.recorrencias?.length ?? 0
 
   return (
     <div className="space-y-8">
@@ -100,7 +102,7 @@ export default async function ConsultorDashboardPage({
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <CardKpi
           icone={<IconeAdesao />}
           cor="emerald"
@@ -108,6 +110,14 @@ export default async function ConsultorDashboardPage({
           valor={String(totalAdesoes)}
           tendenciaPct={calcularTendencia(totalAdesoes, adesoesAnterior)}
           valorAnterior={String(adesoesAnterior)}
+        />
+        <CardKpi
+          icone={<IconeRecorrencia />}
+          cor="violet"
+          titulo="Recorrências"
+          valor={String(totalRecorrencias)}
+          tendenciaPct={calcularTendencia(totalRecorrencias, recorrenciasAnterior)}
+          valorAnterior={String(recorrenciasAnterior)}
         />
         <CardKpi
           icone={<IconePlaca />}
@@ -129,7 +139,7 @@ export default async function ConsultorDashboardPage({
           cor="navy"
           titulo="Premiação individual"
           valor={formatarMoeda(linhaPropria.total_premiacao_individual)}
-          descricao="R$50 por placa a partir de 10 adesões pagas no mês"
+          descricao="R$50 por placa a partir de 10 placas ativadas no mês"
         />
       </div>
 
@@ -174,7 +184,7 @@ export default async function ConsultorDashboardPage({
       </div>
 
       {/* Resumo financeiro */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <CardFinanceiro
           icone={<IconeAdesao />}
           titulo="Adesão"
@@ -182,6 +192,15 @@ export default async function ConsultorDashboardPage({
           cor="#f19100"
           evolucao={evolucao}
           campo="totalAdesao"
+        />
+        <CardFinanceiro
+          icone={<IconeTrofeu />}
+          titulo="Comissão do plano de carreira"
+          valor={formatarMoeda(linhaPropria.total_bonus_nivel)}
+          cor="#002a54"
+          evolucao={evolucao}
+          campo="totalBonusNivel"
+          selo={nivelGestao?.titulo}
         />
         <CardFinanceiro
           icone={<IconeRecorrencia />}

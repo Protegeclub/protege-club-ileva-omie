@@ -22,6 +22,11 @@ export interface RecorrenciaItem {
   valor: number
   cod_cobranca: number
   dt_pagamento: string | null
+  // Mês/ano de referência da mensalidade (formato "AAAA-MM", ex.: "2026-05") — só pra controle
+  // visual (mostra qual mês o boleto cobre, já que a contagem em si é sempre pela data de
+  // pagamento, nunca pela referência: um cliente com boletos atrasados pode pagar vários meses
+  // de referência diferentes no mesmo mês, e cada um conta como uma linha própria).
+  referencia: string | null
 }
 
 export interface VeiculoRastreadorItem {
@@ -235,6 +240,14 @@ export async function apurarConsultorMes(
   const recorrencias: RecorrenciaItem[] = []
   const veiculoPorCodigo = new Map(veiculos.map((v) => [v.cod_veiculo, v]))
 
+  // Um boleto de Fechamento pode cobrir várias placas do mesmo associado num só boleto (comum em
+  // contas com frota/família) — ele aparece na listagem de cobranças de TODAS essas placas, não
+  // só de uma. Sem essa checagem, `comConcorrenciaLimitada` processava (e contava) o mesmo boleto
+  // uma vez para cada placa associada a ele, multiplicando a recorrência real por N (bug real
+  // encontrado em 07/08/2026: um boleto com 7 placas virou 7×7=49 lançamentos salvos em vez de 7,
+  // inflando a comissão). Cada `cod_cobranca` de Fechamento só pode ser processado uma vez.
+  const cobrancasFechamentoProcessadas = new Set<number>()
+
   await comConcorrenciaLimitada(veiculos, 5, async (veiculo) => {
     const { boletos } = await listarCobrancasPorVeiculo({
       cod_veiculo: veiculo.cod_veiculo,
@@ -256,6 +269,9 @@ export async function apurarConsultorMes(
           dt_pagamento: boleto.dt_pagamento,
         })
       } else if (boleto.tipo_boleto === 'Fechamento') {
+        if (cobrancasFechamentoProcessadas.has(boleto.cod_cobranca)) continue
+        cobrancasFechamentoProcessadas.add(boleto.cod_cobranca)
+
         const { boleto: detalhe } = await buscarCobranca({ cod_cobranca: boleto.cod_cobranca })
         for (const veiculoDetalhe of detalhe.veiculos) {
           for (const lancamento of veiculoDetalhe.lancamentos) {
@@ -268,11 +284,17 @@ export async function apurarConsultorMes(
               recorrencias.push({
                 cod_veiculo: veiculoDetalhe.cod_veiculo,
                 placa: veiculoDetalhe.placa,
-                associado: veiculoPorCodigo.get(veiculoDetalhe.cod_veiculo)?.associado ?? '',
+                // Nem sempre o veículo do boleto está na lista de veículos deste consultor (ex.:
+                // boleto de Fechamento agrupando várias placas do mesmo associado, uma delas fora
+                // dessa lista por qualquer motivo do lado do Ileva) — nesse caso cai pro nome do
+                // associado já presente no próprio boleto (mesmo associado da conta, sempre
+                // correto, sem chamada extra) em vez de mostrar em branco.
+                associado: veiculoPorCodigo.get(veiculoDetalhe.cod_veiculo)?.associado || boleto.nome_associado,
                 consultorNome: nomeConsultor,
                 valor: Number(lancamento.valor),
                 cod_cobranca: boleto.cod_cobranca,
                 dt_pagamento: boleto.dt_pagamento,
+                referencia: detalhe.referencia ?? null,
               })
             }
           }

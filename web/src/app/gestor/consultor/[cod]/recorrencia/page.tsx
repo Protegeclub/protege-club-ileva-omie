@@ -1,4 +1,4 @@
-import { formatarMoeda, juntarItens } from '@/app/consultor/tipos'
+import { formatarDataBr, formatarMoeda, formatarReferencia, juntarItens } from '@/app/consultor/tipos'
 import { Banner } from '@/lib/ui/banner'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
 import { carregarContextoGestorConsultor } from '../dados'
@@ -36,6 +36,8 @@ export default async function GestorRecorrenciaPage({
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="bg-brand-navy text-white">
             <tr>
+              <th className="px-4 py-2 font-medium">Data Pagamento</th>
+              <th className="px-4 py-2 font-medium">Referência</th>
               <th className="px-4 py-2 font-medium">Associado</th>
               <th className="px-4 py-2 font-medium">Placa</th>
               <th className="px-4 py-2 font-medium">Consultor</th>
@@ -45,6 +47,8 @@ export default async function GestorRecorrenciaPage({
           <tbody>
             {recorrencias.map((item, i) => (
               <tr key={i} className="border-t border-slate-100">
+                <td className="px-4 py-2">{formatarDataBr(item.dt_pagamento)}</td>
+                <td className="px-4 py-2 text-slate-400">{formatarReferencia(item.referencia)}</td>
                 <td className="px-4 py-2">{item.associado}</td>
                 <td className="px-4 py-2">{item.placa}</td>
                 <td className="px-4 py-2">{item.consultorNome}</td>
@@ -53,7 +57,7 @@ export default async function GestorRecorrenciaPage({
             ))}
             {recorrencias.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
                   Nenhuma recorrência no período.
                 </td>
               </tr>
@@ -61,7 +65,7 @@ export default async function GestorRecorrenciaPage({
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-brand-navy bg-slate-50 font-semibold">
-              <td className="px-4 py-2" colSpan={3}>Total</td>
+              <td className="px-4 py-2" colSpan={5}>Total ({recorrencias.length} recorrências)</td>
               <td className="px-4 py-2 text-right">{formatarMoeda(total)}</td>
             </tr>
           </tfoot>

@@ -73,6 +73,22 @@ export function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+// "AAAA-MM-DD" -> "DD/MM/AAAA". Usado nas tabelas (ex.: Recorrência) — o Ileva já manda a data
+// nesse formato ISO, só reordena pra exibição.
+export function formatarDataBr(iso: string | null): string {
+  if (!iso) return '—'
+  const [ano, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
+// "AAAA-MM" (referência de mensalidade do Ileva, ex.: "2026-05") -> "Ref:MM/AAAA". Só controle
+// visual — a contagem de recorrência é sempre pela data de pagamento, nunca pela referência.
+export function formatarReferencia(referencia: string | null): string {
+  if (!referencia) return '—'
+  const [ano, mes] = referencia.split('-')
+  return `Ref:${mes}/${ano}`
+}
+
 export type TipoMovimentacao = 'adesao' | 'recorrencia' | 'desconto' | 'placa'
 
 export interface ItemTimeline {
@@ -153,6 +169,7 @@ export interface PontoEvolucaoConsultor {
   totalAdesao: number
   totalRecorrencia: number
   totalDescontoRastreador: number
+  totalBonusNivel: number
   totalLiquido: number
   qtdAdesoes: number
 }
@@ -164,6 +181,7 @@ export interface LinhaEvolucaoRow {
   total_adesao: number
   total_recorrencia: number
   total_desconto_rastreador: number
+  total_bonus_nivel: number
   total_liquido: number
   detalhe: { adesoes?: unknown[] } | null
 }
@@ -181,6 +199,7 @@ export function montarEvolucao(
       totalAdesao: linha?.total_adesao ?? 0,
       totalRecorrencia: linha?.total_recorrencia ?? 0,
       totalDescontoRastreador: linha?.total_desconto_rastreador ?? 0,
+      totalBonusNivel: linha?.total_bonus_nivel ?? 0,
       totalLiquido: linha?.total_liquido ?? 0,
       qtdAdesoes: linha?.detalhe?.adesoes?.length ?? 0,
     }

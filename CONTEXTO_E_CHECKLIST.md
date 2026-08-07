@@ -1152,3 +1152,80 @@ sistema.
       problema esperado pra contas normais (só aconteceu nessa conta específica, com histórico de
       reatribuição); se acontecer de novo com outra conta, o caminho é o mesmo: soft-delete +
       apagar a linha órfã de `perfis` manualmente.
+
+### 6.19 Bug financeiro real: recorrência duplicada em boleto multi-veículo (07/08/2026)
+- [x] **Achado a partir de uma pergunta simples do Samuel** ("tem dados repetidos, é normal?" ao
+      ver a mesma placa duas vezes na tela de Recorrência do consultor #19). Investigação com dado
+      real revelou um bug de contagem genuíno, não uma coincidência:
+      - Um boleto "Fechamento" pode cobrir **várias placas do mesmo associado num boleto só**
+        (comum em conta de frota/família — ex.: um boleto real do consultor #19 cobria 7 placas).
+        Esse boleto aparece na listagem de cobranças de **cada uma** dessas 7 placas
+        individualmente. `apurarConsultorMes` (`mensal.ts`) processa placa por placa
+        (`comConcorrenciaLimitada(veiculos, 5, ...)`), e pra cada placa que "enxergava" esse
+        boleto, buscava o detalhe (`buscarCobranca`) e relançava os lançamentos de **todas** as 7
+        placas de novo — sem nenhuma deduplicação por `cod_cobranca`. Resultado real medido: um
+        boleto de 7 placas gerava 7×7=**49** lançamentos salvos (na prática, 42, já que só 6 das 7
+        placas apareciam na busca individual) em vez de 7. Isso inflava `total_recorrencia` (e por
+        tabela, `total_liquido`) de verdade — não era só exibição repetida na tela.
+      - **Impacto medido no caso real**: consultor #19, julho/2026 — 468 linhas de recorrência
+        salvas (deveriam ser 368), `total_recorrencia` R$11.944,24 (correto: R$9.102,02) — o
+        consultor estava recebendo **R$2.842,22 a mais** só nesse mês.
+      - **Corrigido**: `cobrancasFechamentoProcessadas` (um `Set<number>` de `cod_cobranca`,
+        marcado antes do `await buscarCobranca` — seguro mesmo com concorrência 5, já que
+        JS é single-thread e não há `await` entre o `.has()`/`.add()`) garante que cada boleto de
+        Fechamento só é processado uma vez, não importa quantas placas do mesmo associado ele
+        cubra. Adesão **não** tem esse problema (checado numa amostra de 200 veículos do
+        consultor #19: zero boletos de Adesão multi-veículo — faz sentido, adesão é cobrada por
+        veículo individualmente na hora da venda, não em conta agrupada).
+      - **De quebra, corrigido também**: nome do associado em branco em algumas linhas de
+        Recorrência — mesma causa raiz relacionada (quando a placa do lançamento não está na
+        lista de veículos deste consultor, cai pro `boleto.nome_associado`, já disponível na
+        mesma chamada, em vez de string vazia).
+      - Testado de ponta a ponta com dado real (consultor #19, julho/2026, antes/depois): boleto
+        específico de 7 placas confirmado com exatamente 7 linhas após o fix (era 42).
+      - **Pendente**: redeploy do Trigger.dev (mudou `mensal.ts`, dependência de `gerar-apuracao`)
+        — aguardando confirmação antes de fazer.
+- [x] **Coluna "Data Pagamento" adicionada na tela de Recorrência** (Consultor + Gestor
+      espelhado) e no PDF correspondente — o dado (`dt_pagamento`) já existia em `RecorrenciaItem`,
+      só não era exibido. Mesmo padrão já usado em Adesões.
+- [x] **Contagem de recorrências exibida** — novo card KPI "Recorrências" nos dois dashboards
+      (Consultor + Gestor, cor `violet` pra não colidir com "Produção da equipe" que já usava
+      azul) com tendência vs. mês anterior, e o rodapé da tabela de Recorrência agora mostra
+      "Total (N recorrências)" junto do valor em R$.
+- [x] **Premiação Individual (Bônus por Performance) trocada de métrica: adesões pagas → placas
+      ativadas no mês** — a pedido explícito do cliente (07/08/2026). O gatilho (10+) e o
+      multiplicador (R$50 por unidade) continuam iguais, só a contagem que entra na conta mudou.
+      `premiacao-individual.ts`: `LIMITE_ADESOES_BONUS_PERFORMANCE` renomeada pra
+      `LIMITE_PLACAS_BONUS_PERFORMANCE`, campo `quantidadeAdesoes` renomeado pra
+      `quantidadePlacasAtivadas` (refletindo o dado real, evita confusão futura). `gerar.ts` agora
+      chama `calcularPremiacaoIndividual(resultado.placasAtivadas.length)` em vez de
+      `.adesoes.length`. Textos de tela atualizados nos dois dashboards. Testado com dado real
+      (consultor #19: 28 placas ativadas × R$50 = R$1.400,00, batendo exato).
+- [x] **Redesign dos cards de atalho (Adesões/Recorrência/Descontos/Placas/Inadimplentes)** — a
+      pedido do Samuel, várias rodadas de ajuste fino de cor até fechar em: fundo navy sólido,
+      selo circular **branco** com ícone no **mesmo navy do card** (não laranja nem azul claro —
+      testado nas duas variantes antes de fechar nessa), texto branco. `CardAtalho`
+      (`lib/ui/card-atalho.tsx`) deixou de usar o `Cartao` compartilhado (que fixa fundo branco)
+      e passou a estilizar o `<div>` direto, mesmo padrão já usado no bloco "Total a receber" do
+      dashboard.
+- [x] **Card "Comissão do plano de carreira" no Resumo Financeiro** — novo `CardFinanceiro` nos
+      dois dashboards (Consultor + Gestor) mostrando `total_bonus_nivel` em R$ junto com a tag do
+      nível de gestão atual (reaproveitando `calcularNivelGestao`, já usado no cabeçalho). Exigiu
+      um `selo?: string` opcional novo em `CardFinanceiro` (só esse card usa) e adicionar
+      `total_bonus_nivel` no histórico de evolução (`PontoEvolucaoConsultor`/`LinhaEvolucaoRow`/
+      `montarEvolucao` em `consultor/tipos.ts` + `SELECT_EVOLUCAO` nos dois `dados.ts`) pra
+      alimentar o sparkline dos últimos 6 meses, mesmo padrão dos outros cards financeiros.
+- [x] **Referência da mensalidade + formato de data BR na tela de Recorrência (07/08/2026)** —
+      a pedido do Samuel, pra dar visibilidade de controle sobre **qual mês** cada pagamento de
+      recorrência se refere (importante especialmente depois do achado da seção 6.19: um mesmo
+      associado pode ter vários boletos de referências diferentes pagos no mesmo mês, e isso é
+      esperado, não bug — ver explicação do Samuel confirmando esse comportamento). Novo campo
+      `referencia: string | null` em `RecorrenciaItem` (`mensal.ts`), populado direto de
+      `detalhe.referencia` (já vinha na resposta do `buscarCobranca`, só não era guardado).
+      Exibido como "Ref:MM/AAAA" (`formatarReferencia`, novo helper em `consultor/tipos.ts`) numa
+      coluna nova, e a coluna de data mudou de ISO (`AAAA-MM-DD`) pra BR (`DD/MM/AAAA`, novo
+      helper `formatarDataBr`) — nas duas telas espelhadas (Consultor + Gestor) e no PDF
+      (helpers locais equivalentes em `lib/relatorios/consultor.ts`, mesmo padrão já usado em
+      `pdf.ts`). Meses já apurados antes dessa mudança mostram "—" na referência até serem
+      gerados de novo (mesmo comportamento já visto antes com `dt_pagamento`/`placasAtivadas`
+      quando esses campos foram adicionados).

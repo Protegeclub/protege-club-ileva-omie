@@ -36,11 +36,10 @@ export async function gerarESalvarApuracao(
       ? await calcularComissaoGerencialPlacas(ano, mes)
       : null
 
-  // Bônus por Performance (R$50/placa a partir de 10 adesões pagas no mês) — ver
+  // Bônus por Performance (R$50/placa a partir de 10 placas ativadas no mês — trocado de
+  // "adesões pagas" pra "placas ativadas" em 07/08/2026, a pedido do cliente) — ver
   // premiacao-individual.ts pra regra completa e a fonte (PDF "Ganhos e Incentivos" do cliente).
-  // Não existe "premiação de equipe" nem "níveis" — confirmado pelo cliente (30/07/2026) que
-  // este é o plano de carreira completo e final.
-  const premiacaoIndividual = calcularPremiacaoIndividual(resultado.adesoes.length)
+  const premiacaoIndividual = calcularPremiacaoIndividual(resultado.placasAtivadas.length)
 
   // Bônus por Nível do plano de carreira (placas ativadas no mês, não adesões pagas) — ver
   // bonus-nivel.ts pra regra completa e a fonte (PDF "Plano de Carreira Protegeclub", 05/08/2026).

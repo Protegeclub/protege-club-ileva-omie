@@ -6,32 +6,31 @@
 //
 // Regra (texto literal do PDF, página 3): "Bateu 10 adesões? Você libera um bônus de R$50 por
 // placa — nas que já fez e em todas as próximas do mês atual." Ou seja: é um gatilho de tudo-ou-
-// nada por mês — abaixo de 10 adesões pagas no mês, nenhum bônus; a partir de 10 (inclusive),
-// TODAS as adesões daquele mês (não só as que passarem de 10) rendem R$50 cada.
+// nada por mês — abaixo de 10, nenhum bônus; a partir de 10 (inclusive), TODAS as placas daquele
+// mês (não só as que passarem de 10) rendem R$50 cada.
 //
-// "Placa" aqui é a mesma contagem de "adesão paga" já usada pra `totalAdesao` em mensal.ts (1
-// boleto tipo "Adesão" liquidado = 1 veículo/placa) — não a contagem de "Placas Ativadas"
-// (dt_contrato), que é uma métrica operacional diferente e não entra em comissão (ver nota em
-// mensal.ts sobre ativação vs. pagamento).
-//
-// Não existe "premiação de equipe" nem "níveis" — confirmado pelo cliente (30/07/2026) que este
-// PDF é o plano de carreira completo e final; `total_premiacao_equipe` fica 0 permanentemente.
-export const LIMITE_ADESOES_BONUS_PERFORMANCE = 10
+// ~~"Placa" aqui é a mesma contagem de "adesão paga"~~ — **corrigido em 07/08/2026, a pedido do
+// cliente**: a contagem (o "10" do gatilho e o multiplicador do R$50) passou a ser por **placas
+// ativadas no mês** (`dt_contrato` dentro do mês — mesma métrica de `placasAtivadas` em
+// mensal.ts), não mais por adesão paga. As duas métricas divergem na prática (ex.: consultor #19
+// teve 20 adesões pagas vs. 28 placas ativadas em julho/2026) — essa mudança troca qual delas
+// vale pra esse bônus específico.
+export const LIMITE_PLACAS_BONUS_PERFORMANCE = 10
 export const VALOR_BONUS_PERFORMANCE_POR_PLACA = 50
 
 export interface PremiacaoIndividual {
   elegivel: boolean
-  quantidadeAdesoes: number
+  quantidadePlacasAtivadas: number
   valorPorPlaca: number
   valorTotal: number
 }
 
-export function calcularPremiacaoIndividual(quantidadeAdesoesPagas: number): PremiacaoIndividual {
-  const elegivel = quantidadeAdesoesPagas >= LIMITE_ADESOES_BONUS_PERFORMANCE
+export function calcularPremiacaoIndividual(quantidadePlacasAtivadas: number): PremiacaoIndividual {
+  const elegivel = quantidadePlacasAtivadas >= LIMITE_PLACAS_BONUS_PERFORMANCE
   return {
     elegivel,
-    quantidadeAdesoes: quantidadeAdesoesPagas,
+    quantidadePlacasAtivadas,
     valorPorPlaca: VALOR_BONUS_PERFORMANCE_POR_PLACA,
-    valorTotal: elegivel ? quantidadeAdesoesPagas * VALOR_BONUS_PERFORMANCE_POR_PLACA : 0,
+    valorTotal: elegivel ? quantidadePlacasAtivadas * VALOR_BONUS_PERFORMANCE_POR_PLACA : 0,
   }
 }

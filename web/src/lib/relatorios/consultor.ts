@@ -16,6 +16,18 @@ function periodo(ano: number, mes: number) {
   return `Referência: ${NOMES_MESES[mes - 1]}/${ano}`
 }
 
+function formatarDataBr(iso: string | null) {
+  if (!iso) return '—'
+  const [ano, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
+function formatarReferenciaMensalidade(referencia: string | null) {
+  if (!referencia) return '—'
+  const [ano, mes] = referencia.split('-')
+  return `Ref:${mes}/${ano}`
+}
+
 export interface ResumoDashboard {
   totalAdesoes: number
   totalEquipe: number
@@ -114,10 +126,12 @@ export async function gerarPdfRecorrencia(
   desenharTabela(
     doc,
     [
-      { titulo: 'Associado', largura: 200, valor: (i: RecorrenciaItem) => i.associado },
-      { titulo: 'Placa', largura: 90, valor: (i: RecorrenciaItem) => i.placa },
-      { titulo: 'Consultor', largura: 150, valor: (i: RecorrenciaItem) => i.consultorNome },
-      { titulo: 'Valor', largura: 75, alinhar: 'right', valor: (i: RecorrenciaItem) => formatarMoeda(i.valor) },
+      { titulo: 'Data Pagamento', largura: 80, valor: (i: RecorrenciaItem) => formatarDataBr(i.dt_pagamento) },
+      { titulo: 'Referência', largura: 70, valor: (i: RecorrenciaItem) => formatarReferenciaMensalidade(i.referencia) },
+      { titulo: 'Associado', largura: 130, valor: (i: RecorrenciaItem) => i.associado },
+      { titulo: 'Placa', largura: 65, valor: (i: RecorrenciaItem) => i.placa },
+      { titulo: 'Consultor', largura: 100, valor: (i: RecorrenciaItem) => i.consultorNome },
+      { titulo: 'Valor', largura: 70, alinhar: 'right', valor: (i: RecorrenciaItem) => formatarMoeda(i.valor) },
     ],
     itens,
     { linhaTotal: { rotulo: 'Total', valor: formatarMoeda(total) } }
