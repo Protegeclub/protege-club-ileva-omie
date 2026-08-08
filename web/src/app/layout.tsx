@@ -15,8 +15,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Protege Club — Apuração de Comissões",
-  description: "Sistema de apuração de comissões de consultores da Protege Club",
+  title: "ProtegeClub — Apuração de Comissões",
+  description: "Sistema de apuração de comissões de consultores da ProtegeClub",
 };
 
 export default function RootLayout({

@@ -73,7 +73,7 @@ export default async function GestorGerarPage({
           </Link>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-navy">Centro de Apuração</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Sincronização automática de comissões entre a API do Ileva e o sistema Protege Club.
+            Sincronização automática de comissões entre a API do Ileva e o sistema ProtegeClub.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

@@ -9,7 +9,7 @@ import {
 } from '@/app/consultor/tipos'
 
 const MESES_EVOLUCAO = 6
-const SELECT_EVOLUCAO = 'mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_bonus_nivel, total_liquido, detalhe'
+const SELECT_EVOLUCAO = 'mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_bonus_nivel, total_premiacao_individual, total_liquido, detalhe'
 
 export interface ContextoGestorConsultor {
   codConsultor: number

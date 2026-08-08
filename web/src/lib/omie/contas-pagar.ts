@@ -64,7 +64,7 @@ export async function enviarContaPagar(p: EnviarContaPagarParams): Promise<{
       codigoCategoria: p.codigoCategoria,
       idContaCorrente: p.idContaCorrente,
       codigoLancamentoIntegracao: codigoIntegracao,
-      observacao: `Comissão consultor #${p.codConsultor} — Protege Club`,
+      observacao: `Comissão consultor #${p.codConsultor} — ProtegeClub`,
     })
 
     await admin.from('auditoria_omie').update({ status: 'enviado', retorno_omie: resposta }).eq('id', registro.id)

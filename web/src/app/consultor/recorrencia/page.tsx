@@ -34,6 +34,7 @@ export default async function RecorrenciaPage({
             <tr>
               <th className="px-4 py-2 font-medium">Data Pagamento</th>
               <th className="px-4 py-2 font-medium">Referência</th>
+              <th className="px-4 py-2 font-medium">Cód. Boleto</th>
               <th className="px-4 py-2 font-medium">Associado</th>
               <th className="px-4 py-2 font-medium">Placa</th>
               <th className="px-4 py-2 font-medium">Consultor</th>
@@ -45,6 +46,7 @@ export default async function RecorrenciaPage({
               <tr key={i} className="border-t border-slate-100">
                 <td className="px-4 py-2">{formatarDataBr(item.dt_pagamento)}</td>
                 <td className="px-4 py-2 text-slate-400">{formatarReferencia(item.referencia)}</td>
+                <td className="px-4 py-2 text-slate-400">{item.cod_cobranca}</td>
                 <td className="px-4 py-2">{item.associado}</td>
                 <td className="px-4 py-2">{item.placa}</td>
                 <td className="px-4 py-2">{item.consultorNome}</td>
@@ -53,7 +55,7 @@ export default async function RecorrenciaPage({
             ))}
             {recorrencias.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
                   Nenhuma recorrência no período.
                 </td>
               </tr>
@@ -61,7 +63,7 @@ export default async function RecorrenciaPage({
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-brand-navy bg-slate-50 font-semibold">
-              <td className="px-4 py-2" colSpan={5}>Total ({recorrencias.length} recorrências)</td>
+              <td className="px-4 py-2" colSpan={6}>Total ({recorrencias.length} recorrências)</td>
               <td className="px-4 py-2 text-right">{formatarMoeda(total)}</td>
             </tr>
           </tfoot>

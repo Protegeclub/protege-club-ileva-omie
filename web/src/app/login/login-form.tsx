@@ -76,13 +76,13 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
           <div className="animar-entrada flex items-center gap-3">
             <Image
               src="/Logo Protege Club.png"
-              alt="Protege Club"
+              alt="ProtegeClub"
               width={80}
               height={80}
               priority
               className="h-20 w-20 shrink-0"
             />
-            <span className="text-sm font-semibold tracking-wide">Protege Club</span>
+            <span className="text-sm font-semibold tracking-wide">ProtegeClub</span>
           </div>
 
           <div
@@ -139,7 +139,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] bg-brand-navy">
               <Image
                 src="/Logo Protege Club.png"
-                alt="Protege Club"
+                alt="ProtegeClub"
                 width={40}
                 height={40}
                 priority

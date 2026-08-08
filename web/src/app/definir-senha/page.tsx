@@ -112,14 +112,14 @@ function DefinirSenhaConteudo() {
         <div className="space-y-2 text-center">
           <Image
             src="/Logo Protege Club.png"
-            alt="Protege Club"
+            alt="ProtegeClub"
             width={56}
             height={56}
             priority
             className="mx-auto h-14 w-14"
           />
           <h1 className="text-lg font-semibold text-brand-navy">Defina sua senha</h1>
-          <p className="text-sm text-slate-500">Protege Club — Apuração de comissões</p>
+          <p className="text-sm text-slate-500">ProtegeClub — Apuração de comissões</p>
         </div>
 
         <div className="space-y-1">

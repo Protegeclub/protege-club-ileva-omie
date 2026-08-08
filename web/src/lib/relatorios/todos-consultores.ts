@@ -33,7 +33,7 @@ export async function gerarPdfTodosConsultores(
 ): Promise<Buffer> {
   const { doc, fim } = criarDocumento()
   desenharCabecalho(doc, 'Apuração de Comissões — Todos os Consultores', [
-    'Protege Club',
+    'ProtegeClub',
     `Referência: ${NOMES_MESES[mes - 1]}/${ano}`,
   ])
 

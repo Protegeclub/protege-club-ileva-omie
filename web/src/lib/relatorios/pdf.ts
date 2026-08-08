@@ -35,7 +35,7 @@ export async function gerarPdfConsolidado(relatorio: RelatorioConsolidado): Prom
     .fillColor(cinza)
     .fontSize(11)
     .font('Helvetica')
-    .text('Protege Club', { align: 'center' })
+    .text('ProtegeClub', { align: 'center' })
   doc
     .fontSize(10)
     .fillColor('#7A7A7A')

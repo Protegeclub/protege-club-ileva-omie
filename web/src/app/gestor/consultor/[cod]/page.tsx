@@ -118,7 +118,7 @@ export default async function GestorConsultorDetalhePage({
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <CardKpi
           icone={<IconeAdesao />}
           cor="emerald"
@@ -149,13 +149,6 @@ export default async function GestorConsultorDetalhePage({
           titulo="Produção da equipe"
           valor={String(Math.max(totalEquipe, 0))}
           descricao="Adesões dos colegas"
-        />
-        <CardKpi
-          icone={<IconeTrofeu />}
-          cor="navy"
-          titulo="Premiação individual"
-          valor={formatarMoeda(linhaPropria.total_premiacao_individual)}
-          descricao="R$50 por placa a partir de 10 placas ativadas no mês"
         />
       </div>
 
@@ -205,7 +198,7 @@ export default async function GestorConsultorDetalhePage({
       </div>
 
       {/* Resumo financeiro */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <CardFinanceiro
           icone={<IconeAdesao />}
           titulo="Adesão"
@@ -222,6 +215,14 @@ export default async function GestorConsultorDetalhePage({
           evolucao={evolucao}
           campo="totalBonusNivel"
           selo={nivelGestao?.titulo}
+        />
+        <CardFinanceiro
+          icone={<IconeTrofeu />}
+          titulo="Premiação individual"
+          valor={formatarMoeda(linhaPropria.total_premiacao_individual)}
+          cor="#7c3aed"
+          evolucao={evolucao}
+          campo="totalPremiacaoIndividual"
         />
         <CardFinanceiro
           icone={<IconeRecorrencia />}

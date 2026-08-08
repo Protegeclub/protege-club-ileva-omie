@@ -54,13 +54,13 @@ export function SidebarGestor({ nome, children }: { nome: string | null; childre
       <div className="flex items-center gap-3 px-4 py-6">
         <Image
           src="/Logo Protege Club.png"
-          alt="Protege Club"
+          alt="ProtegeClub"
           width={36}
           height={36}
           priority
           className="h-9 w-9 shrink-0"
         />
-        {!colapsado && <span className="truncate text-xs font-semibold tracking-wide text-white">Protege Club</span>}
+        {!colapsado && <span className="truncate text-xs font-semibold tracking-wide text-white">ProtegeClub</span>}
         <button
           type="button"
           onClick={() => setColapsado((v) => !v)}

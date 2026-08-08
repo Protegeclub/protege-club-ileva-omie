@@ -47,7 +47,7 @@ export async function gerarPdfDashboard(
   resumo: ResumoDashboard
 ): Promise<Buffer> {
   const { doc, fim } = criarDocumento()
-  desenharCabecalho(doc, 'Apuração de Comissão — Protege Club', [nomeConsultor, periodo(ano, mes)])
+  desenharCabecalho(doc, 'Apuração de Comissão — ProtegeClub', [nomeConsultor, periodo(ano, mes)])
 
   const totalReceber =
     resumo.totalAdesao +
@@ -126,12 +126,13 @@ export async function gerarPdfRecorrencia(
   desenharTabela(
     doc,
     [
-      { titulo: 'Data Pagamento', largura: 80, valor: (i: RecorrenciaItem) => formatarDataBr(i.dt_pagamento) },
-      { titulo: 'Referência', largura: 70, valor: (i: RecorrenciaItem) => formatarReferenciaMensalidade(i.referencia) },
-      { titulo: 'Associado', largura: 130, valor: (i: RecorrenciaItem) => i.associado },
-      { titulo: 'Placa', largura: 65, valor: (i: RecorrenciaItem) => i.placa },
+      { titulo: 'Data Pagamento', largura: 70, valor: (i: RecorrenciaItem) => formatarDataBr(i.dt_pagamento) },
+      { titulo: 'Referência', largura: 55, valor: (i: RecorrenciaItem) => formatarReferenciaMensalidade(i.referencia) },
+      { titulo: 'Cód. Boleto', largura: 50, valor: (i: RecorrenciaItem) => String(i.cod_cobranca) },
+      { titulo: 'Associado', largura: 110, valor: (i: RecorrenciaItem) => i.associado },
+      { titulo: 'Placa', largura: 55, valor: (i: RecorrenciaItem) => i.placa },
       { titulo: 'Consultor', largura: 100, valor: (i: RecorrenciaItem) => i.consultorNome },
-      { titulo: 'Valor', largura: 70, alinhar: 'right', valor: (i: RecorrenciaItem) => formatarMoeda(i.valor) },
+      { titulo: 'Valor', largura: 75, alinhar: 'right', valor: (i: RecorrenciaItem) => formatarMoeda(i.valor) },
     ],
     itens,
     { linhaTotal: { rotulo: 'Total', valor: formatarMoeda(total) } }
