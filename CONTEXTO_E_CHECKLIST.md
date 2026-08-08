@@ -1229,3 +1229,40 @@ sistema.
       `pdf.ts`). Meses já apurados antes dessa mudança mostram "—" na referência até serem
       gerados de novo (mesmo comportamento já visto antes com `dt_pagamento`/`placasAtivadas`
       quando esses campos foram adicionados).
+
+### 6.20 Bug financeiro real: recorrência de placa de OUTRO consultor creditada no boleto compartilhado (07/08/2026)
+- [x] **Achado comparando com um relatório oficial do Ileva** — o cliente forneceu a apuração de
+      julho/2026 do consultor #9 direto do Ileva (150 itens, R$3.371,75) pra validar contra o
+      nosso sistema, que mostrava 152 itens/R$3.433,75. Comparação boleto a boleto (`cod_cobranca`)
+      mostrou que os **143 boletos eram exatamente os mesmos nos dois lados** — a diferença inteira
+      (2 itens, R$62,00) vinha de 2 placas que apareceram no nosso `detalhe.recorrencias` do
+      consultor #9 mas **não pertencem a ele**.
+      - Causa raiz, distinta da seção 6.19 (que era o MESMO boleto reprocessado várias vezes pro
+        MESMO consultor): aqui o boleto de Fechamento já era processado uma única vez (fix da
+        6.19 funcionando certo), mas ao expandir `detalhe.veiculos` desse boleto, o código
+        empurrava um item de recorrência pra **cada** veículo do boleto, sem checar se aquele
+        veículo pertencia ao consultor sendo apurado. Boletos de Fechamento podem agrupar placas
+        de consultores **diferentes** (família/conta com veículos vendidos por vendedores
+        diferentes, faturados juntos) — o comentário antigo no código já citava esse caso
+        ("nem sempre o veículo do boleto está na lista de veículos deste consultor"), mas só
+        tratava como problema de nome em branco, não de atribuição indevida de valor.
+      - Confirmado ao vivo na API do Ileva (`GET /veiculo/buscar`): placa QPA5C81 (R$15,00,
+        boleto #37116) é do consultor **#78** (Santiago Damasceno Leles Silva); placa PQV5D58
+        (R$47,00, boleto #37208) é do consultor **#8**. Nenhuma das duas é do consultor #9.
+        R$15+R$47 = R$62,00, exatamente a diferença encontrada.
+      - **Risco real**: como a apuração é gerada por consultor individualmente, o mesmo boleto
+        também aparece na apuração do consultor dono da outra placa (#78/#8) — ou seja, esse
+        valor corria risco de ser **pago em duplicidade** (uma vez pro consultor errado, e de
+        novo pro dono real), não só uma diferença de exibição.
+      - **Corrigido** em `mensal.ts`: antes de empurrar o item de recorrência de cada
+        `veiculoDetalhe` do boleto expandido, checa `veiculoPorCodigo.has(veiculoDetalhe.cod_veiculo)`
+        (o mapa dos veículos do PRÓPRIO consultor sendo apurado) e ignora o veículo se não for
+        dele. O boleto continua sendo expandido normalmente pros veículos que realmente são do
+        consultor. Como consequência, o fallback `|| boleto.nome_associado` pro nome do associado
+        (que existia por causa desse mesmo cenário) deixou de ser necessário e foi removido —
+        agora `veiculoPorCodigo.get(...)` sempre existe nesse ponto.
+      - `npx tsc --noEmit`, `npm run lint` e `npm run build` confirmados limpos depois do fix.
+      - **Pendente**: redeploy do Trigger.dev (mudou `mensal.ts`, dependência de `gerar-apuracao`).
+        O Samuel vai gerar a apuração de julho/2026 manualmente pelo sistema pra revalidar contra
+        o relatório do Ileva antes de decidir se outros meses/consultores precisam ser
+        regenerados também.

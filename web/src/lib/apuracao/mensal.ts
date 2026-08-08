@@ -274,6 +274,12 @@ export async function apurarConsultorMes(
 
         const { boleto: detalhe } = await buscarCobranca({ cod_cobranca: boleto.cod_cobranca })
         for (const veiculoDetalhe of detalhe.veiculos) {
+          // Um boleto de Fechamento pode agrupar placas de MAIS de um consultor (ex.: família com
+          // veículos vendidos por consultores diferentes, faturados juntos) — sem essa checagem,
+          // a recorrência da placa do outro consultor era creditada aqui também, duplicando o
+          // pagamento real (bug real encontrado em 07/08/2026, comparando com relatório do Ileva:
+          // consultor #9 recebia R$62 de 2 placas que eram na verdade dos consultores #78 e #8).
+          if (!veiculoPorCodigo.has(veiculoDetalhe.cod_veiculo)) continue
           for (const lancamento of veiculoDetalhe.lancamentos) {
             if (
               lancamento.cod_beneficio &&
@@ -284,12 +290,7 @@ export async function apurarConsultorMes(
               recorrencias.push({
                 cod_veiculo: veiculoDetalhe.cod_veiculo,
                 placa: veiculoDetalhe.placa,
-                // Nem sempre o veículo do boleto está na lista de veículos deste consultor (ex.:
-                // boleto de Fechamento agrupando várias placas do mesmo associado, uma delas fora
-                // dessa lista por qualquer motivo do lado do Ileva) — nesse caso cai pro nome do
-                // associado já presente no próprio boleto (mesmo associado da conta, sempre
-                // correto, sem chamada extra) em vez de mostrar em branco.
-                associado: veiculoPorCodigo.get(veiculoDetalhe.cod_veiculo)?.associado || boleto.nome_associado,
+                associado: veiculoPorCodigo.get(veiculoDetalhe.cod_veiculo)!.associado,
                 consultorNome: nomeConsultor,
                 valor: Number(lancamento.valor),
                 cod_cobranca: boleto.cod_cobranca,
