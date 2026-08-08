@@ -171,6 +171,7 @@ export interface PontoEvolucaoConsultor {
   totalDescontoRastreador: number
   totalBonusNivel: number
   totalPremiacaoIndividual: number
+  totalComissaoGerencial: number
   totalLiquido: number
   qtdAdesoes: number
 }
@@ -184,6 +185,7 @@ export interface LinhaEvolucaoRow {
   total_desconto_rastreador: number
   total_bonus_nivel: number
   total_premiacao_individual: number
+  total_comissao_gerencial: number
   total_liquido: number
   detalhe: { adesoes?: unknown[] } | null
 }
@@ -203,6 +205,7 @@ export function montarEvolucao(
       totalDescontoRastreador: linha?.total_desconto_rastreador ?? 0,
       totalBonusNivel: linha?.total_bonus_nivel ?? 0,
       totalPremiacaoIndividual: linha?.total_premiacao_individual ?? 0,
+      totalComissaoGerencial: linha?.total_comissao_gerencial ?? 0,
       totalLiquido: linha?.total_liquido ?? 0,
       qtdAdesoes: linha?.detalhe?.adesoes?.length ?? 0,
     }

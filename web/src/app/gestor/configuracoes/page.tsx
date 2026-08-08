@@ -92,6 +92,7 @@ export default async function GestorConfiguracoesPage() {
                 ? `Configurado — ${omieConfig?.descricao_categoria} · ${omieConfig?.descricao_conta_corrente}`
                 : 'Ainda não configurado — categoria e conta corrente'
             }
+            cor="navy"
           />
         </div>
       </Cartao>
@@ -101,6 +102,7 @@ export default async function GestorConfiguracoesPage() {
         icone={<IconeUsuarios />}
         titulo="Gestão de acessos"
         descricao="Convidar ou remover login de Gestores e Consultores"
+        cor="navy"
       />
 
       <Cartao className="p-5">

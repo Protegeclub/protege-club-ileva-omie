@@ -170,35 +170,40 @@ export default async function GestorConsultorDetalhePage({
           icone={<IconeAdesao />}
           titulo="Adesões"
           descricao="Contratos e valores do período"
+          cor="verde"
         />
         <CardAtalho
           href={`/gestor/consultor/${codConsultor}/recorrencia?${qs}`}
           icone={<IconeRecorrencia />}
           titulo="Recorrência"
           descricao="Pagamentos recorrentes recebidos"
+          cor="verde"
         />
         <CardAtalho
           href={`/gestor/consultor/${codConsultor}/rastreadores?${qs}`}
           icone={<IconeRastreador />}
           titulo="Descontos"
           descricao="Descontos de rastreadores"
+          cor="vermelho"
         />
         <CardAtalho
           href={`/gestor/consultor/${codConsultor}/placas-ativadas?${qs}`}
           icone={<IconePlaca />}
           titulo="Placas"
           descricao="Placas ativadas no período"
+          cor="laranja"
         />
         <CardAtalho
           href={`/gestor/consultor/${codConsultor}/inadimplentes`}
           icone={<IconeAlerta />}
           titulo="Inadimplentes"
           descricao="Situação atual dos associados"
+          cor="vermelho"
         />
       </div>
 
       {/* Resumo financeiro */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
         <CardFinanceiro
           icone={<IconeAdesao />}
           titulo="Adesão"
@@ -223,6 +228,14 @@ export default async function GestorConsultorDetalhePage({
           cor="#7c3aed"
           evolucao={evolucao}
           campo="totalPremiacaoIndividual"
+        />
+        <CardFinanceiro
+          icone={<IconeUsuarios />}
+          titulo="Comissão de gerência"
+          valor={formatarMoeda(linhaPropria.total_comissao_gerencial)}
+          cor="#0d9488"
+          evolucao={evolucao}
+          campo="totalComissaoGerencial"
         />
         <CardFinanceiro
           icone={<IconeRecorrencia />}
