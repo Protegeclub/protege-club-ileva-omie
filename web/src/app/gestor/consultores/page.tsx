@@ -159,7 +159,7 @@ export default async function GestorConsultoresPage({
               id="equipe_consolidado"
               name="equipe"
               defaultValue=""
-              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             >
               <option value="">Todas as equipes (separadas no PDF)</option>
               {equipesDisponiveis.map((eq) => (
@@ -177,7 +177,7 @@ export default async function GestorConsultoresPage({
               type="date"
               defaultValue={dataInicioPadrao}
               required
-              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
           </div>
           <div>
@@ -190,7 +190,7 @@ export default async function GestorConsultoresPage({
               type="date"
               defaultValue={dataFimPadrao}
               required
-              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
           </div>
           <Botao type="submit" variante="secundaria">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { Botao } from '@/lib/ui/botao'
 import {
   convidarConsultor,
@@ -17,7 +17,7 @@ import { BadgeStatusAcesso, type LinhaAcesso, type StatusAcesso } from './tabela
 
 function IconeFechar({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
@@ -34,6 +34,16 @@ export function DrawerConsultor({
   consultor: LinhaAcesso | null
   onFechar: () => void
 }) {
+  // Fecha com Esc, igual qualquer modal — só liga o listener enquanto o drawer está aberto.
+  useEffect(() => {
+    if (!consultor) return
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') onFechar()
+    }
+    document.addEventListener('keydown', aoTeclar)
+    return () => document.removeEventListener('keydown', aoTeclar)
+  }, [consultor, onFechar])
+
   return (
     <>
       <div
@@ -45,6 +55,9 @@ export function DrawerConsultor({
       />
       <aside
         data-testid="drawer-consultor"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="drawer-consultor-titulo"
         className={`fixed right-0 top-0 z-50 flex h-screen w-full max-w-md flex-col overflow-hidden bg-white shadow-xl transition-transform duration-200 ${
           consultor ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -57,6 +70,7 @@ export function DrawerConsultor({
 
 function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFechar: () => void }) {
   const [editandoEmail, setEditandoEmail] = useState(false)
+  const [linkCopiado, setLinkCopiado] = useState(false)
 
   const [estadoConvite, acaoConvite, pendenteConvite] = useActionState<ConvidarEstado, FormData>(
     convidarConsultor,
@@ -86,27 +100,33 @@ function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFec
       : consultor.status
 
   async function copiarLink() {
-    if (estadoLink.link) await navigator.clipboard.writeText(estadoLink.link)
+    if (!estadoLink.link) return
+    await navigator.clipboard.writeText(estadoLink.link)
+    setLinkCopiado(true)
+    setTimeout(() => setLinkCopiado(false), 2000)
   }
 
   return (
     <>
       <div className="flex items-center justify-between border-b border-slate-100 p-5">
         <div>
-          <h3 className="text-base font-semibold text-slate-900">{consultor.nome}</h3>
+          <h3 id="drawer-consultor-titulo" className="text-base font-semibold text-slate-900">
+            {consultor.nome}
+          </h3>
           <p className="text-sm text-slate-500">{consultor.equipe}</p>
         </div>
         <button
           type="button"
+          autoFocus
           onClick={onFechar}
           aria-label="Fechar"
-          className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+          className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue"
         >
           <IconeFechar className="h-5 w-5" />
         </button>
       </div>
 
-      <div className="flex-1 space-y-5 overflow-y-auto p-5">
+      <div className="flex-1 space-y-5 overflow-y-auto p-5" style={{ overscrollBehavior: 'contain' }}>
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">E-mail</p>
           {editandoEmail ? (
@@ -121,10 +141,10 @@ function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFec
                 name="email"
                 defaultValue={consultor.email}
                 required
-                className="h-9 flex-1 rounded-lg border border-slate-300 px-2.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+                className="h-9 flex-1 rounded-lg border border-slate-300 px-2.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
               />
               <Botao type="submit" tamanho="sm" disabled={pendenteEmail}>
-                {pendenteEmail ? 'Salvando...' : 'Salvar'}
+                {pendenteEmail ? 'Salvando…' : 'Salvar'}
               </Botao>
               <Botao type="button" variante="fantasma" tamanho="sm" onClick={() => setEditandoEmail(false)}>
                 Cancelar
@@ -163,7 +183,7 @@ function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFec
           <form action={acaoConvite}>
             <input type="hidden" name="cod_consultor" value={consultor.cod_consultor} />
             <Botao type="submit" className="w-full" disabled={pendenteConvite}>
-              {pendenteConvite ? 'Enviando...' : 'Enviar convite'}
+              {pendenteConvite ? 'Enviando…' : 'Enviar convite'}
             </Botao>
           </form>
         )}
@@ -176,7 +196,7 @@ function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFec
           <form action={acaoReenvio}>
             <input type="hidden" name="cod_consultor" value={consultor.cod_consultor} />
             <Botao type="submit" className="w-full" disabled={pendenteReenvio}>
-              {pendenteReenvio ? 'Reenviando...' : 'Reenviar convite'}
+              {pendenteReenvio ? 'Reenviando…' : 'Reenviar convite'}
             </Botao>
           </form>
         )}
@@ -190,7 +210,7 @@ function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFec
             <form action={acaoLink}>
               <input type="hidden" name="cod_consultor" value={consultor.cod_consultor} />
               <Botao type="submit" variante="secundaria" className="w-full" disabled={pendenteLink}>
-                {pendenteLink ? 'Gerando...' : 'Copiar link'}
+                {pendenteLink ? 'Gerando…' : 'Copiar link'}
               </Botao>
             </form>
             {estadoLink.link && (
@@ -201,7 +221,7 @@ function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFec
                   onClick={copiarLink}
                   className="shrink-0 text-xs font-medium text-brand-blue hover:underline"
                 >
-                  Copiar
+                  {linkCopiado ? 'Copiado!' : 'Copiar'}
                 </button>
               </div>
             )}
@@ -221,7 +241,7 @@ function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFec
           >
             <input type="hidden" name="cod_consultor" value={consultor.cod_consultor} />
             <Botao type="submit" variante="fantasma" className="w-full" disabled={pendenteRemover}>
-              {pendenteRemover ? 'Removendo...' : 'Remover acesso'}
+              {pendenteRemover ? 'Removendo…' : 'Remover acesso'}
             </Botao>
           </form>
         )}

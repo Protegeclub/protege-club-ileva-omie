@@ -118,7 +118,7 @@ function ConfiguracaoOmieCard({
       {editando && (
         <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
           {carregando ? (
-            <p className="text-sm text-slate-400">Carregando categorias e contas do Omie...</p>
+            <p className="text-sm text-slate-400">Carregando categorias e contas do Omie…</p>
           ) : opcoes && !('erro' in opcoes) ? (
             <>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -127,9 +127,9 @@ function ConfiguracaoOmieCard({
                   <select
                     value={categoriaEscolhida}
                     onChange={(e) => setCategoriaEscolhida(e.target.value)}
-                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
                   >
-                    <option value="">Selecione...</option>
+                    <option value="">Selecione…</option>
                     {opcoes.categorias.map((c) => (
                       <option key={c.codigo} value={c.codigo}>
                         {c.codigo} — {c.descricao}
@@ -142,9 +142,9 @@ function ConfiguracaoOmieCard({
                   <select
                     value={contaEscolhida}
                     onChange={(e) => setContaEscolhida(e.target.value)}
-                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
                   >
-                    <option value="">Selecione...</option>
+                    <option value="">Selecione…</option>
                     {opcoes.contas.map((c) => (
                       <option key={c.nCodCC} value={String(c.nCodCC)}>
                         {c.descricao} ({c.tipo})
@@ -156,7 +156,7 @@ function ConfiguracaoOmieCard({
               {erro && <p className="text-sm text-red-600">{erro}</p>}
               <div className="flex gap-2">
                 <Botao type="button" variante="destaque" tamanho="sm" disabled={salvando} onClick={salvar}>
-                  {salvando ? 'Salvando...' : 'Salvar configuração'}
+                  {salvando ? 'Salvando…' : 'Salvar configuração'}
                 </Botao>
                 <Botao type="button" variante="fantasma" tamanho="sm" onClick={() => setEditando(false)}>
                   Cancelar
@@ -263,12 +263,12 @@ function LinhaConsultorOmie({
             )}
             <input
               type="text"
-              placeholder="Buscar por nome ou CPF/CNPJ..."
+              placeholder="Buscar por nome ou CPF/CNPJ…"
               value={termoBusca}
               onChange={(e) => buscarManualmente(e.target.value)}
-              className="h-8 w-full max-w-xs rounded-md border border-slate-300 px-2 text-xs focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="h-8 w-full max-w-xs rounded-md border border-slate-300 px-2 text-xs focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
-            {buscando && <p className="text-xs text-slate-400">Buscando...</p>}
+            {buscando && <p className="text-xs text-slate-400">Buscando…</p>}
             {resultadosBusca && resultadosBusca.length > 0 && (
               <div className="max-h-32 space-y-1 overflow-y-auto rounded-md border border-slate-200 bg-white p-1.5">
                 {resultadosBusca.map((r) => (
@@ -320,12 +320,12 @@ function LinhaConsultorOmie({
               type="date"
               value={vencimento}
               onChange={(e) => setVencimento(e.target.value)}
-              className="h-8 w-full rounded-md border border-slate-300 px-2 text-xs focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="h-8 w-full rounded-md border border-slate-300 px-2 text-xs focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
             {erroEnvio && <p className="text-xs text-red-600">{erroEnvio}</p>}
             <div className="flex gap-1.5">
               <Botao type="button" variante="destaque" tamanho="sm" disabled={enviando} onClick={confirmarEnvio}>
-                {enviando ? 'Enviando...' : 'Confirmar e criar no Omie'}
+                {enviando ? 'Enviando…' : 'Confirmar e criar no Omie'}
               </Botao>
               <Botao type="button" variante="fantasma" tamanho="sm" onClick={() => setEnviarAberto(false)}>
                 Cancelar

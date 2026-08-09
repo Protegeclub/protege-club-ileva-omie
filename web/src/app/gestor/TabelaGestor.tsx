@@ -93,7 +93,7 @@ function formatarMoeda(valor: number) {
 
 function IconeBusca({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.8" />
       <path d="M20 20l-4.3-4.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
@@ -102,7 +102,7 @@ function IconeBusca({ className }: { className?: string }) {
 
 function IconeFiltro({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path d="M4 6h16M7.5 12h9M11 18h2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
@@ -110,7 +110,7 @@ function IconeFiltro({ className }: { className?: string }) {
 
 function IconeLimpar({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
@@ -118,7 +118,7 @@ function IconeLimpar({ className }: { className?: string }) {
 
 function IconeMais({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
       <circle cx="12" cy="5" r="1.6" />
       <circle cx="12" cy="12" r="1.6" />
       <circle cx="12" cy="19" r="1.6" />
@@ -131,7 +131,7 @@ function IconeMais({ className }: { className?: string }) {
 // quando é (ver ThOrdenavel).
 function IconeOrdenacaoNeutra({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path d="M7 10l5-5 5 5M7 15l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -139,7 +139,7 @@ function IconeOrdenacaoNeutra({ className }: { className?: string }) {
 
 function IconeChevron({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -480,7 +480,7 @@ export function TabelaGestor({
           aria-label="Equipe"
           value={equipe}
           onChange={(e) => setEquipe(e.target.value)}
-          className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
         >
           <option value="">Todas as equipes</option>
           {equipesDisponiveis.map((eq) => (
@@ -493,10 +493,10 @@ export function TabelaGestor({
           <input
             aria-label="Consultor"
             type="text"
-            placeholder="Buscar consultor por nome ou código..."
+            placeholder="Buscar consultor por nome ou código…"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
           />
         </div>
 
@@ -507,7 +507,7 @@ export function TabelaGestor({
             aria-label="Mês"
             name="mes"
             defaultValue={mes}
-            className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
           >
             {NOMES_MESES.map((nome, i) => (
               <option key={nome} value={i + 1}>{nome}</option>
@@ -518,7 +518,7 @@ export function TabelaGestor({
             name="ano"
             type="number"
             defaultValue={ano}
-            className="h-11 w-20 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            className="h-11 w-20 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
           />
           <Botao type="submit" variante="primaria" className="h-11">
             <IconeFiltro className="h-4 w-4" />
@@ -566,7 +566,7 @@ export function TabelaGestor({
               return (
                 <tr
                   key={consultor.cod_consultor}
-                  className="group cursor-pointer transition-colors duration-150 hover:bg-slate-50"
+                  className="group transition-colors duration-150 hover:bg-slate-50"
                 >
                   <td className="px-4 py-4 text-slate-800">
                     <div className="flex items-center gap-3">
@@ -583,17 +583,17 @@ export function TabelaGestor({
                     </div>
                   </td>
                   <td className="px-4 py-4 text-slate-500">{consultor.equipe}</td>
-                  <td className="px-4 py-4 text-slate-500">
+                  <td className="px-4 py-4 tabular-nums text-slate-500">
                     {apuracao ? formatarMoeda(apuracao.total_adesao) : '—'}
                   </td>
-                  <td className="px-4 py-4 text-slate-500">
+                  <td className="px-4 py-4 tabular-nums text-slate-500">
                     {apuracao ? formatarMoeda(apuracao.total_recorrencia) : '—'}
                   </td>
-                  <td className="px-4 py-4 text-slate-500">
+                  <td className="px-4 py-4 tabular-nums text-slate-500">
                     {apuracao ? formatarMoeda(apuracao.total_desconto_rastreador) : '—'}
                   </td>
                   <td className="px-4 py-4">
-                    <p className="text-base font-semibold text-slate-900">
+                    <p className="text-base font-semibold tabular-nums text-slate-900">
                       {apuracao ? formatarMoeda(apuracao.total_liquido) : '—'}
                     </p>
                     {apuracao && (

@@ -49,7 +49,7 @@ export function CardFinanceiro({
         {dica && <DicaInfo texto={dica} alinhar={alinharDica} />}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <p className={`text-xl font-semibold ${corTexto ?? 'text-slate-900'}`}>{valor}</p>
+        <p className={`text-xl font-semibold tabular-nums ${corTexto ?? 'text-slate-900'}`}>{valor}</p>
         {selo && (
           <span className="rounded-full bg-brand-orange/10 px-2 py-0.5 text-[11px] font-semibold text-brand-orange">
             {selo}

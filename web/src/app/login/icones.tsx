@@ -2,7 +2,7 @@
 // de gestor/gerar/icones.tsx e lib/ui/icones-sidebar.tsx.
 export function IconeEmail({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <rect x="3.5" y="5.5" width="17" height="13" rx="2" stroke="currentColor" strokeWidth="1.7" />
       <path d="m4.5 7 7.5 6 7.5-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -11,7 +11,7 @@ export function IconeEmail({ className }: { className?: string }) {
 
 export function IconeCadeado({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <rect x="4.5" y="10.5" width="15" height="10" rx="2" stroke="currentColor" strokeWidth="1.7" />
       <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
       <circle cx="12" cy="15" r="1.4" fill="currentColor" />
@@ -21,7 +21,7 @@ export function IconeCadeado({ className }: { className?: string }) {
 
 export function IconeOlho({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
         stroke="currentColor"
@@ -35,7 +35,7 @@ export function IconeOlho({ className }: { className?: string }) {
 
 export function IconeOlhoFechado({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M4 4l16 16M9.9 9.9a3 3 0 0 0 4.2 4.2"
         stroke="currentColor"
@@ -55,7 +55,7 @@ export function IconeOlhoFechado({ className }: { className?: string }) {
 
 export function IconeEscudo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M12 3.5 5 6v5.5c0 5 3 8.3 7 9.5 4-1.2 7-4.5 7-9.5V6l-7-2.5Z"
         stroke="currentColor"
@@ -69,7 +69,7 @@ export function IconeEscudo({ className }: { className?: string }) {
 
 export function IconeGraficoBarras({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M4 20V10M10 20V4M16 20v-7M21 20H3"
         stroke="currentColor"
@@ -83,7 +83,7 @@ export function IconeGraficoBarras({ className }: { className?: string }) {
 
 export function IconeCheck({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 16 16" fill="none" className={className}>
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={className}>
       <path d="M3 8.2 6.2 11.4 13 4.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -91,7 +91,7 @@ export function IconeCheck({ className }: { className?: string }) {
 
 export function IconeEntrar({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"
         stroke="currentColor"

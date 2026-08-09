@@ -25,7 +25,7 @@ export function BotaoRemoverGestor({ userId, nome }: { userId: string; nome: str
     >
       <input type="hidden" name="user_id" value={userId} />
       <Botao type="submit" variante="fantasma" tamanho="sm" disabled={pendente}>
-        {pendente ? 'Removendo...' : 'Remover'}
+        {pendente ? 'Removendo…' : 'Remover'}
       </Botao>
       {estado.erro ? <p className="mt-1 text-xs text-red-600">{estado.erro}</p> : null}
     </form>

@@ -2,7 +2,7 @@
 // mesmo estilo de web/src/app/gestor/gerar/icones.tsx.
 export function IconeDashboard({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <rect x="3.5" y="3.5" width="7" height="7" rx="1.3" stroke="currentColor" strokeWidth="1.8" />
       <rect x="13.5" y="3.5" width="7" height="7" rx="1.3" stroke="currentColor" strokeWidth="1.8" />
       <rect x="3.5" y="13.5" width="7" height="7" rx="1.3" stroke="currentColor" strokeWidth="1.8" />
@@ -13,7 +13,7 @@ export function IconeDashboard({ className }: { className?: string }) {
 
 export function IconeAdesao({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
       <path
         d="M9.5 15c0 1.1 1.1 2 2.5 2s2.5-.7 2.5-1.8-1-1.6-2.5-2-2.5-.9-2.5-2 1.1-1.8 2.5-1.8 2.5.9 2.5 2M12 6.5v11"
@@ -27,7 +27,7 @@ export function IconeAdesao({ className }: { className?: string }) {
 
 export function IconeRecorrencia({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M20 11a8 8 0 0 0-14.5-4.5M4 4v4h4"
         stroke="currentColor"
@@ -48,7 +48,7 @@ export function IconeRecorrencia({ className }: { className?: string }) {
 
 export function IconeRastreador({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z"
         stroke="currentColor"
@@ -62,7 +62,7 @@ export function IconeRastreador({ className }: { className?: string }) {
 
 export function IconePlaca({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M4 16v-3.2c0-.5.2-.9.5-1.3L7 8.3c.4-.5 1-.8 1.6-.8h6.8c.6 0 1.2.3 1.6.8l2.5 3.2c.3.4.5.8.5 1.3V16"
         stroke="currentColor"
@@ -78,7 +78,7 @@ export function IconePlaca({ className }: { className?: string }) {
 
 export function IconeAlerta({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M12 4 3 20h18L12 4Z"
         stroke="currentColor"
@@ -93,7 +93,7 @@ export function IconeAlerta({ className }: { className?: string }) {
 
 export function IconeLista({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <circle cx="4.5" cy="6" r="1.2" fill="currentColor" />
       <circle cx="4.5" cy="12" r="1.2" fill="currentColor" />
       <circle cx="4.5" cy="18" r="1.2" fill="currentColor" />
@@ -104,7 +104,7 @@ export function IconeLista({ className }: { className?: string }) {
 
 export function IconeUsuarios({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <circle cx="9" cy="8" r="3" stroke="currentColor" strokeWidth="1.8" />
       <path d="M3.5 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <path
@@ -119,7 +119,7 @@ export function IconeUsuarios({ className }: { className?: string }) {
 
 export function IconeSair({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M10 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-2"
         stroke="currentColor"
@@ -134,7 +134,7 @@ export function IconeSair({ className }: { className?: string }) {
 
 export function IconeColapsar({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path d="M15 5 8 12l7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M19 5v14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
@@ -144,7 +144,7 @@ export function IconeColapsar({ className }: { className?: string }) {
 // Ícones de KPI compartilhados entre Consultores, Gerar apuração e Dashboard.
 export function IconeCarteira({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5V9H6.5A2.5 2.5 0 0 1 4 6.5v1Z"
         stroke="currentColor"
@@ -163,7 +163,7 @@ export function IconeCarteira({ className }: { className?: string }) {
 
 export function IconeApurado({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
       <path d="M8 12.5l2.5 2.5L16 9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -172,7 +172,7 @@ export function IconeApurado({ className }: { className?: string }) {
 
 export function IconeSeta({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -180,7 +180,7 @@ export function IconeSeta({ className }: { className?: string }) {
 
 export function IconeTrofeu({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M7 4h10v5a5 5 0 0 1-10 0V4Z"
         stroke="currentColor"
@@ -195,7 +195,7 @@ export function IconeTrofeu({ className }: { className?: string }) {
 
 export function IconeAtualizar({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d="M4 12a8 8 0 0 1 13.66-5.66M20 12a8 8 0 0 1-13.66 5.66"
         stroke="currentColor"
@@ -211,7 +211,7 @@ export function IconeAtualizar({ className }: { className?: string }) {
 // painéis, mais fácil de desenhar com precisão do que uma engrenagem de verdade.
 export function IconeConfiguracoes({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path d="M4 6h8M16 6h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <circle cx="13" cy="6" r="2" stroke="currentColor" strokeWidth="1.8" />
       <path d="M4 12h4M12 12h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -224,7 +224,7 @@ export function IconeConfiguracoes({ className }: { className?: string }) {
 
 export function IconeUsuario({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8" />
       <path d="M4.5 19.5c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
@@ -233,7 +233,7 @@ export function IconeUsuario({ className }: { className?: string }) {
 
 export function IconeCadeado({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <rect x="4.5" y="10.5" width="15" height="10" rx="2" stroke="currentColor" strokeWidth="1.7" />
       <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
       <circle cx="12" cy="15" r="1.4" fill="currentColor" />

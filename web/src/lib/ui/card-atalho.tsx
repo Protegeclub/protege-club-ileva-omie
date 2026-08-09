@@ -33,7 +33,10 @@ export function CardAtalho({
 }) {
   const paleta = CORES[cor]
   return (
-    <Link href={href} className="group block">
+    <Link
+      href={href}
+      className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2"
+    >
       <div
         className={`flex h-full items-start gap-3 rounded-xl ${paleta.fundo} p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md`}
       >

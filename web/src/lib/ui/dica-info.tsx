@@ -30,7 +30,7 @@ export function DicaInfo({ texto, alinhar = 'centro' }: { texto: string; alinhar
         }}
         onBlur={() => setAberto(false)}
         aria-label="Como esse valor é calculado"
-        className="flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold leading-none text-slate-400 transition-colors hover:border-brand-blue hover:text-brand-blue"
+        className="flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] font-semibold leading-none text-slate-400 transition-colors hover:border-brand-blue hover:text-brand-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue"
       >
         ?
       </button>

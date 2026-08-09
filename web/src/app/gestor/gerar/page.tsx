@@ -114,7 +114,7 @@ export default async function GestorGerarPage({
               id="mes"
               name="mes"
               defaultValue={mes}
-              className="mt-1.5 h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1.5 h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             >
               {NOMES_MESES.map((nome, i) => (
                 <option key={nome} value={i + 1}>{nome}</option>
@@ -130,7 +130,7 @@ export default async function GestorGerarPage({
               name="ano"
               type="number"
               defaultValue={ano}
-              className="mt-1.5 h-11 w-24 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1.5 h-11 w-24 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
           </div>
           <Botao type="submit" variante="primaria" className="h-11">Ver competência</Botao>

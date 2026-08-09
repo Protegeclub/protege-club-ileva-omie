@@ -101,7 +101,7 @@ export default async function GestorConsultorDetalhePage({
             <p className="mt-1 text-sm text-slate-500">
               {equipeNome ? `${equipeNome} · ` : ''}Referência {NOMES_MESES[mes - 1]}/{ano}
             </p>
-            <p className="mt-2 text-sm text-slate-400">Confira abaixo o resumo da sua produção.</p>
+            <p className="mt-2 text-sm text-slate-400">Confira abaixo o resumo da produção deste consultor.</p>
           </div>
         </div>
 
@@ -111,7 +111,7 @@ export default async function GestorConsultorDetalhePage({
           </div>
           <div>
             <p className="text-xs uppercase tracking-wide text-white/60">Total a receber</p>
-            <p className="text-2xl font-bold">{formatarMoeda(totalReceber)}</p>
+            <p className="text-2xl font-bold tabular-nums">{formatarMoeda(totalReceber)}</p>
             <p className="text-xs text-white/50">Previsão para este período</p>
           </div>
         </div>

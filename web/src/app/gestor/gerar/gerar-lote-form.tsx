@@ -227,7 +227,7 @@ export function GerarLoteForm({
               value={mes}
               disabled={acompanhando}
               onChange={(e) => setMes(Number(e.target.value))}
-              className="mt-1.5 h-11 w-24 rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-24 rounded-lg border border-slate-300 px-3.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
@@ -240,7 +240,7 @@ export function GerarLoteForm({
               value={ano}
               disabled={acompanhando}
               onChange={(e) => setAno(Number(e.target.value))}
-              className="mt-1.5 h-11 w-28 rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-28 rounded-lg border border-slate-300 px-3.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
 
@@ -316,7 +316,7 @@ export function GerarLoteForm({
                     <IconeVelocimetro className="h-3.5 w-3.5" /> Velocidade
                   </p>
                   <p className="mt-0.5 text-sm font-semibold text-slate-700">
-                    {velocidadePorMinuto ? `${velocidadePorMinuto.toFixed(1)}/min` : 'calculando...'}
+                    {velocidadePorMinuto ? `${velocidadePorMinuto.toFixed(1)}/min` : 'calculando…'}
                   </p>
                 </div>
                 <div>
@@ -324,7 +324,7 @@ export function GerarLoteForm({
                     <IconeRelogio className="h-3.5 w-3.5" /> Tempo restante
                   </p>
                   <p className="mt-0.5 text-sm font-semibold text-slate-700">
-                    {etaSegundos != null ? `~${formatarDuracao(etaSegundos)}` : 'calculando...'}
+                    {etaSegundos != null ? `~${formatarDuracao(etaSegundos)}` : 'calculando…'}
                   </p>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
@@ -350,10 +350,10 @@ export function GerarLoteForm({
               <input
                 aria-label="Buscar consultor"
                 type="text"
-                placeholder="Buscar por nome ou código..."
+                placeholder="Buscar por nome ou código…"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
               />
             </div>
 
@@ -469,7 +469,7 @@ function formatarHora(iso: string) {
 
 function IconeBusca({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.8" />
       <path d="M20 20l-4.3-4.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
@@ -520,7 +520,7 @@ function StatusBadge({ status }: { status: StatusJob }) {
   if (status.status === 'processando') {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-medium text-sky-700">
-        <IconeSpinner className="h-3.5 w-3.5" /> Gerando...
+        <IconeSpinner className="h-3.5 w-3.5" /> Gerando…
       </span>
     )
   }

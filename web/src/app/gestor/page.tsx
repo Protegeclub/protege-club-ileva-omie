@@ -86,7 +86,7 @@ export default async function GestorDashboardPage({
             Gerar
           </Botao>
           <Botao href="/gestor/consultores" variante="destaque" className="h-11">
-            Ver Consultores
+            Ver consultores
           </Botao>
         </div>
       </div>
@@ -103,7 +103,7 @@ export default async function GestorDashboardPage({
               id="mes"
               name="mes"
               defaultValue={mes}
-              className="h-9 rounded-lg border border-transparent bg-slate-50 px-3 text-sm text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="h-9 rounded-lg border border-transparent bg-slate-50 px-3 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             >
               {NOMES_MESES.map((nome, i) => (
                 <option key={nome} value={i + 1}>{nome}</option>
@@ -119,7 +119,7 @@ export default async function GestorDashboardPage({
               name="ano"
               type="number"
               defaultValue={ano}
-              className="h-9 w-20 rounded-lg border border-transparent bg-slate-50 px-3 text-sm text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="h-9 w-20 rounded-lg border border-transparent bg-slate-50 px-3 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
           </div>
           <Botao type="submit" variante="primaria" tamanho="sm" className="h-9">Ver período</Botao>

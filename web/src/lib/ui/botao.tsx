@@ -42,7 +42,7 @@ type PropsBotao = PropsComuns &
 
 export function Botao(props: PropsLink | PropsBotao) {
   const { variante = 'primaria', tamanho = 'md', className, children, ...resto } = props
-  const classes = `inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTES[variante]} ${TAMANHOS[tamanho]} ${className ?? ''}`
+  const classes = `inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTES[variante]} ${TAMANHOS[tamanho]} ${className ?? ''}`
 
   if ('href' in props && props.href) {
     const { href, target, rel, ...anchorResto } = resto as AnchorHTMLAttributes<HTMLAnchorElement> & {

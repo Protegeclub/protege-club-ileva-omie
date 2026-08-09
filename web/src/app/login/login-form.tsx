@@ -184,7 +184,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
                     autoComplete="email"
                     placeholder="voce@protegeclub.com.br"
                     required
-                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
+                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus-visible:border-brand-blue focus-visible:bg-white focus-visible:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
                   />
                 </div>
               </div>
@@ -203,7 +203,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
                 className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
                 {pendenteRecuperacao ? <IconeSpinner className="h-5 w-5" /> : <IconeEmail className="h-5 w-5" />}
-                {pendenteRecuperacao ? 'Enviando...' : 'Enviar link de redefinição'}
+                {pendenteRecuperacao ? 'Enviando…' : 'Enviar link de redefinição'}
               </button>
 
               <button
@@ -229,7 +229,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
                     autoComplete="email"
                     placeholder="voce@protegeclub.com.br"
                     required
-                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
+                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus-visible:border-brand-blue focus-visible:bg-white focus-visible:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
                   />
                 </div>
               </div>
@@ -247,7 +247,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
                     autoComplete="current-password"
                     placeholder="••••••••"
                     required
-                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
+                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus-visible:border-brand-blue focus-visible:bg-white focus-visible:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
                   />
                   <button
                     type="button"
@@ -263,7 +263,15 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-600">
                   <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center">
-                    <input type="checkbox" className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                    {/* Supabase já persiste a sessão por padrão (localStorage) independente deste
+                        checkbox — não existe hoje um modo "sessão curta" pra alternar. O `name`
+                        só garante que o campo seja um controle de formulário real (antes não
+                        tinha, então nunca era enviado com o submit). */}
+                    <input
+                      type="checkbox"
+                      name="manter_conectado"
+                      className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
                     <span className="pointer-events-none absolute inset-0 rounded-[6px] border border-slate-300 bg-white transition-colors peer-checked:border-brand-orange peer-checked:bg-brand-orange peer-focus-visible:ring-2 peer-focus-visible:ring-brand-blue/30 peer-focus-visible:ring-offset-1" />
                     <IconeCheck className="pointer-events-none relative h-2.5 w-2.5 text-white opacity-0 transition-opacity peer-checked:opacity-100" />
                   </span>
@@ -286,7 +294,7 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
                 className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
                 {pendente ? <IconeSpinner className="h-5 w-5" /> : <IconeEntrar className="h-5 w-5" />}
-                {pendente ? 'Entrando...' : 'Entrar'}
+                {pendente ? 'Entrando…' : 'Entrar'}
               </button>
 
               <div className="flex items-center justify-center gap-1.5 border-t border-slate-100 pt-4 text-xs text-slate-400">

@@ -32,7 +32,7 @@ export function BadgeStatusAcesso({ status }: { status: StatusAcesso }) {
 
 function IconeBusca({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" strokeWidth="1.8" />
       <path d="M20 20l-4.3-4.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
@@ -55,7 +55,10 @@ export function TabelaAcessos({
   const [selecionado, setSelecionado] = useState<LinhaAcesso | null>(null)
 
   const linhasFiltradas = useMemo(() => {
-    const buscaLower = busca.trim().toLowerCase()
+    // Remove um "#" na frente antes de comparar — os códigos aparecem como "#123" na própria
+    // linha da tabela (ver <td> abaixo), então buscar "#123" é o esperado (mesmo fix aplicado em
+    // TabelaGestor.tsx).
+    const buscaLower = busca.trim().toLowerCase().replace(/^#/, '')
     return linhas.filter((l) => {
       if (statusFiltro && l.status !== statusFiltro) return false
       if (equipeFiltro && l.equipe !== equipeFiltro) return false
@@ -82,17 +85,17 @@ export function TabelaAcessos({
           <input
             aria-label="Buscar consultor"
             type="text"
-            placeholder="Buscar consultor..."
+            placeholder="Buscar consultor…"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
           />
         </div>
         <select
           aria-label="Status"
           value={statusFiltro}
           onChange={(e) => setStatusFiltro(e.target.value as '' | StatusAcesso)}
-          className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
         >
           <option value="">Status</option>
           <option value="ativo">Ativo</option>
@@ -103,7 +106,7 @@ export function TabelaAcessos({
           aria-label="Equipe"
           value={equipeFiltro}
           onChange={(e) => setEquipeFiltro(e.target.value)}
-          className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
         >
           <option value="">Equipe</option>
           {equipesDisponiveis.map((eq) => (
@@ -140,8 +143,15 @@ export function TabelaAcessos({
             {linhasFiltradas.map((linha) => (
               <tr
                 key={linha.cod_consultor}
+                tabIndex={0}
                 onClick={() => setSelecionado(linha)}
-                className="cursor-pointer transition-colors duration-150 hover:bg-slate-50"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setSelecionado(linha)
+                  }
+                }}
+                className="cursor-pointer transition-colors duration-150 hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-blue"
               >
                 <td className="px-4 py-3 text-slate-800">
                   <span className="font-medium">{linha.nome}</span>{' '}

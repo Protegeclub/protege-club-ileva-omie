@@ -95,7 +95,7 @@ export default async function ConsultorDashboardPage({
           </div>
           <div>
             <p className="text-xs uppercase tracking-wide text-white/60">Total a receber</p>
-            <p className="text-2xl font-bold">{formatarMoeda(totalReceber)}</p>
+            <p className="text-2xl font-bold tabular-nums">{formatarMoeda(totalReceber)}</p>
             <p className="text-xs text-white/50">Previsão para este período</p>
           </div>
         </div>
@@ -178,7 +178,7 @@ export default async function ConsultorDashboardPage({
           cor="laranja"
         />
         <CardAtalho
-          href={`/consultor/inadimplentes?cod=${codConsultor}`}
+          href="/consultor/inadimplentes"
           icone={<IconeAlerta />}
           titulo="Inadimplentes"
           descricao="Situação atual dos associados"

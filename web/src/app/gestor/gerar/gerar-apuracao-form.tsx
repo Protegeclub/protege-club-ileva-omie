@@ -87,15 +87,15 @@ export function GerarApuracaoForm({
               value={codConsultor}
               disabled={acompanhando}
               onChange={(e) => setCodConsultor(e.target.value)}
-              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
-            <label htmlFor="mes" className="block text-xs font-medium text-slate-500">
+            <label htmlFor="gerar-consultor-mes" className="block text-xs font-medium text-slate-500">
               Mês
             </label>
             <input
-              id="mes"
+              id="gerar-consultor-mes"
               type="number"
               min={1}
               max={12}
@@ -103,21 +103,21 @@ export function GerarApuracaoForm({
               value={mes}
               disabled={acompanhando}
               onChange={(e) => setMes(Number(e.target.value))}
-              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
           <div>
-            <label htmlFor="ano" className="block text-xs font-medium text-slate-500">
+            <label htmlFor="gerar-consultor-ano" className="block text-xs font-medium text-slate-500">
               Ano
             </label>
             <input
-              id="ano"
+              id="gerar-consultor-ano"
               type="number"
               required
               value={ano}
               disabled={acompanhando}
               onChange={(e) => setAno(Number(e.target.value))}
-              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-slate-50"
+              className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue disabled:bg-slate-50"
             />
           </div>
         </div>
@@ -126,7 +126,7 @@ export function GerarApuracaoForm({
           {acompanhando ? (
             <>
               <IconeSpinner className="h-4 w-4" />
-              Gerando... {formatarDuracao(segundos)}
+              Gerando… {formatarDuracao(segundos)}
             </>
           ) : (
             'Gerar apuração'

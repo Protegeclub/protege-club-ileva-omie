@@ -52,7 +52,7 @@ export function CartaoMinhaConta({
               defaultValue={nomeAtual}
               required
               maxLength={100}
-              className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
           </div>
           <div>
@@ -70,7 +70,7 @@ export function CartaoMinhaConta({
           {estadoNome.ok ? <Banner tom="sucesso">Nome atualizado.</Banner> : null}
 
           <Botao type="submit" variante="secundaria" tamanho="sm" disabled={pendenteNome}>
-            {pendenteNome ? 'Salvando...' : 'Salvar nome'}
+            {pendenteNome ? 'Salvando…' : 'Salvar nome'}
           </Botao>
         </form>
       </Cartao>
@@ -86,7 +86,7 @@ export function CartaoMinhaConta({
               type={mostrarSenhas ? 'text' : 'password'}
               autoComplete="current-password"
               required
-              className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
           </div>
           <div>
@@ -98,7 +98,7 @@ export function CartaoMinhaConta({
               autoComplete="new-password"
               required
               minLength={6}
-              className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
           </div>
           <div>
@@ -110,7 +110,7 @@ export function CartaoMinhaConta({
               autoComplete="new-password"
               required
               minLength={6}
-              className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
           </div>
 
@@ -128,7 +128,7 @@ export function CartaoMinhaConta({
           {estadoSenha.ok ? <Banner tom="sucesso">Senha alterada com sucesso.</Banner> : null}
 
           <Botao type="submit" variante="secundaria" tamanho="sm" disabled={pendenteSenha}>
-            {pendenteSenha ? 'Salvando...' : 'Trocar senha'}
+            {pendenteSenha ? 'Salvando…' : 'Trocar senha'}
           </Botao>
         </form>
       </Cartao>

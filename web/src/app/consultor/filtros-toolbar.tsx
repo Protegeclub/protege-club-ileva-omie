@@ -67,7 +67,7 @@ export function FiltrosToolbar() {
         <select
           value={mes}
           onChange={(e) => irPara({ mes: Number(e.target.value) })}
-          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
         >
           {NOMES_MESES.map((nome, i) => (
             <option key={nome} value={i + 1}>
@@ -82,7 +82,7 @@ export function FiltrosToolbar() {
           type="checkbox"
           checked={equipe}
           onChange={(e) => irPara({ equipe: e.target.checked })}
-          className="rounded border-slate-300 text-brand-navy focus:ring-brand-blue"
+          className="rounded border-slate-300 text-brand-navy focus-visible:ring-brand-blue"
         />
         <IconeUsuarios className="h-4 w-4 text-slate-400" />
         Visualizar dados da equipe

@@ -29,7 +29,7 @@ export function ConvidarGestorForm() {
           name="nome"
           type="text"
           required
-          className="mt-1 w-56 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          className="mt-1 w-56 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
         />
       </div>
       <div>
@@ -41,11 +41,11 @@ export function ConvidarGestorForm() {
           name="email"
           type="email"
           required
-          className="mt-1 w-64 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          className="mt-1 w-64 rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
         />
       </div>
       <Botao type="submit" disabled={pendente}>
-        {pendente ? 'Convidando...' : 'Convidar como Gestor'}
+        {pendente ? 'Convidando…' : 'Convidar como Gestor'}
       </Botao>
       {estado.erro ? <p className="w-full text-sm text-red-600">{estado.erro}</p> : null}
     </form>

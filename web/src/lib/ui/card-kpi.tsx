@@ -53,7 +53,7 @@ function Sparkline({ dados, cor }: { dados: number[]; cor: string }) {
   const area = `0,${altura} ${linha} ${largura},${altura}`
 
   return (
-    <svg viewBox={`0 0 ${largura} ${altura}`} preserveAspectRatio="none" className="mt-2.5 h-7 w-full">
+    <svg viewBox={`0 0 ${largura} ${altura}`} preserveAspectRatio="none" aria-hidden="true" className="mt-2.5 h-7 w-full">
       <polyline points={area} fill={cor} opacity={0.12} stroke="none" />
       <polyline points={linha} fill="none" stroke={cor} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
@@ -69,7 +69,7 @@ function AnelProgresso({ atual, total, cor }: { atual: number; total: number; co
 
   return (
     <div className="mt-2.5 flex items-center gap-2">
-      <svg viewBox="0 0 28 28" className="h-6 w-6 shrink-0 -rotate-90">
+      <svg viewBox="0 0 28 28" aria-hidden="true" className="h-6 w-6 shrink-0 -rotate-90">
         <circle cx="14" cy="14" r={raio} fill="none" stroke="#f1f5f9" strokeWidth="3.5" />
         <circle
           cx="14"
@@ -148,7 +148,7 @@ export function CardKpi({
         </div>
         <p className={`font-semibold uppercase tracking-wide text-slate-400 ${destaque ? 'text-xs' : 'text-[11px]'}`}>{titulo}</p>
       </div>
-      <p className={`mt-3 font-semibold text-slate-900 ${destaque ? 'text-3xl' : 'text-xl'}`}>{valor}</p>
+      <p className={`mt-3 font-semibold tabular-nums text-slate-900 ${destaque ? 'text-3xl' : 'text-xl'}`}>{valor}</p>
       {tendenciaPct != null ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-xs">
           <span className={`inline-flex items-center gap-0.5 font-medium ${subiu ? 'text-emerald-600' : 'text-red-600'}`}>
