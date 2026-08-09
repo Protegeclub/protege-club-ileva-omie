@@ -8,13 +8,13 @@ import { IconeSeta } from './icones-sidebar'
 // na mesma cor do fundo do card — não usa o `Cartao` compartilhado porque ele fixa fundo branco;
 // segue o mesmo padrão do bloco "Total a receber" do dashboard, que também é sólido sem passar
 // pelo `Cartao`.
-// Cor por categoria (a pedido do Samuel, 07/08/2026): vermelho pra atenção/custo (Descontos,
-// Inadimplentes), verde pra ganho (Adesões, Recorrência), laranja pra Placas — evolução do
-// navy uniforme original, que ficava indistinguível entre os 5 atalhos.
+// Cor por categoria, alinhada ao mesmo significado fixo usado nos gráficos e no Resumo
+// Financeiro (09/08/2026): laranja da marca = Adesão, azul da marca = Recorrência, vermelho =
+// atenção/custo (Descontos, Inadimplentes), navy = Placas (só pra diferenciar do resto).
 const CORES = {
   navy: { fundo: 'bg-brand-navy', icone: 'text-brand-navy' },
   vermelho: { fundo: 'bg-red-600', icone: 'text-red-600' },
-  verde: { fundo: 'bg-emerald-600', icone: 'text-emerald-600' },
+  azul: { fundo: 'bg-brand-blue', icone: 'text-brand-blue' },
   laranja: { fundo: 'bg-brand-orange', icone: 'text-brand-orange' },
 } as const
 

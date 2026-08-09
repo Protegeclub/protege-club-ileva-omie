@@ -1,6 +1,7 @@
 import { formatarDataBr, formatarMoeda, formatarReferencia, juntarItens } from '@/app/consultor/tipos'
 import { Banner } from '@/lib/ui/banner'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { carregarContextoGestorConsultor } from '../dados'
 
 export default async function GestorRecorrenciaPage({
@@ -58,11 +59,7 @@ export default async function GestorRecorrenciaPage({
               </tr>
             ))}
             {recorrencias.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
-                  Nenhuma recorrência no período.
-                </td>
-              </tr>
+              <LinhaVazia colSpan={7} texto="Nenhuma recorrência no período." />
             )}
           </tbody>
           <tfoot>

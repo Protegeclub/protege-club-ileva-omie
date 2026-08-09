@@ -1,4 +1,5 @@
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { carregarContextoConsultor } from '../dados'
 import { formatarDataBr, formatarMoeda, formatarReferencia, juntarItens } from '../tipos'
 import { Banner } from '@/lib/ui/banner'
@@ -54,11 +55,7 @@ export default async function RecorrenciaPage({
               </tr>
             ))}
             {recorrencias.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
-                  Nenhuma recorrência no período.
-                </td>
-              </tr>
+              <LinhaVazia colSpan={7} texto="Nenhuma recorrência no período." />
             )}
           </tbody>
           <tfoot>

@@ -1,7 +1,8 @@
 import { Banner } from '@/lib/ui/banner'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { carregarContextoConsultor } from '../dados'
-import { formatarMoeda, juntarItens } from '../tipos'
+import { formatarDataBr, formatarMoeda, juntarItens } from '../tipos'
 
 export default async function AdesoesPage({
   searchParams,
@@ -41,18 +42,14 @@ export default async function AdesoesPage({
           <tbody>
             {adesoes.map((item, i) => (
               <tr key={i} className="border-t border-slate-100">
-                <td className="px-4 py-2">{item.dt_pagamento ?? '—'}</td>
+                <td className="px-4 py-2">{formatarDataBr(item.dt_pagamento)}</td>
                 <td className="px-4 py-2">{item.associado}</td>
                 <td className="px-4 py-2">{item.consultorNome}</td>
                 <td className="px-4 py-2 text-right">{formatarMoeda(item.valor)}</td>
               </tr>
             ))}
             {adesoes.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                  Nenhuma adesão no período.
-                </td>
-              </tr>
+              <LinhaVazia colSpan={4} texto="Nenhuma adesão no período." />
             )}
           </tbody>
           <tfoot>

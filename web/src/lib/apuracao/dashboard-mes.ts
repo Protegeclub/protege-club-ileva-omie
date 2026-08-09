@@ -51,7 +51,7 @@ export interface PontoEvolucao {
 }
 
 // Mesmos totais do mês, mas do período anterior — só pra calcular a tendência dos cards de KPI
-// (ver calcularTendencia em TabelaGestor.tsx/CardKpi), mesmo padrão que consultores/page.tsx já
+// (ver calcularTendencia em card-metrica.tsx), mesmo padrão que consultores/page.tsx já
 // usa hoje.
 export interface TotaisPeriodo {
   totalLiquido: number

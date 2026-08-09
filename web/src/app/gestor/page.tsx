@@ -4,7 +4,7 @@ import { NOMES_MESES } from '@/app/consultor/tipos'
 import { montarDashboardMes, type DashboardMes } from '@/lib/apuracao/dashboard-mes'
 import { Botao } from '@/lib/ui/botao'
 import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
-import { CardKpi, calcularProgresso, calcularTendencia } from '@/lib/ui/card-kpi'
+import { CardMetrica, calcularProgresso, calcularTendencia } from '@/lib/ui/card-metrica'
 import { Cartao } from '@/lib/ui/cartao'
 import {
   IconeAdesao,
@@ -126,7 +126,7 @@ export default async function GestorDashboardPage({
         </form>
       </Cartao>
 
-      {/* KPIs — mesmo card compartilhado com Consultores/Gerar apuração (ver lib/ui/card-kpi.tsx).
+      {/* KPIs — mesmo card compartilhado com Consultores/Gerar apuração (ver lib/ui/card-metrica.tsx).
           Sparkline/anel são só decoração adicional (props novas, opcionais) reaproveitando dados
           que a página já buscava (evolução de 6 meses / total do mês anterior / apurados-ativos).
           Desconto rastreador não mostra seta de tendência de propósito: é um valor descontado dos
@@ -135,7 +135,7 @@ export default async function GestorDashboardPage({
         {/* Comissão líquida em destaque (~1.4x maior) — é o número que mais importa pro Gestor,
             os outros 5 tinham exatamente o mesmo peso visual antes (pedido do Samuel, 04/08/2026). */}
         <div className="col-span-2 sm:col-span-3 lg:col-span-2">
-          <CardKpi
+          <CardMetrica
             icone={<IconeCarteira />}
             cor="blue"
             titulo="Comissão líquida"
@@ -147,9 +147,9 @@ export default async function GestorDashboardPage({
             destaque
           />
         </div>
-        <CardKpi
+        <CardMetrica
           icone={<IconeAdesao />}
-          cor="emerald"
+          cor="orange"
           titulo="Adesão"
           valor={formatarMoeda(dados.totalAdesao)}
           tendenciaPct={calcularTendencia(dados.totalAdesao, dados.anterior.totalAdesao)}
@@ -157,9 +157,9 @@ export default async function GestorDashboardPage({
           sparkline={evolucaoAdesao}
           progresso={calcularProgresso(dados.totalAdesao, dados.anterior.totalAdesao) ?? undefined}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeRecorrencia />}
-          cor="violet"
+          cor="blue"
           titulo="Recorrência"
           valor={formatarMoeda(dados.totalRecorrencia)}
           tendenciaPct={calcularTendencia(dados.totalRecorrencia, dados.anterior.totalRecorrencia)}
@@ -167,7 +167,7 @@ export default async function GestorDashboardPage({
           sparkline={evolucaoRecorrencia}
           progresso={calcularProgresso(dados.totalRecorrencia, dados.anterior.totalRecorrencia) ?? undefined}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeRastreador />}
           cor="navy"
           titulo="Desconto rastreador"
@@ -175,7 +175,7 @@ export default async function GestorDashboardPage({
           descricao="Descontado dos consultores"
           sparkline={[dados.anterior.totalDescontoRastreador, dados.totalDescontoRastreador]}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconePlaca />}
           cor="orange"
           titulo="Placas ativadas"
@@ -183,7 +183,7 @@ export default async function GestorDashboardPage({
           descricao="Este mês"
           sparkline={[dados.anterior.qtdPlacasAtivadas, dados.qtdPlacasAtivadas]}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeApurado />}
           cor="navy"
           titulo="Apurados"

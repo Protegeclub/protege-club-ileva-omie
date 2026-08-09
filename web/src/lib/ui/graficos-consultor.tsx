@@ -31,34 +31,6 @@ const ESTILO_TOOLTIP = {
   itemStyle: { fontSize: 13, fontWeight: 600 },
 }
 
-// Sparkline minúscula (sem eixos/tooltip) pro bloco de resumo financeiro — só uma tendência
-// visual ao lado do valor, mesmo dado do gráfico de evolução principal.
-export function Sparkline({ evolucao, campo, cor }: { evolucao: PontoEvolucaoConsultor[]; campo: keyof PontoEvolucaoConsultor; cor: string }) {
-  return (
-    <div className="h-10 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={evolucao} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id={`gradiente-spark-${String(campo)}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={cor} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={cor} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey={campo}
-            stroke={cor}
-            strokeWidth={2}
-            fill={`url(#gradiente-spark-${String(campo)})`}
-            dot={false}
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
 export function AreaProducaoMensal({ evolucao }: { evolucao: PontoEvolucaoConsultor[] }) {
   return (
     <Cartao className="p-5 lg:col-span-2">

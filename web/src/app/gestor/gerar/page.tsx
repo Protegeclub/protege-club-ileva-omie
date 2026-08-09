@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { listarTodosConsultores } from '@/lib/ileva/api'
 import { Botao } from '@/lib/ui/botao'
 import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
-import { CardKpi } from '@/lib/ui/card-kpi'
+import { CardMetrica } from '@/lib/ui/card-metrica'
 import { Cartao } from '@/lib/ui/cartao'
 import { IconeAlerta, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 import { buscarStatusCompetencia, type StatusCompetencia } from './actions'
@@ -164,15 +164,15 @@ export default async function GestorGerarPage({
       {/* KPIs */}
       {statusCompetencia && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <CardKpi icone={<IconeUsuarios />} cor="navy" titulo="Total de consultores" valor={String(statusCompetencia.totalAtivos)} />
-          <CardKpi icone={<IconeCheckCircle />} cor="emerald" titulo="Processados" valor={String(statusCompetencia.processados)} />
-          <CardKpi
+          <CardMetrica icone={<IconeUsuarios />} cor="navy" titulo="Total de consultores" valor={String(statusCompetencia.totalAtivos)} />
+          <CardMetrica icone={<IconeCheckCircle />} cor="emerald" titulo="Processados" valor={String(statusCompetencia.processados)} />
+          <CardMetrica
             icone={<IconeRelogio />}
             cor="orange"
             titulo="Pendentes"
             valor={String(statusCompetencia.pendentes + statusCompetencia.processando)}
           />
-          <CardKpi icone={<IconeXCircle />} cor="blue" titulo="Erros" valor={String(statusCompetencia.erros)} />
+          <CardMetrica icone={<IconeXCircle />} cor="blue" titulo="Erros" valor={String(statusCompetencia.erros)} />
         </div>
       )}
 

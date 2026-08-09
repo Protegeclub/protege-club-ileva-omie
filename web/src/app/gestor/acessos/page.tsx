@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { listarTodosConsultores } from '@/lib/ileva/api'
+import { CardMetrica } from '@/lib/ui/card-metrica'
 import { Cartao } from '@/lib/ui/cartao'
+import { IconeAlerta, IconeApurado, IconeCadeado, IconeUsuario, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { BotaoRemoverGestor } from './botao-remover-gestor'
 import { ConvidarGestorForm } from './convidar-gestor-form'
@@ -69,17 +71,17 @@ export default async function GestorAcessosPage() {
         <Link href="/gestor/consultores" className="text-xs text-slate-400 hover:text-brand-navy hover:underline">
           ← Voltar para consultores
         </Link>
-        <h2 className="text-base font-semibold text-slate-900">Acessos</h2>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-brand-navy">Acessos</h1>
       </div>
 
       {/* Cards de resumo — contagens fixas (não reagem aos filtros da tabela abaixo), pro
           Gestor ter uma referência estável do total, igual ao resto do sistema. */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <CardResumo titulo="Gestores" valor={gestores.length} />
-        <CardResumo titulo="Consultores" valor={linhas.length} />
-        <CardResumo titulo="Acessos ativos" valor={totalAtivos} tom="emerald" />
-        <CardResumo titulo="Pendentes" valor={totalPendentes} tom="amber" />
-        <CardResumo titulo="Sem acesso" valor={totalSemAcesso} tom="slate" />
+        <CardMetrica icone={<IconeCadeado />} titulo="Gestores" valor={String(gestores.length)} cor="navy" denso />
+        <CardMetrica icone={<IconeUsuarios />} titulo="Consultores" valor={String(linhas.length)} cor="navy" denso />
+        <CardMetrica icone={<IconeApurado />} titulo="Acessos ativos" valor={String(totalAtivos)} cor="emerald" denso />
+        <CardMetrica icone={<IconeAlerta />} titulo="Pendentes" valor={String(totalPendentes)} cor="orange" denso />
+        <CardMetrica icone={<IconeUsuario />} titulo="Sem acesso" valor={String(totalSemAcesso)} cor="slate" denso />
       </div>
 
       <Cartao className="space-y-3 p-5">
@@ -118,28 +120,5 @@ export default async function GestorAcessosPage() {
 
       <TabelaAcessos linhas={linhas} equipesDisponiveis={equipesDisponiveis} />
     </div>
-  )
-}
-
-function CardResumo({
-  titulo,
-  valor,
-  tom = 'navy',
-}: {
-  titulo: string
-  valor: number
-  tom?: 'navy' | 'emerald' | 'amber' | 'slate'
-}) {
-  const cores: Record<string, string> = {
-    navy: 'text-brand-navy',
-    emerald: 'text-emerald-600',
-    amber: 'text-amber-600',
-    slate: 'text-slate-500',
-  }
-  return (
-    <Cartao>
-      <p className="text-sm text-slate-500">{titulo}</p>
-      <p className={`mt-2 text-2xl font-semibold ${cores[tom]}`}>{valor}</p>
-    </Cartao>
   )
 }

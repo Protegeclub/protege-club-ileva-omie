@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import type { ApuracaoRow } from '@/app/consultor/tipos'
-import { formatarMoeda } from '@/app/consultor/tipos'
+import { formatarDataBr, formatarMoeda, formatarTelefone } from '@/app/consultor/tipos'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 // Estado atual (quem está atrasado agora), igual web/src/app/consultor/inadimplentes/page.tsx —
@@ -75,19 +76,15 @@ export default async function GestorInadimplentesPage({
               <tbody>
                 {inadimplentes.map((item, i) => (
                   <tr key={i} className="border-t border-slate-100">
-                    <td className="px-4 py-2">{item.dt_vencimento}</td>
+                    <td className="px-4 py-2">{formatarDataBr(item.dt_vencimento)}</td>
                     <td className="px-4 py-2">{item.associado}</td>
-                    <td className="px-4 py-2">{item.telefone || '—'}</td>
+                    <td className="px-4 py-2">{formatarTelefone(item.telefone)}</td>
                     <td className="px-4 py-2">{item.consultorNome}</td>
                     <td className="px-4 py-2 text-right">{formatarMoeda(item.valorBoleto)}</td>
                   </tr>
                 ))}
                 {inadimplentes.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                      Nenhum inadimplente na carteira.
-                    </td>
-                  </tr>
+                  <LinhaVazia colSpan={5} texto="Nenhum inadimplente na carteira." />
                 )}
               </tbody>
               <tfoot>

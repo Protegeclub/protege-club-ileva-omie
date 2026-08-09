@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Banner } from '@/lib/ui/banner'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { Selo } from '@/lib/ui/selo'
 import {
   buscarClientesOmieAction,
@@ -406,11 +407,7 @@ export function TabelaOmie({
                 />
               ))}
               {linhas.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                    Nenhum consultor com apuração e líquido positivo neste período.
-                  </td>
-                </tr>
+                <LinhaVazia colSpan={5} texto="Nenhum consultor com apuração e líquido positivo neste período." />
               )}
             </tbody>
           </table>

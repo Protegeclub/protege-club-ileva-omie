@@ -7,8 +7,8 @@ import {
 import { Banner } from '@/lib/ui/banner'
 import { Botao } from '@/lib/ui/botao'
 import { CardAtalho } from '@/lib/ui/card-atalho'
-import { CardFinanceiro } from '@/lib/ui/card-financeiro'
-import { CardKpi, calcularTendencia } from '@/lib/ui/card-kpi'
+import { CardMetrica, calcularTendencia } from '@/lib/ui/card-metrica'
+import { COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS } from '@/lib/apuracao/comissao-gerencial'
 import { AreaProducaoMensal, BarraAdesoesPorMes, DonutComposicaoConsultor } from '@/lib/ui/graficos-consultor'
 import {
   IconeAdesao,
@@ -49,6 +49,7 @@ export default async function GestorConsultorDetalhePage({
 
   const { ano, mes, equipeAtiva, linhaPropria, linhasEquipe, nomeConsultor, equipeNome, anterior, evolucao } = contexto
   const qs = `ano=${ano}&mes=${mes}&equipe=${equipeAtiva ? 1 : 0}`
+  const mostrarComissaoGerencial = codConsultor === COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS
 
   if (!linhaPropria) {
     return (
@@ -119,23 +120,23 @@ export default async function GestorConsultorDetalhePage({
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <CardKpi
+        <CardMetrica
           icone={<IconeAdesao />}
-          cor="emerald"
+          cor="orange"
           titulo="Adesões"
           valor={String(totalAdesoes)}
           tendenciaPct={calcularTendencia(totalAdesoes, adesoesAnterior)}
           valorAnterior={String(adesoesAnterior)}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeRecorrencia />}
-          cor="violet"
+          cor="blue"
           titulo="Recorrências"
           valor={String(totalRecorrencias)}
           tendenciaPct={calcularTendencia(totalRecorrencias, recorrenciasAnterior)}
           valorAnterior={String(recorrenciasAnterior)}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconePlaca />}
           cor="orange"
           titulo="Placas ativadas"
@@ -143,7 +144,7 @@ export default async function GestorConsultorDetalhePage({
           tendenciaPct={calcularTendencia(totalPlacasAtivadas, placasAnterior)}
           valorAnterior={String(placasAnterior)}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeUsuarios />}
           cor="blue"
           titulo="Produção da equipe"
@@ -170,14 +171,14 @@ export default async function GestorConsultorDetalhePage({
           icone={<IconeAdesao />}
           titulo="Adesões"
           descricao="Contratos e valores do período"
-          cor="verde"
+          cor="laranja"
         />
         <CardAtalho
           href={`/gestor/consultor/${codConsultor}/recorrencia?${qs}`}
           icone={<IconeRecorrencia />}
           titulo="Recorrência"
           descricao="Pagamentos recorrentes recebidos"
-          cor="verde"
+          cor="azul"
         />
         <CardAtalho
           href={`/gestor/consultor/${codConsultor}/rastreadores?${qs}`}
@@ -191,7 +192,7 @@ export default async function GestorConsultorDetalhePage({
           icone={<IconePlaca />}
           titulo="Placas"
           descricao="Placas ativadas no período"
-          cor="laranja"
+          cor="navy"
         />
         <CardAtalho
           href={`/gestor/consultor/${codConsultor}/inadimplentes`}
@@ -202,72 +203,69 @@ export default async function GestorConsultorDetalhePage({
         />
       </div>
 
-      {/* Resumo financeiro */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
-        <CardFinanceiro
+      {/* Resumo financeiro — card de Comissão de gerência só existe pra quem realmente pode
+          ganhá-la (ver COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS em lib/apuracao/comissao-gerencial.ts),
+          senão vira um card de R$0,00 sem sentido pros outros 188 consultores. */}
+      <div className={`grid gap-3 sm:grid-cols-2 ${mostrarComissaoGerencial ? 'lg:grid-cols-7' : 'lg:grid-cols-6'}`}>
+        <CardMetrica
           icone={<IconeAdesao />}
           titulo="Adesão"
           valor={formatarMoeda(linhaPropria.total_adesao)}
-          cor="#f19100"
-          evolucao={evolucao}
-          campo="totalAdesao"
+          cor="orange"
+          sparkline={evolucao.map((p) => p.totalAdesao)}
           dica="Soma dos boletos de Adesão pagos neste mês."
           alinharDica="esquerda"
         />
-        <CardFinanceiro
+        <CardMetrica
           icone={<IconeTrofeu />}
           titulo="Comissão do plano de carreira"
           valor={formatarMoeda(linhaPropria.total_bonus_nivel)}
-          cor="#002a54"
-          evolucao={evolucao}
-          campo="totalBonusNivel"
+          cor="navy"
+          sparkline={evolucao.map((p) => p.totalBonusNivel)}
           selo={nivelGestao?.titulo}
           dica="Valor do maior patamar de placas ativadas atingido neste mês, conforme a tabela do plano de carreira."
         />
-        <CardFinanceiro
+        <CardMetrica
           icone={<IconeTrofeu />}
           titulo="Premiação individual"
           valor={formatarMoeda(linhaPropria.total_premiacao_individual)}
-          cor="#7c3aed"
-          evolucao={evolucao}
-          campo="totalPremiacaoIndividual"
+          cor="violet"
+          sparkline={evolucao.map((p) => p.totalPremiacaoIndividual)}
           dica="R$50 por placa ativada neste mês, a partir de 10 placas ativadas."
         />
-        <CardFinanceiro
-          icone={<IconeUsuarios />}
-          titulo="Comissão de gerência"
-          valor={formatarMoeda(linhaPropria.total_comissao_gerencial)}
-          cor="#0d9488"
-          evolucao={evolucao}
-          campo="totalComissaoGerencial"
-          dica="R$2,00 por placa ativada neste mês por outros consultores da equipe."
-        />
-        <CardFinanceiro
+        {mostrarComissaoGerencial && (
+          <CardMetrica
+            icone={<IconeUsuarios />}
+            titulo="Comissão de gerência"
+            valor={formatarMoeda(linhaPropria.total_comissao_gerencial)}
+            cor="teal"
+            sparkline={evolucao.map((p) => p.totalComissaoGerencial)}
+            dica="R$2,00 por placa ativada neste mês por outros consultores da equipe."
+          />
+        )}
+        <CardMetrica
           icone={<IconeRecorrencia />}
           titulo="Recorrência"
           valor={formatarMoeda(linhaPropria.total_recorrencia)}
-          cor="#25a9e1"
-          evolucao={evolucao}
-          campo="totalRecorrencia"
+          cor="blue"
+          sparkline={evolucao.map((p) => p.totalRecorrencia)}
           dica="Resultado de boletos de mensalidade pagos neste mês, pela data de pagamento (inclui parcelas atrasadas pagas agora)."
         />
-        <CardFinanceiro
+        <CardMetrica
           icone={<IconeRastreador />}
           titulo="Desconto rastreadores"
           valor={formatarMoeda(linhaPropria.total_desconto_rastreador)}
-          cor="#ef4444"
-          corTexto="text-red-600"
-          evolucao={evolucao}
-          campo="totalDescontoRastreador"
+          cor="red"
+          corValor="text-red-600"
+          sparkline={evolucao.map((p) => p.totalDescontoRastreador)}
           dica="R$100 por veículo com rastreador ativado neste mês."
         />
-        <CardFinanceiro
+        <CardMetrica
           icone={<IconeCarteira />}
           titulo="Comissão líquida"
           valor={formatarMoeda(linhaPropria.total_liquido)}
-          cor="#002a54"
-          evolucao={evolucao}
-          campo="totalLiquido"
+          cor="navy"
+          sparkline={evolucao.map((p) => p.totalLiquido)}
           dica="Soma de todos os valores acima: Adesão + Recorrência − Desconto de rastreadores + Premiação individual + Comissão de gerência + Comissão do plano de carreira."
           alinharDica="direita"
         />

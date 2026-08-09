@@ -7,7 +7,8 @@ import { solicitarApuracao } from './gerar/actions'
 import { IconeRelampago } from './gerar/icones'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
-import { CardKpi, calcularTendencia } from '@/lib/ui/card-kpi'
+import { CardMetrica, calcularTendencia } from '@/lib/ui/card-metrica'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import {
   IconeAdesao,
   IconeApurado,
@@ -420,7 +421,7 @@ export function TabelaGestor({
           referência do Samuel, 26/07/2026) — só decorativo, não codifica nenhum significado além
           de diferenciar os cards visualmente. */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <CardKpi
+        <CardMetrica
           icone={<IconeCarteira />}
           cor="blue"
           titulo="Líquido"
@@ -429,25 +430,25 @@ export function TabelaGestor({
           valorAnterior={formatarMoeda(totalLiquidoAnterior)}
           sparkline={[totalLiquidoAnterior, totalLiquidoGeral]}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeAdesao />}
-          cor="emerald"
+          cor="orange"
           titulo="Adesão"
           valor={formatarMoeda(totalAdesaoGeral)}
           tendenciaPct={calcularTendencia(totalAdesaoGeral, totalAdesaoAnterior)}
           valorAnterior={formatarMoeda(totalAdesaoAnterior)}
           sparkline={[totalAdesaoAnterior, totalAdesaoGeral]}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeRecorrencia />}
-          cor="violet"
+          cor="blue"
           titulo="Recorrência"
           valor={formatarMoeda(totalRecorrenciaGeral)}
           tendenciaPct={calcularTendencia(totalRecorrenciaGeral, totalRecorrenciaAnterior)}
           valorAnterior={formatarMoeda(totalRecorrenciaAnterior)}
           sparkline={[totalRecorrenciaAnterior, totalRecorrenciaGeral]}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconePlaca />}
           cor="orange"
           titulo="Placas ativadas"
@@ -455,7 +456,7 @@ export function TabelaGestor({
           descricao="Este mês"
           sparkline={[totalPlacasAtivadasAnterior, totalPlacasAtivadasGeral]}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeApurado />}
           cor="navy"
           titulo="Apurados"
@@ -463,7 +464,7 @@ export function TabelaGestor({
           descricao="Consultores apurados"
           anelProgresso={{ atual: geradosCount, total: linhas.length }}
         />
-        <CardKpi
+        <CardMetrica
           icone={<IconeUsuarios />}
           cor="navy"
           titulo="Consultores"
@@ -637,11 +638,7 @@ export function TabelaGestor({
               )
             })}
             {linhas.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
-                  Nenhum consultor encontrado com os filtros atuais.
-                </td>
-              </tr>
+              <LinhaVazia colSpan={8} texto="Nenhum consultor encontrado com os filtros atuais." />
             )}
           </tbody>
           </table>

@@ -1,6 +1,7 @@
-import { formatarMoeda, juntarItens } from '@/app/consultor/tipos'
+import { formatarDataBr, formatarMoeda, juntarItens } from '@/app/consultor/tipos'
 import { Banner } from '@/lib/ui/banner'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { carregarContextoGestorConsultor } from '../dados'
 
 export default async function GestorRastreadoresPage({
@@ -46,7 +47,7 @@ export default async function GestorRastreadoresPage({
           <tbody>
             {descontos.map((item, i) => (
               <tr key={i} className="border-t border-slate-100">
-                <td className="px-4 py-2">{item.dt_contrato}</td>
+                <td className="px-4 py-2">{formatarDataBr(item.dt_contrato)}</td>
                 <td className="px-4 py-2">{item.associado}</td>
                 <td className="px-4 py-2">{item.placa}</td>
                 <td className="px-4 py-2">{item.consultorNome}</td>
@@ -54,11 +55,7 @@ export default async function GestorRastreadoresPage({
               </tr>
             ))}
             {descontos.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                  Nenhum desconto de rastreador no período.
-                </td>
-              </tr>
+              <LinhaVazia colSpan={5} texto="Nenhum desconto de rastreador no período." />
             )}
           </tbody>
           <tfoot>

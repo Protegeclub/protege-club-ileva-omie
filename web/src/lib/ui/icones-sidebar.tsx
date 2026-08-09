@@ -240,3 +240,18 @@ export function IconeCadeado({ className }: { className?: string }) {
     </svg>
   )
 }
+
+// Estado vazio de tabela (ver lib/ui/linha-vazia.tsx) — caixa entreaberta, sem conteúdo dentro.
+export function IconeCaixaVazia({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M3.5 9.5 12 6l8.5 3.5v9L12 22l-8.5-3.5v-9Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M3.5 9.5 12 13l8.5-3.5M12 13v9" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+}

@@ -89,6 +89,17 @@ export function formatarReferencia(referencia: string | null): string {
   return `Ref:${mes}/${ano}`
 }
 
+// Telefone do Ileva vem só com dígitos (ex.: "64992695058") — formata como celular (11 dígitos,
+// "(64) 99269-5058") ou fixo (10 dígitos, "(64) 3221-5058"); qualquer outro formato mostra como
+// veio, sem tentar adivinhar.
+export function formatarTelefone(numero: string | null): string {
+  if (!numero) return '—'
+  const digitos = numero.replace(/\D/g, '')
+  if (digitos.length === 11) return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`
+  if (digitos.length === 10) return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`
+  return numero
+}
+
 export type TipoMovimentacao = 'adesao' | 'recorrencia' | 'desconto' | 'placa'
 
 export interface ItemTimeline {

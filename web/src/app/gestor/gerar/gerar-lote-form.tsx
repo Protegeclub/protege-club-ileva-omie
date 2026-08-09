@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Banner } from '@/lib/ui/banner'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao, CartaoCabecalho } from '@/lib/ui/cartao'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { consultarStatusPeriodo, revalidarPaineisAposLote, solicitarApuracaoLote, type StatusJob } from './actions'
 import { BarraProgresso } from './barra-progresso'
 import {
@@ -413,11 +414,7 @@ export function GerarLoteForm({
                     </tr>
                   ))}
                   {linhasVisiveis.length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="px-4 py-6 text-center text-slate-400">
-                        Nenhum consultor nesse status.
-                      </td>
-                    </tr>
+                    <LinhaVazia colSpan={3} texto="Nenhum consultor nesse status." />
                   )}
                 </tbody>
               </table>

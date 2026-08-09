@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Botao } from '@/lib/ui/botao'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { DrawerConsultor } from './drawer-consultor'
 
 export type StatusAcesso = 'ativo' | 'pendente' | 'nunca_convidado'
@@ -165,11 +166,7 @@ export function TabelaAcessos({
               </tr>
             ))}
             {linhasFiltradas.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                  Nenhum consultor encontrado com os filtros atuais.
-                </td>
-              </tr>
+              <LinhaVazia colSpan={4} texto="Nenhum consultor encontrado com os filtros atuais." />
             )}
           </tbody>
         </table>

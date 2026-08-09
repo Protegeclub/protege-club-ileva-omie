@@ -1,7 +1,8 @@
 import { Banner } from '@/lib/ui/banner'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
+import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { carregarContextoConsultor } from '../dados'
-import { juntarItens } from '../tipos'
+import { formatarDataBr, juntarItens } from '../tipos'
 
 export default async function PlacasAtivadasPage({
   searchParams,
@@ -46,18 +47,14 @@ export default async function PlacasAtivadasPage({
           <tbody>
             {placas.map((item, i) => (
               <tr key={i} className="border-t border-slate-100">
-                <td className="px-4 py-2">{item.dt_contrato}</td>
+                <td className="px-4 py-2">{formatarDataBr(item.dt_contrato)}</td>
                 <td className="px-4 py-2">{item.associado}</td>
                 <td className="px-4 py-2">{item.placa}</td>
                 <td className="px-4 py-2">{item.consultorNome}</td>
               </tr>
             ))}
             {placas.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                  Nenhuma placa ativada no período.
-                </td>
-              </tr>
+              <LinhaVazia colSpan={4} texto="Nenhuma placa ativada no período." />
             )}
           </tbody>
           <tfoot>
