@@ -195,6 +195,8 @@ export default async function ConsultorDashboardPage({
           cor="#f19100"
           evolucao={evolucao}
           campo="totalAdesao"
+          dica="Soma dos boletos de Adesão pagos neste mês."
+          alinharDica="esquerda"
         />
         <CardFinanceiro
           icone={<IconeTrofeu />}
@@ -204,6 +206,7 @@ export default async function ConsultorDashboardPage({
           evolucao={evolucao}
           campo="totalBonusNivel"
           selo={nivelGestao?.titulo}
+          dica="Valor do maior patamar de placas ativadas atingido neste mês, conforme a tabela do plano de carreira."
         />
         <CardFinanceiro
           icone={<IconeTrofeu />}
@@ -212,6 +215,7 @@ export default async function ConsultorDashboardPage({
           cor="#7c3aed"
           evolucao={evolucao}
           campo="totalPremiacaoIndividual"
+          dica="R$50 por placa ativada neste mês, a partir de 10 placas ativadas."
         />
         <CardFinanceiro
           icone={<IconeUsuarios />}
@@ -220,6 +224,7 @@ export default async function ConsultorDashboardPage({
           cor="#0d9488"
           evolucao={evolucao}
           campo="totalComissaoGerencial"
+          dica="R$2,00 por placa ativada neste mês por outros consultores da equipe."
         />
         <CardFinanceiro
           icone={<IconeRecorrencia />}
@@ -228,6 +233,7 @@ export default async function ConsultorDashboardPage({
           cor="#25a9e1"
           evolucao={evolucao}
           campo="totalRecorrencia"
+          dica="Resultado de boletos de mensalidade pagos neste mês, pela data de pagamento (inclui parcelas atrasadas pagas agora)."
         />
         <CardFinanceiro
           icone={<IconeRastreador />}
@@ -237,6 +243,7 @@ export default async function ConsultorDashboardPage({
           corTexto="text-red-600"
           evolucao={evolucao}
           campo="totalDescontoRastreador"
+          dica="R$100 por veículo com rastreador ativado neste mês."
         />
         <CardFinanceiro
           icone={<IconeCarteira />}
@@ -245,6 +252,8 @@ export default async function ConsultorDashboardPage({
           cor="#002a54"
           evolucao={evolucao}
           campo="totalLiquido"
+          dica="Soma de todos os valores acima: Adesão + Recorrência − Desconto de rastreadores + Premiação individual + Comissão de gerência + Comissão do plano de carreira."
+          alinharDica="direita"
         />
       </div>
 

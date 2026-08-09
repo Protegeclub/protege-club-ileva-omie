@@ -5,7 +5,7 @@ import { useActionState, useState } from 'react'
 import { Banner } from '@/lib/ui/banner'
 import { IconeAtualizar, IconeUsuarios } from '@/lib/ui/icones-sidebar'
 import { IconeSpinner } from '../gestor/gerar/icones'
-import { entrar } from './actions'
+import { entrar, enviarLinkRecuperacaoAction, type RecuperarSenhaEstado } from './actions'
 import {
   IconeCadeado,
   IconeCheck,
@@ -18,6 +18,7 @@ import {
 } from './icones'
 
 const estadoInicial = { erro: '' }
+const estadoRecuperacaoInicial: RecuperarSenhaEstado = {}
 
 // Redesign "estilo software corporativo" (pedido do Samuel, 03/08/2026) — abandona o tom de
 // landing page (texto longo, lista com bullet) por 4 cards minimalistas, ícone + rótulo curto.
@@ -31,6 +32,11 @@ const CARDS = [
 export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
   const [estado, formAction, pendente] = useActionState(entrar, estadoInicial)
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [mostrarRecuperacao, setMostrarRecuperacao] = useState(false)
+  const [estadoRecuperacao, recuperacaoAction, pendenteRecuperacao] = useActionState(
+    enviarLinkRecuperacaoAction,
+    estadoRecuperacaoInicial
+  )
 
   return (
     <main className="flex h-screen w-full overflow-hidden bg-white">
@@ -146,92 +152,149 @@ export function LoginForm({ temArteFundo }: { temArteFundo: boolean }) {
                 className="h-10 w-10"
               />
             </div>
-            <h2 className="text-4xl font-bold text-brand-navy">Bem-vindo de volta!</h2>
-            <p className="text-base text-slate-500">
-              Faça login para acessar o painel de apuração de comissões.
-            </p>
+            {mostrarRecuperacao ? (
+              <>
+                <h2 className="text-4xl font-bold text-brand-navy">Redefinir senha</h2>
+                <p className="text-base text-slate-500">
+                  Informe seu e-mail de acesso e mandamos um link pra você definir uma senha nova.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-4xl font-bold text-brand-navy">Bem-vindo de volta!</h2>
+                <p className="text-base text-slate-500">
+                  Faça login para acessar o painel de apuração de comissões.
+                </p>
+              </>
+            )}
           </div>
 
-          <form action={formAction} className="space-y-5">
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-slate-700">
-                E-mail
-              </label>
-              <div className="relative">
-                <IconeEmail className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="voce@protegeclub.com.br"
-                  required
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
-                />
+          {mostrarRecuperacao ? (
+            <form action={recuperacaoAction} className="space-y-5">
+              <div className="space-y-1.5">
+                <label htmlFor="email-recuperacao" className="text-sm font-medium text-slate-700">
+                  E-mail
+                </label>
+                <div className="relative">
+                  <IconeEmail className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="email-recuperacao"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="voce@protegeclub.com.br"
+                    required
+                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                Senha
-              </label>
-              <div className="relative">
-                <IconeCadeado className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
-                <input
-                  id="password"
-                  name="password"
-                  type={mostrarSenha ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  required
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
-                />
+              {estadoRecuperacao?.erro ? <Banner tom="erro">{estadoRecuperacao.erro}</Banner> : null}
+              {estadoRecuperacao?.sucesso ? (
+                <Banner tom="sucesso">
+                  Se esse e-mail tiver uma conta no sistema, enviamos um link de redefinição — confira sua caixa de
+                  entrada (e o spam).
+                </Banner>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={pendenteRecuperacao}
+                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              >
+                {pendenteRecuperacao ? <IconeSpinner className="h-5 w-5" /> : <IconeEmail className="h-5 w-5" />}
+                {pendenteRecuperacao ? 'Enviando...' : 'Enviar link de redefinição'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMostrarRecuperacao(false)}
+                className="w-full text-center text-sm font-medium text-slate-500 hover:text-brand-navy"
+              >
+                ← Voltar para o login
+              </button>
+            </form>
+          ) : (
+            <form action={formAction} className="space-y-5">
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                  E-mail
+                </label>
+                <div className="relative">
+                  <IconeEmail className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="voce@protegeclub.com.br"
+                    required
+                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                  Senha
+                </label>
+                <div className="relative">
+                  <IconeCadeado className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="password"
+                    name="password"
+                    type={mostrarSenha ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    required
+                    className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-base text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-brand-blue focus:bg-white focus:shadow-[0_0_0_4px_rgba(37,169,225,0.15)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSenha((v) => !v)}
+                    aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {mostrarSenha ? <IconeOlhoFechado className="h-[18px] w-[18px]" /> : <IconeOlho className="h-[18px] w-[18px]" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-600">
+                  <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+                    <input type="checkbox" className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                    <span className="pointer-events-none absolute inset-0 rounded-[6px] border border-slate-300 bg-white transition-colors peer-checked:border-brand-orange peer-checked:bg-brand-orange peer-focus-visible:ring-2 peer-focus-visible:ring-brand-blue/30 peer-focus-visible:ring-offset-1" />
+                    <IconeCheck className="pointer-events-none relative h-2.5 w-2.5 text-white opacity-0 transition-opacity peer-checked:opacity-100" />
+                  </span>
+                  Manter conectado
+                </label>
                 <button
                   type="button"
-                  onClick={() => setMostrarSenha((v) => !v)}
-                  aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  onClick={() => setMostrarRecuperacao(true)}
+                  className="text-left text-sm font-medium text-brand-blue hover:text-brand-navy sm:text-right"
                 >
-                  {mostrarSenha ? <IconeOlhoFechado className="h-[18px] w-[18px]" /> : <IconeOlho className="h-[18px] w-[18px]" />}
+                  Esqueceu sua senha?
                 </button>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-600">
-                <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center">
-                  <input type="checkbox" className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0" />
-                  <span className="pointer-events-none absolute inset-0 rounded-[6px] border border-slate-300 bg-white transition-colors peer-checked:border-brand-orange peer-checked:bg-brand-orange peer-focus-visible:ring-2 peer-focus-visible:ring-brand-blue/30 peer-focus-visible:ring-offset-1" />
-                  <IconeCheck className="pointer-events-none relative h-2.5 w-2.5 text-white opacity-0 transition-opacity peer-checked:opacity-100" />
-                </span>
-                Manter conectado
-              </label>
-              {/* Sem fluxo de recuperação de senha implementado ainda — texto informativo, não
-                  um link que finge funcionar. */}
-              <span
-                title="Fale com o administrador do sistema para redefinir sua senha."
-                className="cursor-default text-sm text-slate-400"
+              {estado?.erro ? <Banner tom="erro">{estado.erro}</Banner> : null}
+
+              <button
+                type="submit"
+                disabled={pendente}
+                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
-                Esqueceu sua senha?
-              </span>
-            </div>
+                {pendente ? <IconeSpinner className="h-5 w-5" /> : <IconeEntrar className="h-5 w-5" />}
+                {pendente ? 'Entrando...' : 'Entrar'}
+              </button>
 
-            {estado?.erro ? <Banner tom="erro">{estado.erro}</Banner> : null}
-
-            <button
-              type="submit"
-              disabled={pendente}
-              className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-orange text-base font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-brand-orange-hover hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-            >
-              {pendente ? <IconeSpinner className="h-5 w-5" /> : <IconeEntrar className="h-5 w-5" />}
-              {pendente ? 'Entrando...' : 'Entrar'}
-            </button>
-
-            <div className="flex items-center justify-center gap-1.5 border-t border-slate-100 pt-4 text-xs text-slate-400">
-              <IconeCadeado className="h-3.5 w-3.5" />
-              Sistema protegido
-            </div>
-          </form>
+              <div className="flex items-center justify-center gap-1.5 border-t border-slate-100 pt-4 text-xs text-slate-400">
+                <IconeCadeado className="h-3.5 w-3.5" />
+                Sistema protegido
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </main>

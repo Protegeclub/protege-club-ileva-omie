@@ -296,7 +296,10 @@ export function TabelaGestor({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(dirInicial)
 
   const linhas = useMemo(() => {
-    const buscaLower = busca.trim().toLowerCase()
+    // Remove um "#" na frente antes de comparar — os códigos aparecem como "#123" em toda a
+    // tela (ex.: linha 578 abaixo), então buscar "#123" é o comportamento esperado de quem só
+    // copiou o que já vê na tela, não "123" sem o prefixo.
+    const buscaLower = busca.trim().toLowerCase().replace(/^#/, '')
     return linhasIniciais
       .filter((l) => !equipe || l.consultor.equipe === equipe)
       .filter(

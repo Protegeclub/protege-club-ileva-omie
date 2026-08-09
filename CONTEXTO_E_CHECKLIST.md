@@ -1262,7 +1262,97 @@ sistema.
         (que existia por causa desse mesmo cenário) deixou de ser necessário e foi removido —
         agora `veiculoPorCodigo.get(...)` sempre existe nesse ponto.
       - `npx tsc --noEmit`, `npm run lint` e `npm run build` confirmados limpos depois do fix.
-      - **Pendente**: redeploy do Trigger.dev (mudou `mensal.ts`, dependência de `gerar-apuracao`).
-        O Samuel vai gerar a apuração de julho/2026 manualmente pelo sistema pra revalidar contra
-        o relatório do Ileva antes de decidir se outros meses/consultores precisam ser
-        regenerados também.
+      - **Redeploy do Trigger.dev feito** (versão `20260808.2`) antes do Samuel gerar a apuração
+        manual. **Confirmado pelo Samuel**: os números do consultor #9 bateram com o relatório do
+        Ileva depois da nova geração. Validação sistêmica pra todos os outros consultores na
+        seção 6.21 abaixo.
+
+### 6.21 Validação sistêmica pós-fix (07/08/2026) + limpeza de conta de teste
+- [x] **Validação de todos os consultores, não só o #9** — a pedido do Samuel, depois de
+      confirmar manualmente que os números do #9 batem com o Ileva. Em vez de chamar a API do
+      Ileva de novo pra cada um dos ~211 consultores (lento e arrisca concorrência de token com
+      geração real em andamento), a checagem foi 100% sobre o dado já salvo em
+      `apuracoes_mensais`: nenhum `cod_veiculo` pode aparecer na lista de recorrências de **mais
+      de um** consultor diferente no mesmo mês — se aparecer, é o mesmo bug da seção 6.20 (ou
+      dado gerado antes do fix).
+      - **211 apurações de julho/2026** no banco. **189 geradas depois do redeploy do fix**
+        (Trigger.dev versão `20260808.2`) — **zero** veículo com dono duplicado nesse grupo,
+        confirma o fix por construção (não é coincidência de dado, é invariante de código).
+      - **22 apurações geradas ANTES do fix** (algumas de 14-15/07, bem antigas — de antes até do
+        Bônus por Nível e da troca da Premiação Individual pra "placas ativadas"): consultores
+        #6, #12, #17, #18, #20, #21, #31, #33, #34, #35, #39, #40, #42, #60, #87, #102, #104,
+        #105, #160, #216, #245, #286. Essas 22 explicam **100% das 117 duplicidades** encontradas
+        (nenhuma duplicidade "sem explicação" sobrou) — confirma que o fix é a causa raiz certa,
+        não só uma correlação.
+      - **Correção importante (08/08/2026)**: o Samuel confirmou que esses 22 consultores foram
+        **excluídos pelo cliente no Ileva** — não precisam de apuração nova. Primeira checagem
+        (via `situacao: Ativo/Inativo`) tinha apontado 11 como "ainda ativos", o que estava
+        **errado**: `situacao` não reflete exclusão real nesse Ileva. O sinal confiável é outro —
+        confirmado nos 11 "ativos": e-mail adulterado com hash (`nome@dominio.com.<64 chars hex>`,
+        padrão de exclusão suave — libera o e-mail original pra reuso, mantém o registro) **e**
+        ausência total da listagem paginada (`/consultor/listar`, o que `listarTodosConsultores`
+        usa) — só aparecem via busca direta por `cod_consultor` (`/consultor/buscar`), que não
+        filtra excluídos. `situacao` sozinho não é sinal de exclusão nesse Ileva — guardar isso
+        pra qualquer checagem futura desse tipo. **Sem ação pendente** — os 22 ficam com a
+        apuração desatualizada mesmo, já que não serão regerados (consultor excluído).
+      - Sanidade extra: zero apuração com `total_liquido`/`total_recorrencia` negativo.
+      - **Bug real corrigido de brinde**: a busca por texto em `/gestor/consultores`
+        (`TabelaGestor.tsx`) comparava `String(cod_consultor) === busca` sem remover um "#" da
+        frente — buscar "#123" (exatamente como o código aparece em toda a tela, ex.: linha do
+        cabeçalho de cada consultor) nunca encontrava nada, parecendo "consultor não existe"
+        quando era só a busca falhando. Corrigido com `.replace(/^#/, '')` antes de comparar.
+- [x] **Conta de teste do Gestor removida** (`gestor-teste@protegeclub.local`) — usada a sessão
+      inteira pra verificação visual (Playwright). Achado no processo: essa conta tinha
+      `gerado_por`/`solicitado_por` em **228** linhas de `apuracoes_mensais`/`apuracao_jobs` (era
+      a conta usada de fato pra clicar "gerar apuração" em lote) — FK sem `on delete cascade`
+      nessas colunas, então zerei os dois campos (`null`, campo só informativo, nunca exibido em
+      tela) antes de excluir o usuário. `perfis` cascateia automaticamente (`on delete cascade` na
+      FK). Contas reais confirmadas e **não tocadas**: `marketing@artha.srv.br` (Samuel, gestor)
+      e `thiagosiqueira257@gmail.com` (Thiago, consultor #302).
+      - **3º usuário também removido, a pedido do Samuel**: um usuário sem `@` no e-mail
+        (`77kn-Yg3XnKzkRcDwQnoqAMHl1V-yK9NKViaJMiWlLc`, sem `perfis` vinculado, criado 12/07, sem
+        login desde 16/07). Tinha `gerado_por`/`solicitado_por` em 211/209 linhas — parece ter
+        sido a conta usada pra rodar os primeiros lotes de apuração, antes do `gestor-teste`
+        assumir esse papel. Mesma limpeza de FK (campos zerados antes da exclusão).
+      - **Supabase Auth agora só tem as 2 contas reais**: `marketing@artha.srv.br` (Samuel,
+        gestor) e `thiagosiqueira257@gmail.com` (Thiago, consultor #302).
+- [x] **"Esqueceu sua senha?" agora funciona de verdade (07/08/2026)** — achado pelo próprio
+      Samuel tentando entrar com `marketing@artha.srv.br` e recebendo "e-mail ou senha
+      inválidos" (conta confirmada saudável, era só senha errada mesmo, e não havia como
+      recuperar). O texto inerte da tela de login virou um botão real: alterna pra um mini-
+      formulário (só e-mail) que chama `supabase.auth.resetPasswordForEmail` (nova action
+      `enviarLinkRecuperacaoAction` em `login/actions.ts`) — mesmo mecanismo de e-mail que já
+      manda o convite de acesso, e a mesma landing `/definir-senha` (que já suportava
+      `type=recovery` desde que foi construída, só nunca tinha um jeito de chegar lá). Sempre
+      responde com a mesma mensagem de sucesso, exista ou não o e-mail (`resetPasswordForEmail`
+      já não erra nesse caso — evita enumeração de quem tem conta). `obterUrlBase` extraído de
+      `gestor/acessos/actions.ts` pra `lib/auth/url-base.ts`, compartilhado entre convite e
+      recuperação. Testado de ponta a ponta com Playwright + e-mail real
+      (`marketing@artha.srv.br`, 2 envios — o segundo pegou o rate limit de 60s do próprio
+      Supabase, confirmando que o primeiro realmente disparou o e-mail).
+      - **Mesma limitação já conhecida do convite (seção 6.9 acima)**: sem SMTP próprio
+        configurado, o template desse e-mail também fica travado no
+        `{{ .ConfirmationURL }}` padrão do Supabase (link hospedado, vulnerável a preview
+        automático). Diferente do convite, aqui não tem uma pessoa (Gestor) pra usar "Copiar
+        link" como alternativa — é self-service de quem já está deslogado. Funciona na prática
+        pra caixa de e-mail pessoal (sem scanner de segurança corporativo), mas é o mesmo risco
+        teórico. Resolver de verdade exige o SMTP próprio (mesma pendência do convite).
+      - **Caso real (07/08/2026)**: o e-mail de teste pro Samuel (`marketing@artha.srv.br`)
+        nunca chegou. Um primeiro link gerado manualmente (via `generateLink` direto,
+        contornando o e-mail) também deu "inválido ou expirado". Causa mais provável, não
+        confirmada com certeza (sem acesso aos logs do Supabase pra fechar 100%): **múltiplos
+        pedidos de recuperação em sequência pro mesmo usuário invalidam o token anterior** —
+        os testes de ponta a ponta desse dia geraram 3-4 tokens de recovery pra essa conta em
+        poucos minutos (2× `resetPasswordForEmail` via Playwright + 2× `generateLink` manual),
+        e só o último gerado ficou válido. **Resolvido** gerando um token novo por último e
+        instruindo a ignorar qualquer e-mail/link anterior — funcionou. **Lição**: ao gerar um
+        link de recuperação manualmente pra destravar alguém, gerar só uma vez e usar
+        imediatamente, não ficar tentando de novo "pra garantir" (cada tentativa invalida a
+        anterior).
+- [x] **Confirmado: não existe "modo sandbox/teste" no código** — `ILEVA_API_BASE_URL`/
+      `OMIE_API_BASE_URL` já são os endpoints de produção reais (não homologação), chaves
+      também já são de produção (Omie confirmado na seção 6.5: "não é chave de sandbox").
+      `env.ambiente` (`lib/env.ts`) só reflete `VERCEL_ENV` pra exibir na tela de login, não
+      afeta nenhuma decisão de negócio. "Colocar em modo de produção" não é uma mudança de
+      código — é fechar as pendências reais de negócio (Omie + convite dos consultores, ver
+      Seção 6.5 e a memória `project_proposta_protege_club`).

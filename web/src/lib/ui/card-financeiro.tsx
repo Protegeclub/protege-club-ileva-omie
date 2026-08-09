@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { PontoEvolucaoConsultor } from '@/app/consultor/tipos'
 import { Cartao } from './cartao'
+import { DicaInfo } from './dica-info'
 import { Sparkline } from './graficos-consultor'
 
 // Card do "Resumo Financeiro" (Adesão/Recorrência/Desconto/Comissão líquida) — ícone + valor +
@@ -15,6 +16,8 @@ export function CardFinanceiro({
   evolucao,
   campo,
   selo,
+  dica,
+  alinharDica,
 }: {
   icone: ReactNode
   titulo: string
@@ -26,6 +29,12 @@ export function CardFinanceiro({
   // Tag opcional ao lado do valor — hoje só usada no card de "Comissão do Plano de Carreira",
   // pra mostrar o nível de gestão (Líder Júnior, Coordenador etc.) junto do valor em R$.
   selo?: string
+  // Texto opcional explicando como o valor é apurado — vira um "?" com balão ao lado do título
+  // (a pedido do Samuel, 07/08/2026, pra não precisar perguntar/investigar a regra de cada card).
+  dica?: string
+  // Ancoragem do balão — "esquerda"/"direita" pros cards das pontas da fileira, senão o balão
+  // vaza da tela (ver comentário em dica-info.tsx). Default centralizado.
+  alinharDica?: 'esquerda' | 'centro' | 'direita'
 }) {
   return (
     <Cartao className="p-4">
@@ -37,6 +46,7 @@ export function CardFinanceiro({
           {icone}
         </div>
         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{titulo}</p>
+        {dica && <DicaInfo texto={dica} alinhar={alinharDica} />}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <p className={`text-xl font-semibold ${corTexto ?? 'text-slate-900'}`}>{valor}</p>

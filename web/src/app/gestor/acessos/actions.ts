@@ -1,7 +1,7 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { obterUrlBase } from '@/lib/auth/url-base'
 import { buscarConsultorSemCache } from '@/lib/ileva/api'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
@@ -26,17 +26,6 @@ export interface LinkAcessoEstado {
 export interface EditarEmailEstado {
   sucesso?: boolean
   erro?: string
-}
-
-// Prioriza NEXT_PUBLIC_SITE_URL (fixo, configurado no ambiente) sobre o header Origin da
-// requisição — antes o link do convite saía com o domínio que o Gestor por acaso estava usando
-// no navegador no momento do clique (localhost durante um teste local, uma URL de preview
-// deploy etc.), o que quebrava o convite pra quem recebia de verdade. Cai no Origin só como
-// fallback de conveniência pra dev local, quando a variável não está configurada.
-async function obterUrlBase(): Promise<string | undefined> {
-  const configurada = process.env.NEXT_PUBLIC_SITE_URL
-  if (configurada) return configurada.replace(/\/+$/, '')
-  return (await headers()).get('origin') ?? undefined
 }
 
 async function confirmarGestor(): Promise<{ userId: string }> {
