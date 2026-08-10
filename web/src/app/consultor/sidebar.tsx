@@ -12,6 +12,7 @@ import {
   IconePlaca,
   IconeRastreador,
   IconeRecorrencia,
+  IconeTrofeu,
 } from '@/lib/ui/icones-sidebar'
 import { FundoDecorativoSidebar } from '@/lib/ui/fundo-decorativo-sidebar'
 import { ItemNavSidebar } from '@/lib/ui/item-nav-sidebar'
@@ -49,6 +50,12 @@ export function SidebarConsultor({ nome, children }: { nome: string | null; chil
       href: comQs('/consultor/placas-ativadas'),
       label: 'Placas Ativadas',
       icone: <IconePlaca />,
+    },
+    {
+      rota: '/consultor/plano-carreira',
+      href: comQs('/consultor/plano-carreira'),
+      label: 'Plano de Carreira',
+      icone: <IconeTrofeu />,
     },
     {
       rota: '/consultor/inadimplentes',
