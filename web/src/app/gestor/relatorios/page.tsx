@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { listarEquipesDisponiveis, listarTodosConsultores } from '@/lib/ileva/api'
 import { SeletorRelatorio } from './seletor-relatorio'
 
@@ -30,14 +31,17 @@ export default async function GestorRelatoriosPage() {
         </p>
       </div>
 
-      <SeletorRelatorio
-        consultores={consultores}
-        equipesDisponiveis={equipesDisponiveis}
-        anoInicial={anoInicial}
-        mesInicial={mesInicial}
-        dataInicioPadrao={dataInicioPadrao}
-        dataFimPadrao={dataFimPadrao}
-      />
+      {/* Suspense por causa do useSearchParams no Client Component — exigência do Next.js. */}
+      <Suspense fallback={null}>
+        <SeletorRelatorio
+          consultores={consultores}
+          equipesDisponiveis={equipesDisponiveis}
+          anoInicial={anoInicial}
+          mesInicial={mesInicial}
+          dataInicioPadrao={dataInicioPadrao}
+          dataFimPadrao={dataFimPadrao}
+        />
+      </Suspense>
     </div>
   )
 }

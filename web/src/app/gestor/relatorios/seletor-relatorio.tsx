@@ -1,5 +1,6 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
@@ -37,19 +38,6 @@ const TIPOS_CONSULTOR: { valor: TipoConsultor; label: string }[] = [
   { valor: 'inadimplentes', label: 'Inadimplentes' },
 ]
 
-// Lê o estado inicial direto de window.location — não usar useSearchParams() +
-// router.replace() aqui, porque no App Router qualquer navegação (mesmo só trocando
-// searchParams) reexecuta o Server Component da página no servidor. Essa tela não tem nada
-// server-side que dependa do filtro (a lista de consultores/equipes já vem pronta por prop), então
-// sincronizar a URL a cada clique de filtro pagaria um round-trip à toa a cada interação — o
-// mesmo problema de "sensação de sistema lento" já resolvido em TabelaGestor (filtro 100%
-// client-side). Por isso a sincronização de URL aqui usa history.replaceState puro: o link fica
-// copiável/compartilhável, sem custo de rede por clique.
-function lerParamsIniciais() {
-  if (typeof window === 'undefined') return new URLSearchParams()
-  return new URLSearchParams(window.location.search)
-}
-
 export function SeletorRelatorio({
   consultores,
   equipesDisponiveis,
@@ -65,9 +53,15 @@ export function SeletorRelatorio({
   dataInicioPadrao: string
   dataFimPadrao: string
 }) {
-  // Só usado dentro dos inicializadores de useState abaixo (lidos uma única vez, no mount) —
-  // não precisa de useRef/useMemo pra "congelar" o valor entre renders.
-  const paramsIniciais = lerParamsIniciais()
+  // useSearchParams() (não window.location.search direto) porque o Next preenche esse hook com
+  // a URL real já durante o SSR — servidor e cliente leem o mesmo valor no primeiro render, sem
+  // isso o HTML do servidor sempre assumia os defaults (sem acesso a window) enquanto o cliente
+  // já lia a URL de verdade, gerando erro de hidratação sempre que a página é aberta/recarregada
+  // com algum filtro na URL (ex.: depois de escolher "Consultor específico" uma vez). Só a
+  // LEITURA inicial usa o hook — a sincronização de URL a cada clique (useEffect abaixo) continua
+  // via history.replaceState puro, não router.replace(), pra não pagar round-trip ao servidor a
+  // cada interação (mesmo problema de "sensação de sistema lento" já resolvido em TabelaGestor).
+  const paramsIniciais = useSearchParams()
 
   const [modo, setModo] = useState<Modo>((paramsIniciais.get('modo') as Modo) || 'todos')
   const [formato, setFormato] = useState<Formato>((paramsIniciais.get('formato') as Formato) || 'detalhado')
