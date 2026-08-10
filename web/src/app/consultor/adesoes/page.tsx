@@ -26,7 +26,6 @@ export default async function AdesoesPage({
       <CabecalhoPagina
         titulo="Associados referente às adesões (a receber) no período"
         voltarHref={`/consultor?${qs}`}
-        pdfHref={`/api/relatorios/consultor?tipo=adesoes&cod_consultor=${codConsultor}&${qs}`}
       />
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { listarTodosConsultores } from '@/lib/ileva/api'
+import { listarEquipesDisponiveis, listarTodosConsultores } from '@/lib/ileva/api'
 import { CardMetrica } from '@/lib/ui/card-metrica'
 import { Cartao } from '@/lib/ui/cartao'
 import { IconeAlerta, IconeApurado, IconeCadeado, IconeUsuario, IconeUsuarios } from '@/lib/ui/icones-sidebar'
@@ -52,7 +52,7 @@ export default async function GestorAcessosPage() {
     })
     .sort((a, b) => a.nome.localeCompare(b.nome))
 
-  const equipesDisponiveis = Array.from(new Set(linhas.map((l) => l.equipe))).sort((a, b) => a.localeCompare(b))
+  const equipesDisponiveis = listarEquipesDisponiveis(linhas)
 
   const gestores = await Promise.all(
     (perfisGestores ?? []).map(async (g) => {

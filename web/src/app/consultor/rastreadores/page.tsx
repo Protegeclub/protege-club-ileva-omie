@@ -26,7 +26,6 @@ export default async function RastreadoresPage({
       <CabecalhoPagina
         titulo="Desconto Rastreadores"
         voltarHref={`/consultor?${qs}`}
-        pdfHref={`/api/relatorios/consultor?tipo=rastreadores&cod_consultor=${codConsultor}&${qs}`}
       />
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">

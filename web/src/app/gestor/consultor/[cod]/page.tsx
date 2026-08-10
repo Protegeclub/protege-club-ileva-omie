@@ -119,6 +119,7 @@ export default async function GestorConsultorDetalhePage({
       </div>
 
       {/* KPIs */}
+      <h2 className="text-sm font-medium text-slate-400">Visão geral</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <CardMetrica
           icone={<IconeAdesao />}
@@ -165,6 +166,7 @@ export default async function GestorConsultorDetalhePage({
       )}
 
       {/* Atalhos */}
+      <h2 className="text-sm font-medium text-slate-400">Atalhos</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <CardAtalho
           href={`/gestor/consultor/${codConsultor}/adesoes?${qs}`}
@@ -206,6 +208,7 @@ export default async function GestorConsultorDetalhePage({
       {/* Resumo financeiro — card de Comissão de gerência só existe pra quem realmente pode
           ganhá-la (ver COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS em lib/apuracao/comissao-gerencial.ts),
           senão vira um card de R$0,00 sem sentido pros outros 188 consultores. */}
+      <h2 className="text-sm font-medium text-slate-400">Resumo financeiro</h2>
       <div className={`grid gap-3 sm:grid-cols-2 ${mostrarComissaoGerencial ? 'lg:grid-cols-7' : 'lg:grid-cols-6'}`}>
         <CardMetrica
           icone={<IconeAdesao />}
@@ -272,6 +275,7 @@ export default async function GestorConsultorDetalhePage({
       </div>
 
       {/* Gráficos */}
+      <h2 className="text-sm font-medium text-slate-400">Evolução</h2>
       <div className="grid gap-4 lg:grid-cols-2">
         <AreaProducaoMensal evolucao={evolucao} />
         <DonutComposicaoConsultor
@@ -283,16 +287,8 @@ export default async function GestorConsultorDetalhePage({
         <BarraAdesoesPorMes evolucao={evolucao} />
       </div>
 
+      <h2 className="text-sm font-medium text-slate-400">Histórico</h2>
       <TimelineMovimentacoes itens={timeline} />
-
-      <Botao
-        href={`/api/relatorios/consultor?tipo=dashboard&cod_consultor=${codConsultor}&${qs}`}
-        target="_blank"
-        rel="noreferrer"
-        variante="destaque"
-      >
-        Baixar PDF
-      </Botao>
     </div>
   )
 }

@@ -30,7 +30,6 @@ export default async function GestorRecorrenciaPage({
       <CabecalhoPagina
         titulo="Recorrência"
         voltarHref={`/gestor/consultor/${codConsultor}?${qs}`}
-        pdfHref={`/api/relatorios/consultor?tipo=recorrencia&cod_consultor=${codConsultor}&${qs}`}
       />
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">

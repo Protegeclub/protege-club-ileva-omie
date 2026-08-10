@@ -34,7 +34,6 @@ export default async function GestorInadimplentesPage({
       <CabecalhoPagina
         titulo="Inadimplentes"
         voltarHref={`/gestor/consultor/${codConsultor}`}
-        pdfHref={`/api/relatorios/consultor?tipo=inadimplentes&cod_consultor=${codConsultor}`}
       />
 
       {!linha ? (

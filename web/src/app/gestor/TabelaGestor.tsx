@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { solicitarApuracao } from './gerar/actions'
 import { IconeRelampago } from './gerar/icones'
 import { Botao } from '@/lib/ui/botao'
@@ -117,16 +117,6 @@ function IconeLimpar({ className }: { className?: string }) {
   )
 }
 
-function IconeMais({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
-      <circle cx="12" cy="5" r="1.6" />
-      <circle cx="12" cy="12" r="1.6" />
-      <circle cx="12" cy="19" r="1.6" />
-    </svg>
-  )
-}
-
 // Indicadores de coluna ordenável (padrão datagrid tipo Stripe/Attio): par de chevrons esmaecido
 // quando a coluna não é a ordenação ativa; chevron único, sólido e apontando pra direção certa
 // quando é (ver ThOrdenavel).
@@ -180,69 +170,30 @@ function AvatarConsultor({ nome, codConsultor }: { nome: string; codConsultor: n
 // secundárias. "Recalcular" reaproveita a mesma Server Action que a tela /gestor/gerar já usa
 // pra disparar uma geração individual no Trigger.dev (não é uma ação nova, só um atalho novo pra
 // ela) — depois de disparar, um refresh busca o status atualizado (Pendente/Processando).
-function MenuAcoesConsultor({
-  codConsultor,
-  ano,
-  mes,
-}: {
-  codConsultor: number
-  ano: number
-  mes: number
-}) {
+//
+// Padrão E (v3): antes era um menu "⋮" com 2 itens (Baixar PDF + Recalcular) — com o PDF
+// centralizado em /gestor/relatorios, sobrou 1 ação só, e um dropdown que revela 1 item só é
+// camada de interação desnecessária. Virou botão inline, ao lado de "Detalhes"/"Gerar".
+function BotaoRecalcular({ codConsultor, ano, mes }: { codConsultor: number; ano: number; mes: number }) {
   const router = useRouter()
-  const [aberto, setAberto] = useState(false)
   const [recalculando, setRecalculando] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!aberto) return
-    function aoClicarFora(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false)
-    }
-    document.addEventListener('mousedown', aoClicarFora)
-    return () => document.removeEventListener('mousedown', aoClicarFora)
-  }, [aberto])
 
   async function recalcular() {
     setRecalculando(true)
     await solicitarApuracao(codConsultor, ano, mes)
     setRecalculando(false)
-    setAberto(false)
     router.refresh()
   }
 
   return (
-    <div ref={ref} className="relative inline-block">
-      <button
-        type="button"
-        onClick={() => setAberto((v) => !v)}
-        aria-label="Mais ações"
-        aria-expanded={aberto}
-        className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-      >
-        <IconeMais className="h-4 w-4" />
-      </button>
-      {aberto && (
-        <div className="absolute right-0 z-10 mt-1 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-          <a
-            href={`/api/relatorios/consultor?tipo=dashboard&cod_consultor=${codConsultor}&ano=${ano}&mes=${mes}&equipe=0`}
-            target="_blank"
-            rel="noreferrer"
-            className="block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            Baixar PDF
-          </a>
-          <button
-            type="button"
-            onClick={recalcular}
-            disabled={recalculando}
-            className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            {recalculando ? 'Solicitando…' : 'Recalcular'}
-          </button>
-        </div>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={recalcular}
+      disabled={recalculando}
+      className="text-sm font-medium text-slate-400 transition-colors hover:text-brand-navy disabled:opacity-50"
+    >
+      {recalculando ? 'Solicitando…' : 'Recalcular'}
+    </button>
   )
 }
 
@@ -339,13 +290,6 @@ export function TabelaGestor({
   const totalRecorrenciaAnterior = linhas.reduce((soma, l) => soma + (l.apuracaoAnterior?.total_recorrencia ?? 0), 0)
   const totalPlacasAtivadasAnterior = linhas.reduce((soma, l) => soma + (l.apuracaoAnterior?.qtd_placas_ativadas ?? 0), 0)
 
-  const qsFiltros = new URLSearchParams({
-    ano: String(ano),
-    mes: String(mes),
-    ...(equipe ? { equipe } : {}),
-    ...(busca ? { q: busca } : {}),
-  }).toString()
-
   function clicarOrdenar(campo: string, direcaoPadrao: 'asc' | 'desc') {
     if (sortCampo === campo) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -406,12 +350,9 @@ export function TabelaGestor({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Botao href="/gestor/gerar" variante="fantasma" className="h-11">
+          <Botao href="/gestor/gerar" variante="destaque" className="h-11">
             <IconeRelampago className="h-4 w-4" />
             Gerar apuração
-          </Botao>
-          <Botao href={`/api/relatorios/gestor/todos?${qsFiltros}`} target="_blank" rel="noreferrer" variante="destaque" className="h-11">
-            Gerar PDF
           </Botao>
         </div>
       </div>
@@ -619,7 +560,7 @@ export function TabelaGestor({
                           Detalhes
                           <IconeSeta className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                         </Link>
-                        <MenuAcoesConsultor codConsultor={consultor.cod_consultor} ano={ano} mes={mes} />
+                        <BotaoRecalcular codConsultor={consultor.cod_consultor} ano={ano} mes={mes} />
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -630,7 +571,7 @@ export function TabelaGestor({
                           Gerar
                           <IconeSeta className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                         </Link>
-                        <MenuAcoesConsultor codConsultor={consultor.cod_consultor} ano={ano} mes={mes} />
+                        <BotaoRecalcular codConsultor={consultor.cod_consultor} ano={ano} mes={mes} />
                       </div>
                     )}
                   </td>

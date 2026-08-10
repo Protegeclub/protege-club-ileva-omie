@@ -131,6 +131,7 @@ export default async function GestorDashboardPage({
           que a página já buscava (evolução de 6 meses / total do mês anterior / apurados-ativos).
           Desconto rastreador não mostra seta de tendência de propósito: é um valor descontado dos
           consultores, então "subir" não é necessariamente bom — mostrar "▲ verde" seria enganoso. */}
+      <h2 className="text-sm font-medium text-slate-400">Resumo</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
         {/* Comissão líquida em destaque (~1.4x maior) — é o número que mais importa pro Gestor,
             os outros 5 tinham exatamente o mesmo peso visual antes (pedido do Samuel, 04/08/2026). */}
@@ -195,6 +196,7 @@ export default async function GestorDashboardPage({
 
       {/* Gráfico principal — sozinho na linha, de propósito (era dividido com os donuts antes;
           agora cada bloco tem seu próprio espaço, mais fácil de ler). */}
+      <h2 className="text-sm font-medium text-slate-400">Evolução</h2>
       <AreaEvolucao evolucao={dados.evolucao} />
 
       {/* Segunda linha — composição do líquido + os dois indicadores mensais que antes só
@@ -202,6 +204,7 @@ export default async function GestorDashboardPage({
           antigo donut "Status das apurações" saiu daqui por pedido do Samuel (01/08/2026): é
           quase sempre ~100% gerado, então não rendia gráfico — o número de erros/pendentes
           continua disponível em texto no Resumo operacional/Insights, só não como gráfico. */}
+      <h2 className="text-sm font-medium text-slate-400">Composição e indicadores</h2>
       <div className="grid gap-3 lg:grid-cols-3">
         <DonutComposicao
           totalLiquido={dados.totalLiquido}
@@ -215,6 +218,7 @@ export default async function GestorDashboardPage({
       {/* Terceira linha — Top 5 por líquido (mesmo total já calculado por linha.total_liquido
           na apuração, só reordenado pra exibição) + insights derivados só dos números já
           exibidos acima, sem IA nem chamada nova. */}
+      <h2 className="text-sm font-medium text-slate-400">Destaques</h2>
       <div className="grid gap-3 lg:grid-cols-2">
         <RankingLista
           titulo="Top 5 consultores — por líquido"

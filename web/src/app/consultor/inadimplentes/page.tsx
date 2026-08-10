@@ -40,15 +40,7 @@ export default async function InadimplentesPage() {
 
   return (
     <div className="space-y-4">
-      <CabecalhoPagina
-        titulo="Inadimplentes"
-        voltarHref="/consultor"
-        pdfHref={
-          perfil.cod_consultor
-            ? `/api/relatorios/consultor?tipo=inadimplentes&cod_consultor=${perfil.cod_consultor}`
-            : undefined
-        }
-      />
+      <CabecalhoPagina titulo="Inadimplentes" voltarHref="/consultor" />
 
       {!linha ? (
         <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">

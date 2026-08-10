@@ -9,6 +9,7 @@ import {
   IconeConfiguracoes,
   IconeDashboard,
   IconeLista,
+  IconeRelatorio,
   IconeUsuarios,
 } from '@/lib/ui/icones-sidebar'
 import { FundoDecorativoSidebar } from '@/lib/ui/fundo-decorativo-sidebar'
@@ -18,6 +19,7 @@ import { IconeRelampago } from './gerar/icones'
 const ITENS = [
   { href: '/gestor', label: 'Dashboard', icone: <IconeDashboard /> },
   { href: '/gestor/consultores', label: 'Consultores', icone: <IconeLista /> },
+  { href: '/gestor/relatorios', label: 'Relatórios', icone: <IconeRelatorio /> },
   { href: '/gestor/gerar', label: 'Gerar', icone: <IconeRelampago /> },
   { href: '/gestor/omie', label: 'Omie', icone: <IconeCarteira /> },
   { href: '/gestor/acessos', label: 'Acessos', icone: <IconeUsuarios /> },

@@ -25,7 +25,6 @@ export default async function PlacasAtivadasPage({
       <CabecalhoPagina
         titulo="Placas ativadas (contrato iniciado) no período"
         voltarHref={`/consultor?${qs}`}
-        pdfHref={`/api/relatorios/consultor?tipo=placas-ativadas&cod_consultor=${codConsultor}&${qs}`}
       />
 
       <p className="text-xs text-slate-400">

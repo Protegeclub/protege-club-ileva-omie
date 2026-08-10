@@ -108,3 +108,10 @@ export const listarTodosConsultores = unstable_cache(
   ['listar-todos-consultores'],
   { revalidate: 60 }
 )
+
+// Nomes de equipe distintos, ordenados — mesmo dedupe que já existia solto em
+// gestor/consultores/page.tsx e gestor/acessos/page.tsx (unificado aqui pra não repetir uma
+// 3ª vez na página de Relatórios).
+export function listarEquipesDisponiveis(itens: { equipe: string }[]): string[] {
+  return Array.from(new Set(itens.map((i) => i.equipe).filter(Boolean))).sort((a, b) => a.localeCompare(b))
+}

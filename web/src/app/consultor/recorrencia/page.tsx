@@ -26,7 +26,6 @@ export default async function RecorrenciaPage({
       <CabecalhoPagina
         titulo="Recorrência"
         voltarHref={`/consultor?${qs}`}
-        pdfHref={`/api/relatorios/consultor?tipo=recorrencia&cod_consultor=${codConsultor}&${qs}`}
       />
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
