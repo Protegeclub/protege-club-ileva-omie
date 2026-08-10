@@ -1,15 +1,32 @@
-import { unstable_cache } from 'next/cache'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { listarTodosClientesOmie, type ClienteOmie } from './client'
 
-// Cacheado por 5min — a lista de clientes/fornecedores da Omie (~3.900 registros) não muda a
-// ponto de precisar ser buscada a cada abertura da tela de vínculo, e evita 8 chamadas paginadas
-// à API toda vez que o Gestor revisita a tela no mesmo fechamento.
-export const listarTodosClientesOmieCacheado = unstable_cache(
-  listarTodosClientesOmie,
-  ['omie-todos-clientes'],
-  { revalidate: 300 }
-)
+const DURACAO_CACHE_MS = 5 * 60 * 1000
+
+let cache: { dados: ClienteOmie[]; expiraEm: number } | null = null
+let buscaEmAndamento: Promise<ClienteOmie[]> | null = null
+
+// Cacheado por 5min em memória do processo — a lista de clientes/fornecedores da Omie
+// (~3.900 registros, ~4.9MB serializada) não muda a ponto de precisar ser buscada a cada
+// abertura da tela de vínculo. Não usa unstable_cache: o Data Cache da Vercel rejeita entradas
+// acima de 2MB (falha silenciosa, só um warning no log), então o cache nunca gravava e toda
+// visita refazia as 8 chamadas paginadas à API — e quando duas coincidiam (navegação + prefetch,
+// reload rápido), a própria Omie rejeitava como "consumo redundante" e derrubava a página. A
+// dedupe de busca em andamento evita rodar a paginação duas vezes ao mesmo tempo na mesma
+// instância, que é o cenário que estava disparando isso.
+export async function listarTodosClientesOmieCacheado(): Promise<ClienteOmie[]> {
+  if (cache && cache.expiraEm > Date.now()) return cache.dados
+  if (buscaEmAndamento) return buscaEmAndamento
+
+  buscaEmAndamento = listarTodosClientesOmie()
+  try {
+    const dados = await buscaEmAndamento
+    cache = { dados, expiraEm: Date.now() + DURACAO_CACHE_MS }
+    return dados
+  } finally {
+    buscaEmAndamento = null
+  }
+}
 
 // NFD decompõe acentos em letra + marca separada (ex.: "é" → "e" + acento); o filtro seguinte
 // (só a-z0-9/espaço) já descarta essa marca sozinho, sem precisar de uma regex de range Unicode
