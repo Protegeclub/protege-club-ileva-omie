@@ -65,12 +65,19 @@ export default async function GestorOmiePage({
       {'erro' in dados ? (
         <Cartao className="border-red-200 bg-red-50 p-4 text-sm text-red-700">{dados.erro}</Cartao>
       ) : (
-        <TabelaOmie
-          linhasIniciais={dados.linhas}
-          configuracaoInicial={dados.configuracao}
-          ano={ano}
-          mes={mes}
-        />
+        <>
+          {dados.avisoSugestoes && (
+            <Cartao className="border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+              {dados.avisoSugestoes}
+            </Cartao>
+          )}
+          <TabelaOmie
+            linhasIniciais={dados.linhas}
+            configuracaoInicial={dados.configuracao}
+            ano={ano}
+            mes={mes}
+          />
+        </>
       )}
     </div>
   )

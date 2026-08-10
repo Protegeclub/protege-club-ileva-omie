@@ -64,7 +64,9 @@ export interface ConfiguracaoOmie {
 export async function buscarDadosOmiePeriodo(
   ano: number,
   mes: number
-): Promise<{ linhas: LinhaOmie[]; configuracao: ConfiguracaoOmie } | { erro: string }> {
+): Promise<
+  { linhas: LinhaOmie[]; configuracao: ConfiguracaoOmie; avisoSugestoes?: string } | { erro: string }
+> {
   const auth = await autorizarGestor()
   if ('erro' in auth) return { erro: auth.erro }
 
@@ -87,9 +89,19 @@ export async function buscarDadosOmiePeriodo(
   }[]
   const idsApuracao = apuracoesValidas.map((a) => a.id)
 
+  // A lista de clientes da Omie só alimenta a sugestão automática de vínculo por nome — um
+  // extra, não o núcleo da tela (ver apurações + confirmar envio). Se a Omie estiver
+  // indisponível ou bloqueando por "consumo redundante", a tela inteira não pode cair por isso:
+  // aqui ela degrada pra sugestões vazias (o Gestor ainda busca manualmente) em vez de derrubar
+  // a página.
+  let avisoSugestoes: string | undefined
   const [vinculos, clientesOmie, { data: auditoriaReal }, { data: configRow }] = await Promise.all([
     buscarVinculosConfirmados(),
-    listarTodosClientesOmieCacheado(),
+    listarTodosClientesOmieCacheado().catch((e) => {
+      avisoSugestoes = 'Sugestões automáticas de vínculo indisponíveis agora (Omie não respondeu). Você ainda pode buscar manualmente.'
+      console.error('Falha ao buscar clientes da Omie:', e)
+      return [] as Awaited<ReturnType<typeof listarTodosClientesOmieCacheado>>
+    }),
     idsApuracao.length > 0
       ? admin.from('auditoria_omie').select('apuracao_id, status').in('apuracao_id', idsApuracao)
       : Promise.resolve({ data: [] as { apuracao_id: string | null; status: string }[] }),
@@ -130,6 +142,7 @@ export async function buscarDadosOmiePeriodo(
       codigoContaCorrente: configRow?.codigo_conta_corrente ?? null,
       descricaoContaCorrente: configRow?.descricao_conta_corrente ?? null,
     },
+    ...(avisoSugestoes ? { avisoSugestoes } : {}),
   }
 }
 

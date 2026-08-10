@@ -1,19 +1,21 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { listarTodosClientesOmie, type ClienteOmie } from './client'
 
-const DURACAO_CACHE_MS = 5 * 60 * 1000
+const DURACAO_CACHE_MS = 30 * 60 * 1000
 
 let cache: { dados: ClienteOmie[]; expiraEm: number } | null = null
 let buscaEmAndamento: Promise<ClienteOmie[]> | null = null
 
-// Cacheado por 5min em memória do processo — a lista de clientes/fornecedores da Omie
+// Cacheado por 30min em memória do processo — a lista de clientes/fornecedores da Omie
 // (~3.900 registros, ~4.9MB serializada) não muda a ponto de precisar ser buscada a cada
 // abertura da tela de vínculo. Não usa unstable_cache: o Data Cache da Vercel rejeita entradas
 // acima de 2MB (falha silenciosa, só um warning no log), então o cache nunca gravava e toda
 // visita refazia as 8 chamadas paginadas à API — e quando duas coincidiam (navegação + prefetch,
-// reload rápido), a própria Omie rejeitava como "consumo redundante" e derrubava a página. A
-// dedupe de busca em andamento evita rodar a paginação duas vezes ao mesmo tempo na mesma
-// instância, que é o cenário que estava disparando isso.
+// reload rápido, múltiplas instâncias serverless concorrentes), a própria Omie rejeitava como
+// "consumo redundante" (e o cooldown dela parece renovar a cada nova tentativa durante a janela
+// de bloqueio). A dedupe de busca em andamento evita rodar a paginação duas vezes ao mesmo tempo
+// na mesma instância; o fallback pro cache expirado abaixo cobre o caso de outra instância ter
+// disparado o bloqueio — melhor servir dado com alguns minutos de atraso do que derrubar a tela.
 export async function listarTodosClientesOmieCacheado(): Promise<ClienteOmie[]> {
   if (cache && cache.expiraEm > Date.now()) return cache.dados
   if (buscaEmAndamento) return buscaEmAndamento
@@ -23,6 +25,9 @@ export async function listarTodosClientesOmieCacheado(): Promise<ClienteOmie[]> 
     const dados = await buscaEmAndamento
     cache = { dados, expiraEm: Date.now() + DURACAO_CACHE_MS }
     return dados
+  } catch (e) {
+    if (cache) return cache.dados
+    throw e
   } finally {
     buscaEmAndamento = null
   }
