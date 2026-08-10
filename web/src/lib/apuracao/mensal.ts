@@ -150,6 +150,18 @@ function valorBeneficioAssistenciaProfissional(veiculo: Veiculo): number {
   return beneficio ? Number(beneficio.beneficio_valor) : 0
 }
 
+// O campo `possui_rastreador` do veículo só reflete o "Rastreamento Obrigatório" (cod_beneficio
+// 68, incluído no plano) — um veículo com o rastreamento comercial avulso (cod_beneficio 18,
+// adicional pago) vem com `possui_rastreador: "Não"` mesmo tendo rastreador de verdade. Confirmado
+// com dado real (consultor #9, placas RVC2H97/PXT6B78, 13-14/07/2026) contra o filtro de
+// "Benefícios: Rastreamento*" do próprio painel do Ileva, que agrupa todas as variantes
+// (Rastreamento, Rastreamento Obrigatório, Rastreamento - Planos, Rastreamento - Plano Partner,
+// Rastreamento Obrigatório Motorista de aplicativo) como a mesma coisa. Checar pelo nome do
+// benefício em vez do campo cobre todas essas variantes sem precisar cadastrar cada código.
+function temBeneficioRastreador(veiculo: Veiculo): boolean {
+  return (veiculo.beneficios ?? []).some((b) => b.beneficio_nome.toLowerCase().includes('rastreamento'))
+}
+
 /**
  * Apura adesão, recorrência, desconto de rastreador e inadimplência de um consultor num mês,
  * direto na API do Ileva.
@@ -184,11 +196,11 @@ export async function apurarConsultorMes(
   const codEquipe = consultor.cod_equipe
 
   const veiculosComRastreador: VeiculoRastreadorItem[] = veiculos
-    .filter((v) => v.possui_rastreador === 'Sim')
+    .filter(temBeneficioRastreador)
     .map((v) => ({ cod_veiculo: v.cod_veiculo, placa: v.placa, associado: v.associado }))
 
   const descontosRastreador: DescontoRastreadorItem[] = veiculos
-    .filter((v) => v.possui_rastreador === 'Sim' && v.dt_contrato >= de && v.dt_contrato <= ate)
+    .filter((v) => temBeneficioRastreador(v) && v.dt_contrato >= de && v.dt_contrato <= ate)
     .map((v) => ({
       cod_veiculo: v.cod_veiculo,
       placa: v.placa,
