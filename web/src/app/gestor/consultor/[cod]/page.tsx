@@ -70,6 +70,8 @@ export default async function GestorConsultorDetalhePage({
   const totalAdesoes = linhaPropria.detalhe?.adesoes?.length ?? 0
   const totalPlacasAtivadas = linhaPropria.detalhe?.placasAtivadas?.length ?? 0
   const totalRecorrencias = linhaPropria.detalhe?.recorrencias?.length ?? 0
+  const totalDescontosRastreador = linhaPropria.detalhe?.descontosRastreador?.length ?? 0
+  const totalInadimplentes = linhaPropria.detalhe?.inadimplentes?.length ?? 0
   const nivelGestao = calcularNivelGestao(totalPlacasAtivadas)
   const totalEquipe = linhasEquipe
     .filter((l) => l.cod_equipe === linhaPropria.cod_equipe)
@@ -81,6 +83,7 @@ export default async function GestorConsultorDetalhePage({
   const adesoesAnterior = anterior?.detalhe?.adesoes?.length ?? 0
   const placasAnterior = anterior?.detalhe?.placasAtivadas?.length ?? 0
   const recorrenciasAnterior = anterior?.detalhe?.recorrencias?.length ?? 0
+  const descontosRastreadorAnterior = anterior?.detalhe?.descontosRastreador?.length ?? 0
 
   return (
     <div className="space-y-8">
@@ -120,7 +123,7 @@ export default async function GestorConsultorDetalhePage({
 
       {/* KPIs */}
       <h2 className="text-sm font-medium text-slate-400">Visão geral</h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <CardMetrica
           icone={<IconeAdesao />}
           cor="orange"
@@ -144,6 +147,21 @@ export default async function GestorConsultorDetalhePage({
           valor={String(totalPlacasAtivadas)}
           tendenciaPct={calcularTendencia(totalPlacasAtivadas, placasAnterior)}
           valorAnterior={String(placasAnterior)}
+        />
+        <CardMetrica
+          icone={<IconeRastreador />}
+          cor="red"
+          titulo="Descontos rastreadores"
+          valor={String(totalDescontosRastreador)}
+          tendenciaPct={calcularTendencia(totalDescontosRastreador, descontosRastreadorAnterior)}
+          valorAnterior={String(descontosRastreadorAnterior)}
+        />
+        <CardMetrica
+          icone={<IconeAlerta />}
+          cor="red"
+          titulo="Inadimplentes"
+          valor={String(totalInadimplentes)}
+          descricao="Boletos em aberto"
         />
         <CardMetrica
           icone={<IconeUsuarios />}
