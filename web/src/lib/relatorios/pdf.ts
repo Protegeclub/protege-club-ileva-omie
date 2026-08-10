@@ -1,62 +1,39 @@
-import PDFDocument from 'pdfkit'
-import type { RelatorioConsolidado } from './consolidado'
+import type { PlacaAtivadaComEquipe, RelatorioConsolidado } from './consolidado'
+import { AZUL, CINZA, criarDocumento, desenharCabecalho, desenharTabela, formatarMoeda, rodape } from './pdf-utils'
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
 
-function formatarMoeda(valor: number) {
-  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
 function formatarDataBr(iso: string) {
   const [ano, mes, dia] = iso.split('-')
   return `${dia}/${mes}/${ano}`
 }
 
+interface LinhaComEquipe {
+  nomeConsultor: string
+  equipe: string
+  totalAdesao: number
+  totalRecorrencia: number
+  totalLiquido: number
+}
+
+// Reescrito pra usar a infraestrutura compartilhada (criarDocumento/desenharCabecalho/
+// desenharTabela) em vez de posições `colX` fixas desenhadas à mão — a versão anterior não
+// tinha ellipsis/altura definidas, então um nome de consultor comprido quebrava em várias linhas
+// e desalinhava a linha seguinte (mesma classe de bug documentada em pdf-utils.ts). Mesmas
+// colunas de sempre (Consultor/Adesão/Recorrência/Líquido), mesmo agrupamento por equipe com
+// subtotal — só troca o motor de desenho.
 export async function gerarPdfConsolidado(relatorio: RelatorioConsolidado): Promise<Buffer> {
-  const doc = new PDFDocument({ size: 'A4', margin: 40 })
-  const chunks: Buffer[] = []
-  doc.on('data', (chunk) => chunks.push(chunk))
-  const fim = new Promise<Buffer>((resolve) => {
-    doc.on('end', () => resolve(Buffer.concat(chunks)))
-  })
+  const { doc, fim } = criarDocumento()
 
-  const azul = '#1F3B57'
-  const cinza = '#4A4A4A'
-
-  doc
-    .fillColor(azul)
-    .fontSize(20)
-    .font('Helvetica-Bold')
-    .text('Relatório Consolidado de Comissões', { align: 'center' })
-  doc
-    .fillColor(cinza)
-    .fontSize(11)
-    .font('Helvetica')
-    .text('ProtegeClub', { align: 'center' })
-  doc
-    .fontSize(10)
-    .fillColor('#7A7A7A')
-    .text(
-      `Período: ${formatarDataBr(relatorio.dataInicio)} a ${formatarDataBr(relatorio.dataFim)}`,
-      { align: 'center' }
-    )
-  if (relatorio.equipeFiltro) {
-    doc.text(`Equipe: ${relatorio.equipeFiltro}`, { align: 'center' })
-  }
-  doc.moveDown(1.2)
-  doc
-    .strokeColor(azul)
-    .lineWidth(1)
-    .moveTo(40, doc.y)
-    .lineTo(doc.page.width - 40, doc.y)
-    .stroke()
-  doc.moveDown(1)
+  const subtitulos = [`Período: ${formatarDataBr(relatorio.dataInicio)} a ${formatarDataBr(relatorio.dataFim)}`]
+  if (relatorio.equipeFiltro) subtitulos.push(`Equipe: ${relatorio.equipeFiltro}`)
+  desenharCabecalho(doc, 'Relatório Consolidado de Comissões', subtitulos)
 
   // Resumo geral
-  doc.fontSize(13).fillColor(azul).font('Helvetica-Bold').text('Resumo geral')
+  doc.fontSize(13).fillColor(AZUL).font('Helvetica-Bold').text('Resumo geral')
   doc.moveDown(0.4)
   doc.fontSize(10.5).fillColor('#222222').font('Helvetica')
   doc.text(`Total de adesão: ${formatarMoeda(relatorio.totalAdesaoGeral)}`)
@@ -81,33 +58,16 @@ export async function gerarPdfConsolidado(relatorio: RelatorioConsolidado): Prom
     doc.moveDown(0.8)
   }
 
-  // Tabela
-  doc.fontSize(13).fillColor(azul).font('Helvetica-Bold').text('Por consultor')
+  // Por consultor, agrupado por equipe (com subtotal) — quando `equipeFiltro` já veio
+  // preenchido isso resulta em uma seção só, sem custo extra.
+  doc.fontSize(13).fillColor(AZUL).font('Helvetica-Bold').text('Por consultor')
   doc.moveDown(0.4)
 
-  const colX = { nome: 40, adesao: 280, recorrencia: 370, liquido: 460 }
-  const larguraColunaValor = 80
-  const larguraPagina = doc.page.width - 40
-
-  function cabecalhoTabela() {
-    doc.fontSize(9.5).font('Helvetica-Bold').fillColor('#FFFFFF')
-    const y = doc.y
-    doc.rect(40, y, larguraPagina - 40, 18).fill(azul)
-    doc.fillColor('#FFFFFF')
-    doc.text('Consultor', colX.nome + 4, y + 5)
-    doc.text('Adesão', colX.adesao, y + 5, { width: larguraColunaValor, align: 'right' })
-    doc.text('Recorrência', colX.recorrencia, y + 5, { width: larguraColunaValor, align: 'right' })
-    doc.text('Líquido', colX.liquido, y + 5, { width: larguraColunaValor, align: 'right' })
-    doc.y = y + 20
-  }
-
   if (relatorio.linhas.length === 0) {
-    doc.fillColor('#7A7A7A').fontSize(10).text('Nenhum lançamento encontrado neste intervalo.', 40, doc.y + 4)
+    doc.fillColor('#7A7A7A').fontSize(10).text('Nenhum lançamento encontrado neste intervalo.')
   }
 
-  // Agrupado por equipe (cada equipe em sua seção, com subtotal) — quando `equipeFiltro` já veio
-  // preenchido (relatório de uma única equipe) isso resulta em uma seção só, sem custo extra.
-  const porEquipe = new Map<string, typeof relatorio.linhas>()
+  const porEquipe = new Map<string, LinhaComEquipe[]>()
   for (const linha of relatorio.linhas) {
     const chave = linha.equipe || '—'
     if (!porEquipe.has(chave)) porEquipe.set(chave, [])
@@ -119,45 +79,65 @@ export async function gerarPdfConsolidado(relatorio: RelatorioConsolidado): Prom
     const linhasEquipe = porEquipe.get(equipe)!
     const totalEquipe = linhasEquipe.reduce((s, l) => s + l.totalLiquido, 0)
 
-    if (doc.y > doc.page.height - 110) doc.addPage()
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(azul).text(`Equipe: ${equipe}`, 40, doc.y)
+    if (doc.y > doc.page.height - 130) doc.addPage()
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(AZUL).text(`Equipe: ${equipe}`)
     doc
       .fontSize(9)
       .font('Helvetica')
-      .fillColor(cinza)
+      .fillColor(CINZA)
       .text(`${linhasEquipe.length} consultor(es) — total líquido: ${formatarMoeda(totalEquipe)}`)
     doc.moveDown(0.3)
 
-    cabecalhoTabela()
-    doc.font('Helvetica').fontSize(9.5).fillColor('#222222')
-
-    linhasEquipe.forEach((linha, i) => {
-      if (doc.y > doc.page.height - 80) {
-        doc.addPage()
-        cabecalhoTabela()
-        doc.font('Helvetica').fontSize(9.5).fillColor('#222222')
-      }
-      const y = doc.y
-      if (i % 2 === 1) {
-        doc.rect(40, y - 2, larguraPagina - 40, 16).fill('#EAF1F8')
-        doc.fillColor('#222222')
-      }
-      doc.text(linha.nomeConsultor, colX.nome + 4, y, { width: colX.adesao - colX.nome - 8 })
-      doc.text(formatarMoeda(linha.totalAdesao), colX.adesao, y, { width: larguraColunaValor, align: 'right' })
-      doc.text(formatarMoeda(linha.totalRecorrencia), colX.recorrencia, y, { width: larguraColunaValor, align: 'right' })
-      doc.text(formatarMoeda(linha.totalLiquido), colX.liquido, y, { width: larguraColunaValor, align: 'right' })
-      doc.y = y + 16
-    })
-
-    doc.moveDown(0.7)
+    desenharTabela<LinhaComEquipe>(
+      doc,
+      [
+        { titulo: 'Consultor', largura: 275, valor: (l) => l.nomeConsultor },
+        { titulo: 'Adesão', largura: 80, alinhar: 'right', valor: (l) => formatarMoeda(l.totalAdesao) },
+        { titulo: 'Recorrência', largura: 80, alinhar: 'right', valor: (l) => formatarMoeda(l.totalRecorrencia) },
+        { titulo: 'Líquido', largura: 80, alinhar: 'right', valor: (l) => formatarMoeda(l.totalLiquido) },
+      ],
+      linhasEquipe
+    )
+    doc.moveDown(0.5)
   }
 
-  doc.moveDown(1.5)
-  doc
-    .fontSize(8.5)
-    .fillColor('#7A7A7A')
-    .text(`Gerado em ${new Date().toLocaleString('pt-BR')}`, { align: 'center' })
+  // Placas ativadas no período — pedido antigo do Samuel ("todo relatório que toca em placa
+  // lista com data de contrato"), nunca implementado neste relatório específico.
+  if (relatorio.placasAtivadas.length > 0) {
+    if (doc.y > doc.page.height - 150) doc.addPage()
+    doc.moveDown(0.4)
+    doc.fontSize(13).fillColor(AZUL).font('Helvetica-Bold').text('Placas ativadas no período')
+    doc.moveDown(0.3)
 
+    const porEquipePlacas = new Map<string, PlacaAtivadaComEquipe[]>()
+    for (const placa of relatorio.placasAtivadas) {
+      const chave = placa.equipe || '—'
+      if (!porEquipePlacas.has(chave)) porEquipePlacas.set(chave, [])
+      porEquipePlacas.get(chave)!.push(placa)
+    }
+    const equipesComPlacas = Array.from(porEquipePlacas.keys()).sort((a, b) => a.localeCompare(b))
+
+    for (const equipe of equipesComPlacas) {
+      const placasEquipe = porEquipePlacas.get(equipe)!
+      if (doc.y > doc.page.height - 130) doc.addPage()
+      doc.fontSize(10.5).font('Helvetica-Bold').fillColor(AZUL).text(`Equipe: ${equipe}`)
+      doc.moveDown(0.2)
+      desenharTabela<PlacaAtivadaComEquipe>(
+        doc,
+        [
+          { titulo: 'Data Contrato', largura: 70, valor: (p) => formatarDataBr(p.dt_contrato) },
+          { titulo: 'Associado', largura: 195, valor: (p) => p.associado },
+          { titulo: 'Placa', largura: 70, valor: (p) => p.placa },
+          { titulo: 'Consultor', largura: 180, valor: (p) => p.consultorNome },
+        ],
+        placasEquipe,
+        { linhaTotal: { rotulo: 'Total de placas ativadas', valor: String(placasEquipe.length) } }
+      )
+      doc.moveDown(0.4)
+    }
+  }
+
+  rodape(doc)
   doc.end()
   return fim
 }

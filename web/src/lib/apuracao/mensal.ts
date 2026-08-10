@@ -9,6 +9,8 @@ export interface AdesaoItem {
   consultorNome: string
   valor: number
   dt_pagamento: string | null
+  cod_cobranca: number
+  referencia: string | null
 }
 
 // `dt_pagamento` foi adicionado depois das primeiras gerações de teste — apurações antigas
@@ -68,6 +70,8 @@ export interface InadimplenteItem {
   dt_vencimento: string
   valorBoleto: number
   valorRecorrenciaEstimado: number
+  cod_cobranca: number
+  referencia: string | null
 }
 
 export interface ApuracaoConsultorMesDetalhada {
@@ -229,6 +233,8 @@ export async function apurarConsultorMes(
         dt_vencimento: boleto.dt_vencimento,
         valorBoleto: Number(boleto.valor_boleto),
         valorRecorrenciaEstimado,
+        cod_cobranca: boleto.cod_cobranca,
+        referencia: boleto.referencia ?? null,
       })
     )
   })
@@ -267,6 +273,8 @@ export async function apurarConsultorMes(
           consultorNome: nomeConsultor,
           valor: Number(boleto.valor_pagamento ?? boleto.valor_boleto),
           dt_pagamento: boleto.dt_pagamento,
+          cod_cobranca: boleto.cod_cobranca,
+          referencia: boleto.referencia ?? null,
         })
       } else if (boleto.tipo_boleto === 'Fechamento') {
         if (cobrancasFechamentoProcessadas.has(boleto.cod_cobranca)) continue

@@ -4,12 +4,21 @@ export const AZUL = '#1F3B57'
 export const CINZA = '#4A4A4A'
 export const MARGEM = 40
 
+// Teto defensivo pra altura de UMA célula (ex.: um valor sem espaços numa coluna estreita, que
+// mediria uma altura de "quebra" desproporcional) — acima disso a célula volta a truncar com
+// "..." em vez de deixar 1 dado sujo esticar a linha inteira e distorcer o layout da tabela.
+const ALTURA_MAX_CELULA = 120
+const PAD_V_CABECALHO = 8
+const PAD_V_CORPO = 6
+const PISO_CABECALHO = 12
+const PISO_CORPO = 11
+
 export function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export function criarDocumento() {
-  const doc = new PDFDocument({ size: 'A4', margin: MARGEM })
+export function criarDocumento(opcoes?: { layout?: 'portrait' | 'landscape' }) {
+  const doc = new PDFDocument({ size: 'A4', margin: MARGEM, layout: opcoes?.layout ?? 'portrait' })
   const chunks: Buffer[] = []
   doc.on('data', (chunk) => chunks.push(chunk))
   const fim = new Promise<Buffer>((resolve) => {
@@ -41,9 +50,32 @@ export interface ColunaTabela<T> {
   valor: (item: T) => string
 }
 
-// Desenha uma tabela com colunas de largura fixa que somam, no máximo, a largura útil da
-// página (A4 - margens = ~515pt) — aprendido do bug de corte no relatório consolidado: melhor
-// somar as larguras aqui em vez de chutar posições x soltas.
+interface CelulaMedida {
+  texto: string
+  altura: number
+  ellipsis: boolean
+}
+
+// Mede cada célula da linha com o texto/fonte JÁ definidos em `doc` (heightOfString usa o estado
+// atual de fonte/tamanho) e devolve a altura "natural" de cada uma, capada em ALTURA_MAX_CELULA
+// (com ellipsis=true nesse caso) — quem chama pega o maior valor pra decidir a altura da linha
+// inteira. `heightOfString` sempre mede o texto completo (ignora `height`/corte), então medição
+// e desenho usam o mesmo motor de quebra e nunca discordam entre si.
+function medirCelulas<T>(doc: PDFKit.PDFDocument, colunas: ColunaTabela<T>[], obterTexto: (c: ColunaTabela<T>) => string, piso: number): CelulaMedida[] {
+  return colunas.map((c) => {
+    const texto = obterTexto(c)
+    const alturaNatural = doc.heightOfString(texto, { width: c.largura - 8 })
+    const estourou = alturaNatural > ALTURA_MAX_CELULA
+    return { texto, altura: estourou ? ALTURA_MAX_CELULA : Math.max(piso, alturaNatural), ellipsis: estourou }
+  })
+}
+
+// Desenha uma tabela com colunas de largura fixa que somam, no máximo, a largura útil da página
+// (A4 retrato ~515pt, paisagem ~762pt) — aprendido do bug de corte no relatório consolidado:
+// melhor somar as larguras aqui em vez de chutar posições x soltas. Altura de linha é dinâmica
+// (quebra de linha real via word-wrap, nunca corta texto por padrão) — só uma célula
+// patologicamente alta (ver ALTURA_MAX_CELULA) volta a truncar com "...", isolada, sem puxar o
+// resto da tabela.
 export function desenharTabela<T>(
   doc: PDFKit.PDFDocument,
   colunas: ColunaTabela<T>[],
@@ -69,47 +101,54 @@ export function desenharTabela<T>(
   }
   const xs = posicoesX()
 
-  // `ellipsis: true` força uma linha só (trunca com "..." em vez de quebrar linha) — sem isso,
-  // um cabeçalho comprido ("Valor a Descontar") ou um nome longo de consultor quebra em duas
-  // linhas e desalinha visualmente o resto da linha/cabeçalho (bug visto no teste real).
   function cabecalhoTabela() {
     const y = doc.y
-    doc.rect(MARGEM, y, larguraTotal, 18).fill(AZUL)
-    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(9.5)
+    doc.font('Helvetica-Bold').fontSize(9.5)
+    const celulas = medirCelulas(doc, colunas, (c) => c.titulo, PISO_CABECALHO)
+    const alturaConteudo = Math.max(...celulas.map((c) => c.altura))
+    const alturaRect = alturaConteudo + PAD_V_CABECALHO
+
+    doc.rect(MARGEM, y, larguraTotal, alturaRect).fill(AZUL)
+    doc.fillColor('#FFFFFF')
     colunas.forEach((c, i) => {
-      doc.text(c.titulo, xs[i] + 4, y + 5, {
+      doc.text(celulas[i].texto, xs[i] + 4, y + PAD_V_CABECALHO / 2, {
         width: c.largura - 8,
         align: c.alinhar ?? 'left',
-        height: 12,
-        ellipsis: true,
+        height: alturaConteudo,
+        ellipsis: celulas[i].ellipsis,
       })
     })
-    doc.y = y + 20
+    doc.y = y + alturaRect
   }
 
   cabecalhoTabela()
-  doc.font('Helvetica').fontSize(9).fillColor('#222222')
 
   linhas.forEach((linha, i) => {
-    if (doc.y > doc.page.height - 90) {
+    doc.font('Helvetica').fontSize(9).fillColor('#222222')
+    const celulas = medirCelulas(doc, colunas, (c) => c.valor(linha), PISO_CORPO)
+    const alturaConteudo = Math.max(...celulas.map((c) => c.altura))
+    const alturaLinha = alturaConteudo + PAD_V_CORPO
+
+    if (doc.y + alturaLinha > doc.page.height - 90) {
       doc.addPage()
       cabecalhoTabela()
       doc.font('Helvetica').fontSize(9).fillColor('#222222')
     }
+
     const y = doc.y
     if (i % 2 === 1) {
-      doc.rect(MARGEM, y - 2, larguraTotal, 15).fill('#EAF1F8')
+      doc.rect(MARGEM, y - 2, larguraTotal, alturaLinha).fill('#EAF1F8')
       doc.fillColor('#222222')
     }
     colunas.forEach((c, j) => {
-      doc.text(c.valor(linha), xs[j] + 4, y, {
+      doc.text(celulas[j].texto, xs[j] + 4, y, {
         width: c.largura - 8,
         align: c.alinhar ?? 'left',
-        height: 11,
-        ellipsis: true,
+        height: alturaConteudo,
+        ellipsis: celulas[j].ellipsis,
       })
     })
-    doc.y = y + 15
+    doc.y = y + alturaLinha
   })
 
   if (linhas.length === 0) {

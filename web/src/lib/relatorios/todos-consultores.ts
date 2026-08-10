@@ -6,6 +6,11 @@ const NOMES_MESES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
 
+function formatarDataBr(iso: string) {
+  const [ano, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
 export interface ItemTodosConsultores {
   cod_consultor: number
   nomeConsultor: string
@@ -21,17 +26,20 @@ export interface ItemTodosConsultores {
   placasAtivadas: PlacaAtivadaItem[]
 }
 
-// Um PDF só, mas com uma seção separada por consultor (não uma tabela única resumida como
-// gerarPdfConsolidado) — pensado pra imprimir/arquivar a apuração detalhada de todos de uma vez,
-// mantendo cada consultor claramente distinto no documento. Os consultores gerados são agrupados
-// por equipe (com subtotal por equipe) — se o chamador já filtrou para uma equipe só, isso vira
-// naturalmente uma seção única.
+interface PlacaComConsultor extends PlacaAtivadaItem {
+  consultorNome: string
+}
+
+// Um PDF só, agrupado por equipe (com subtotal por equipe) — se o chamador já filtrou pra uma
+// equipe só, isso vira naturalmente uma seção única. Cada equipe ganha uma tabela-resumo de
+// todos os consultores (não mais um parágrafo de texto por consultor — muito mais fácil de
+// escanear e comparar) seguida da lista de placas ativadas da equipe, se houver.
 export async function gerarPdfTodosConsultores(
   ano: number,
   mes: number,
   itens: ItemTodosConsultores[]
 ): Promise<Buffer> {
-  const { doc, fim } = criarDocumento()
+  const { doc, fim } = criarDocumento({ layout: 'landscape' })
   desenharCabecalho(doc, 'Apuração de Comissões — Todos os Consultores', [
     'ProtegeClub',
     `Referência: ${NOMES_MESES[mes - 1]}/${ano}`,
@@ -71,61 +79,65 @@ export async function gerarPdfTodosConsultores(
 
   for (const equipe of equipesOrdenadas) {
     const itensEquipe = porEquipe.get(equipe)!.sort((a, b) => b.totalLiquido - a.totalLiquido)
-    const totalEquipe = itensEquipe.reduce((s, i) => s + i.totalLiquido, 0)
+    const totalAdesaoEquipe = itensEquipe.reduce((s, i) => s + i.totalAdesao, 0)
+    const totalRecorrenciaEquipe = itensEquipe.reduce((s, i) => s + i.totalRecorrencia, 0)
+    const totalDescontoEquipe = itensEquipe.reduce((s, i) => s + i.totalDescontoRastreador, 0)
+    const totalLiquidoEquipe = itensEquipe.reduce((s, i) => s + i.totalLiquido, 0)
 
-    if (doc.y > doc.page.height - 130) doc.addPage()
+    if (doc.y > doc.page.height - 150) doc.addPage()
     doc.fontSize(13).font('Helvetica-Bold').fillColor('#1F3B57').text(`Equipe: ${equipe}`)
     doc
       .fontSize(9)
       .font('Helvetica')
       .fillColor('#4A4A4A')
-      .text(`${itensEquipe.length} consultor(es) — total líquido: ${formatarMoeda(totalEquipe)}`)
-    doc.moveDown(0.5)
-
-    for (const item of itensEquipe) {
-      if (doc.y > doc.page.height - 130) {
-        doc.addPage()
-      }
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#1F3B57').text(`${item.nomeConsultor}  #${item.cod_consultor}`)
-      doc.moveDown(0.15)
-
-      doc.fontSize(9.5).font('Helvetica').fillColor('#222222')
-      doc.text(
-        `Adesões: ${item.qtdAdesoes}    Placas ativadas: ${item.qtdPlacasAtivadas}    Inadimplentes: ${item.qtdInadimplentes}`
+      .text(
+        `${itensEquipe.length} consultor(es) — Adesão: ${formatarMoeda(totalAdesaoEquipe)} · Recorrência: ` +
+          `${formatarMoeda(totalRecorrenciaEquipe)} · Desconto: ${formatarMoeda(totalDescontoEquipe)} · ` +
+          `Líquido: ${formatarMoeda(totalLiquidoEquipe)}`
       )
-      doc.text(
-        `Adesão: ${formatarMoeda(item.totalAdesao)}    Recorrência: ${formatarMoeda(item.totalRecorrencia)}    Desconto rastreador: ${formatarMoeda(item.totalDescontoRastreador)}`
+    doc.moveDown(0.4)
+
+    desenharTabela<ItemTodosConsultores>(
+      doc,
+      [
+        { titulo: 'Consultor', largura: 180, valor: (i) => `${i.nomeConsultor} #${i.cod_consultor}` },
+        { titulo: 'Adesões', largura: 55, alinhar: 'right', valor: (i) => String(i.qtdAdesoes) },
+        { titulo: 'Adesão', largura: 85, alinhar: 'right', valor: (i) => formatarMoeda(i.totalAdesao) },
+        { titulo: 'Recorrência', largura: 85, alinhar: 'right', valor: (i) => formatarMoeda(i.totalRecorrencia) },
+        { titulo: 'Desconto', largura: 75, alinhar: 'right', valor: (i) => formatarMoeda(i.totalDescontoRastreador) },
+        { titulo: 'Inadimpl.', largura: 65, alinhar: 'right', valor: (i) => String(i.qtdInadimplentes) },
+        { titulo: 'Placas', largura: 65, alinhar: 'right', valor: (i) => String(i.qtdPlacasAtivadas) },
+        { titulo: 'Líquido', largura: 90, alinhar: 'right', valor: (i) => formatarMoeda(i.totalLiquido) },
+      ],
+      itensEquipe
+    )
+    doc.moveDown(0.6)
+
+    // Placas ativadas de toda a equipe numa tabela só (não mais 1 mini-tabela por consultor) —
+    // por isso a coluna Consultor volta aqui: sem o bloco de texto individual, o contexto de
+    // "de quem é essa placa" deixa de ser óbvio.
+    const placasEquipe: PlacaComConsultor[] = itensEquipe.flatMap((i) =>
+      i.placasAtivadas.map((p) => ({ ...p, consultorNome: i.nomeConsultor }))
+    )
+    if (placasEquipe.length > 0) {
+      if (doc.y > doc.page.height - 150) doc.addPage()
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#1F3B57').text(`Placas ativadas — ${equipe}`)
+      doc.moveDown(0.2)
+      desenharTabela<PlacaComConsultor>(
+        doc,
+        [
+          { titulo: 'Data Contrato', largura: 80, valor: (p) => formatarDataBr(p.dt_contrato) },
+          { titulo: 'Associado', largura: 300, valor: (p) => p.associado },
+          { titulo: 'Placa', largura: 90, valor: (p) => p.placa },
+          { titulo: 'Consultor', largura: 270, valor: (p) => p.consultorNome },
+        ],
+        placasEquipe,
+        { linhaTotal: { rotulo: 'Total de placas ativadas', valor: String(placasEquipe.length) } }
       )
-      doc.font('Helvetica-Bold').fontSize(10.5).text(`Total líquido: ${formatarMoeda(item.totalLiquido)}`)
-      doc.moveDown(0.35)
-
-      // Lista de placas só quando existe alguma — repetir "Nenhum registro encontrado" pra cada
-      // um dos ~200 consultores sem placa no mês poluiria o PDF à toa.
-      if (item.placasAtivadas.length > 0) {
-        doc.fontSize(9).font('Helvetica-Bold').fillColor('#1F3B57').text('Placas ativadas no mês:')
-        doc.moveDown(0.2)
-        desenharTabela(
-          doc,
-          [
-            { titulo: 'Data Contrato', largura: 80, valor: (p: PlacaAtivadaItem) => p.dt_contrato },
-            { titulo: 'Associado', largura: 335, valor: (p: PlacaAtivadaItem) => p.associado },
-            { titulo: 'Placa', largura: 100, valor: (p: PlacaAtivadaItem) => p.placa },
-          ],
-          item.placasAtivadas
-        )
-        doc.moveDown(0.35)
-      }
-
-      doc
-        .strokeColor('#DCE3EA')
-        .lineWidth(0.5)
-        .moveTo(MARGEM, doc.y)
-        .lineTo(doc.page.width - MARGEM, doc.y)
-        .stroke()
-      doc.moveDown(0.5)
+      doc.moveDown(0.4)
     }
 
-    doc.moveDown(0.3)
+    doc.moveDown(0.4)
   }
 
   if (pendentes.length > 0) {

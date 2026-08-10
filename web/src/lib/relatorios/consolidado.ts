@@ -1,13 +1,13 @@
 import { listarTodosConsultores } from '@/lib/ileva/api'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import type { AdesaoItem, RecorrenciaItem } from '@/lib/apuracao/mensal'
+import type { AdesaoItem, PlacaAtivadaItem, RecorrenciaItem } from '@/lib/apuracao/mensal'
 import type { Consultor } from '@/types/domain'
 
 interface ApuracaoRow {
   cod_consultor: number
   ano: number
   mes: number
-  detalhe: { adesoes?: AdesaoItem[]; recorrencias?: RecorrenciaItem[] } | null
+  detalhe: { adesoes?: AdesaoItem[]; recorrencias?: RecorrenciaItem[]; placasAtivadas?: PlacaAtivadaItem[] } | null
 }
 
 export interface LinhaRelatorio {
@@ -26,6 +26,13 @@ export interface MesConsiderado {
   consultoresAtivosSemApuracao: number
 }
 
+// PlacaAtivadaItem já tem `consultorNome`, mas não `equipe` — anotamos aqui na coleta, já que
+// `montarRelatorioConsolidado` já tem `equipePorConsultor` em escopo no mesmo loop que lê
+// `.adesoes`/`.recorrencias`.
+export interface PlacaAtivadaComEquipe extends PlacaAtivadaItem {
+  equipe: string
+}
+
 export interface RelatorioConsolidado {
   dataInicio: string
   dataFim: string
@@ -35,6 +42,7 @@ export interface RelatorioConsolidado {
   totalRecorrenciaGeral: number
   totalLiquidoGeral: number
   mesesConsiderados: MesConsiderado[]
+  placasAtivadas: PlacaAtivadaComEquipe[]
 }
 
 // A apuração é gerada e guardada por mês inteiro (ver lib/apuracao/mensal.ts) — o relatório por
@@ -92,10 +100,12 @@ export async function montarRelatorioConsolidado(
   )
 
   const totaisPorConsultor = new Map<number, LinhaRelatorio>()
+  const placasAtivadas: PlacaAtivadaComEquipe[] = []
 
   for (const row of apuracoes) {
     const adesoes = row.detalhe?.adesoes ?? []
     const recorrencias = row.detalhe?.recorrencias ?? []
+    const placas = row.detalhe?.placasAtivadas ?? []
 
     const adesoesNoIntervalo = adesoes.filter((a) =>
       dataDentroDoIntervalo(a.dt_pagamento, dataInicio, dataFim)
@@ -104,6 +114,16 @@ export async function montarRelatorioConsolidado(
       dataDentroDoIntervalo(r.dt_pagamento, dataInicio, dataFim)
     )
     const itensSemDataConhecida = recorrencias.filter((r) => !r.dt_pagamento).length
+    const equipeConsultor = equipePorConsultor.get(row.cod_consultor) ?? '—'
+
+    // Placas ativadas coletadas fora do "continue" abaixo — um consultor pode ter tido só uma
+    // placa ativada no intervalo (sem adesão/recorrência nenhuma no mesmo período) e ainda assim
+    // precisa aparecer na seção de placas do PDF.
+    placasAtivadas.push(
+      ...placas
+        .filter((p) => dataDentroDoIntervalo(p.dt_contrato, dataInicio, dataFim))
+        .map((p) => ({ ...p, equipe: equipeConsultor }))
+    )
 
     if (!adesoesNoIntervalo.length && !recorrenciasNoIntervalo.length && !itensSemDataConhecida) {
       continue
@@ -115,7 +135,7 @@ export async function montarRelatorioConsolidado(
     const acumulado: LinhaRelatorio = totaisPorConsultor.get(row.cod_consultor) ?? {
       cod_consultor: row.cod_consultor,
       nomeConsultor: nomesPorConsultor.get(row.cod_consultor) ?? `Consultor #${row.cod_consultor}`,
-      equipe: equipePorConsultor.get(row.cod_consultor) ?? '—',
+      equipe: equipeConsultor,
       totalAdesao: 0,
       totalRecorrencia: 0,
       totalLiquido: 0,
@@ -132,6 +152,9 @@ export async function montarRelatorioConsolidado(
   const linhas = Array.from(totaisPorConsultor.values())
     .filter((l) => !equipeFiltroLimpa || l.equipe === equipeFiltroLimpa)
     .sort((a, b) => b.totalLiquido - a.totalLiquido)
+  const placasAtivadasFiltradas = placasAtivadas
+    .filter((p) => !equipeFiltroLimpa || p.equipe === equipeFiltroLimpa)
+    .sort((a, b) => a.dt_contrato.localeCompare(b.dt_contrato))
 
   const codConsultoresAtivos = new Set(
     consultores.filter((c) => c.situacao === 'Ativo').map((c) => c.cod_consultor)
@@ -156,5 +179,6 @@ export async function montarRelatorioConsolidado(
     totalRecorrenciaGeral: linhas.reduce((soma, l) => soma + l.totalRecorrencia, 0),
     totalLiquidoGeral: linhas.reduce((soma, l) => soma + l.totalLiquido, 0),
     mesesConsiderados,
+    placasAtivadas: placasAtivadasFiltradas,
   }
 }
