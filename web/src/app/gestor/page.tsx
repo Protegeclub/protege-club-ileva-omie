@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { NOMES_MESES } from '@/app/consultor/tipos'
 import { montarDashboardMes, type DashboardMes } from '@/lib/apuracao/dashboard-mes'
 import { Botao } from '@/lib/ui/botao'
-import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
 import { CardMetrica, calcularProgresso, calcularTendencia } from '@/lib/ui/card-metrica'
 import { Cartao } from '@/lib/ui/cartao'
 import {
@@ -15,10 +14,18 @@ import {
   IconeRastreador,
   IconeRecorrencia,
   IconeTrofeu,
+  IconeUsuario,
   IconeUsuarios,
 } from '@/lib/ui/icones-sidebar'
-import { AreaEvolucao, DonutComposicao, GraficoDescontoRastreador, GraficoPlacasAtivadas } from './dashboard-graficos'
-import { IconeRelogio } from './gerar/icones'
+import {
+  AreaEvolucao,
+  DonutComposicao,
+  GraficoDescontoRastreador,
+  GraficoPlacasAtivadas,
+  GraficoTotalLiquido,
+} from './dashboard-graficos'
+import { IconeRelampago, IconeRelogio } from './gerar/icones'
+import { SeletorCompetencia } from './seletor-competencia'
 
 function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -59,72 +66,31 @@ export default async function GestorDashboardPage({
 
   return (
     <div className="space-y-5">
-      {/* Header "hero" (pedido do Samuel, 04/08/2026: "precisa respirar") — competência/última
-          atualização viram dois blocos rotulados separados por um traço vertical, em vez do
-          pill+ponto+texto espremido numa linha só. */}
+      {/* Header (pedido do Samuel, 10/08/2026, com print de referência): breadcrumb + título +
+          subtítulo com a competência embutida no texto, à esquerda; seletor de competência
+          único (mês+ano combinados, ver seletor-competencia.tsx) + os dois CTAs, à direita. A
+          "Última atualização" que morava aqui saiu — já existe como item do ResumoOperacional
+          (rodapé fixo da página), então não duplicava a informação em dois lugares. */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-bold tracking-tight text-brand-navy">Dashboard Comercial</h1>
-          <p className="mt-1 text-sm text-slate-500">Resumo executivo da operação comercial.</p>
-          <div className="mt-5 flex flex-wrap items-center gap-6">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Competência</p>
-              <p className="mt-0.5 text-sm font-medium text-slate-700">{NOMES_MESES[mes - 1]} {ano}</p>
-            </div>
-            <span className="h-8 w-px bg-slate-200" aria-hidden />
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Última atualização</p>
-              <p className="mt-0.5 text-sm font-medium text-slate-700">
-                {dados.ultimaAtualizacao ? formatarUltimaAtualizacao(dados.ultimaAtualizacao) : 'Nenhuma apuração ainda'}
-              </p>
-            </div>
-          </div>
+          <p className="text-xs font-medium text-slate-400">Painel / Comercial</p>
+          <h1 className="mt-1 text-[28px] font-bold tracking-tight text-brand-navy">Dashboard comercial</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Resumo executivo da operação — competência de {NOMES_MESES[mes - 1].toLowerCase()} de {ano}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <BotaoAtualizarPagina />
-          <Botao href="/gestor/gerar" variante="secundaria" className="h-11">
-            Gerar
-          </Botao>
-          <Botao href="/gestor/consultores" variante="destaque" className="h-11">
+          <SeletorCompetencia ano={ano} mes={mes} />
+          <Botao href="/gestor/consultores" variante="fantasma" className="h-11">
+            <IconeUsuario className="h-4 w-4" />
             Ver consultores
+          </Botao>
+          <Botao href="/gestor/gerar" variante="destaque" className="h-11">
+            <IconeRelampago className="h-4 w-4" />
+            Gerar apuração
           </Botao>
         </div>
       </div>
-
-      {/* Toolbar de período — mesmo form GET de sempre (name="mes"/"ano"), só menos "formulário"
-          e mais barra de filtro de uma linha só. */}
-      <Cartao className="flex flex-wrap items-center gap-3 p-3.5">
-        <form method="GET" className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <label htmlFor="mes" className="text-xs font-medium text-slate-400">
-              Mês
-            </label>
-            <select
-              id="mes"
-              name="mes"
-              defaultValue={mes}
-              className="h-9 rounded-lg border border-transparent bg-slate-50 px-3 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
-            >
-              {NOMES_MESES.map((nome, i) => (
-                <option key={nome} value={i + 1}>{nome}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="ano" className="text-xs font-medium text-slate-400">
-              Ano
-            </label>
-            <input
-              id="ano"
-              name="ano"
-              type="number"
-              defaultValue={ano}
-              className="h-9 w-20 rounded-lg border border-transparent bg-slate-50 px-3 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
-            />
-          </div>
-          <Botao type="submit" variante="primaria" tamanho="sm" className="h-9">Ver período</Botao>
-        </form>
-      </Cartao>
 
       {/* KPIs — mesmo card compartilhado com Consultores/Gerar apuração (ver lib/ui/card-metrica.tsx).
           Sparkline/anel são só decoração adicional (props novas, opcionais) reaproveitando dados
@@ -205,12 +171,13 @@ export default async function GestorDashboardPage({
           quase sempre ~100% gerado, então não rendia gráfico — o número de erros/pendentes
           continua disponível em texto no Resumo operacional/Insights, só não como gráfico. */}
       <h2 className="text-sm font-medium text-slate-400">Composição e indicadores</h2>
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
         <DonutComposicao
           totalLiquido={dados.totalLiquido}
           totalAdesao={dados.totalAdesao}
           totalRecorrencia={dados.totalRecorrencia}
         />
+        <GraficoTotalLiquido evolucao={dados.evolucao} atual={dados.totalLiquido} />
         <GraficoPlacasAtivadas evolucao={dados.evolucao} atual={dados.qtdPlacasAtivadas} />
         <GraficoDescontoRastreador evolucao={dados.evolucao} atual={dados.totalDescontoRastreador} />
       </div>

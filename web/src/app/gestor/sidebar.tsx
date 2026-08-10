@@ -16,14 +16,29 @@ import { FundoDecorativoSidebar } from '@/lib/ui/fundo-decorativo-sidebar'
 import { ItemNavSidebar } from '@/lib/ui/item-nav-sidebar'
 import { IconeRelampago } from './gerar/icones'
 
-const ITENS = [
-  { href: '/gestor', label: 'Dashboard', icone: <IconeDashboard /> },
-  { href: '/gestor/consultores', label: 'Consultores', icone: <IconeLista /> },
-  { href: '/gestor/relatorios', label: 'Relatórios', icone: <IconeRelatorio /> },
-  { href: '/gestor/gerar', label: 'Gerar', icone: <IconeRelampago /> },
-  { href: '/gestor/omie', label: 'Omie', icone: <IconeCarteira /> },
-  { href: '/gestor/acessos', label: 'Acessos', icone: <IconeUsuarios /> },
-  { href: '/gestor/configuracoes', label: 'Configurações', icone: <IconeConfiguracoes /> },
+const SECOES = [
+  {
+    titulo: 'VISÃO GERAL',
+    itens: [
+      { href: '/gestor', label: 'Dashboard', icone: <IconeDashboard /> },
+      { href: '/gestor/consultores', label: 'Consultores', icone: <IconeLista /> },
+      { href: '/gestor/relatorios', label: 'Relatórios', icone: <IconeRelatorio /> },
+    ],
+  },
+  {
+    titulo: 'OPERAÇÃO',
+    itens: [
+      { href: '/gestor/gerar', label: 'Gerar apuração', icone: <IconeRelampago /> },
+      { href: '/gestor/omie', label: 'Omie', icone: <IconeCarteira /> },
+    ],
+  },
+  {
+    titulo: 'ADMINISTRAÇÃO',
+    itens: [
+      { href: '/gestor/acessos', label: 'Acessos', icone: <IconeUsuarios /> },
+      { href: '/gestor/configuracoes', label: 'Configurações', icone: <IconeConfiguracoes /> },
+    ],
+  },
 ]
 
 // "Consultores" fica destacado também dentro do detalhe de um consultor
@@ -92,16 +107,30 @@ export function SidebarGestor({ nome, children }: { nome: string | null; childre
         </div>
       )}
 
-      <nav className="flex-1 space-y-2.5 px-3.5">
-        {ITENS.map((item) => (
-          <ItemNavSidebar
-            key={item.href}
-            href={item.href}
-            label={item.label}
-            icone={item.icone}
-            ativo={ehAtivo(item.href, pathname)}
-            colapsado={colapsado}
-          />
+      <nav className="flex-1 space-y-5 px-3.5">
+        {SECOES.map((secao, indice) => (
+          <div
+            key={secao.titulo}
+            className={colapsado && indice > 0 ? 'border-t border-white/10 pt-4' : ''}
+          >
+            {!colapsado && (
+              <p className="mb-2 px-3.5 text-[11px] font-semibold tracking-wider text-white/40">
+                {secao.titulo}
+              </p>
+            )}
+            <div className="space-y-2.5">
+              {secao.itens.map((item) => (
+                <ItemNavSidebar
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icone={item.icone}
+                  ativo={ehAtivo(item.href, pathname)}
+                  colapsado={colapsado}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 

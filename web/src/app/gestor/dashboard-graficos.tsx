@@ -8,10 +8,13 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Legend,
   LabelList,
+  Line,
   Pie,
   PieChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -67,16 +70,23 @@ export function DonutComposicao({
   return (
     <Cartao className="p-5 transition-shadow hover:shadow-md">
       <p className="text-sm font-medium text-slate-700">Composição do líquido</p>
+      {/* Donut de 176px→144px e legenda em bloco empilhado (valor acima do %, em vez de tudo
+          numa linha só com "·" no meio) — no card mais estreito da grade de 4 colunas, o texto
+          "R$ 8.683 · 24%" não cabia numa linha e quebrava no meio da frase (pedido do Samuel,
+          10/08/2026: "olha como está esse"). Empilhado, cada linha é curta o bastante pra nunca
+          precisar quebrar, independente da largura do card. Furo do donut alargado (44/60 em vez
+          de 40/56) + rótulo central sem tracking-wide/menor: no primeiro ajuste o furo ficou
+          menor que o texto "TOTAL LÍQUIDO", que vazava por baixo do anel dos dois lados. */}
       <div className="mt-3 flex flex-col items-center gap-5 sm:flex-row">
-        <div className="relative h-44 w-44 shrink-0">
+        <div className="relative h-36 w-36 shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={dados}
                 dataKey="valor"
                 nameKey="nome"
-                innerRadius={52}
-                outerRadius={72}
+                innerRadius={44}
+                outerRadius={60}
                 paddingAngle={3}
                 stroke="none"
                 onMouseEnter={(_, i) => setIndiceAtivo(i)}
@@ -93,11 +103,11 @@ export function DonutComposicao({
               </Pie>
             </PieChart>
           </ResponsiveContainer>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2 text-center">
-            <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-1 text-center">
+            <p className="text-[9px] font-medium uppercase text-slate-400">
               {itemAtivo?.nome ?? 'Total líquido'}
             </p>
-            <p className="text-sm font-semibold text-slate-900">{formatarMoeda(itemAtivo?.valor ?? totalLiquido)}</p>
+            <p className="text-[13px] font-semibold text-slate-900">{formatarMoeda(itemAtivo?.valor ?? totalLiquido)}</p>
           </div>
         </div>
         <div className="w-full space-y-1">
@@ -116,8 +126,9 @@ export function DonutComposicao({
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: d.cor }} aria-hidden />
                   {d.nome}
                 </span>
-                <span className="text-sm text-slate-500">
-                  {formatarMoeda(d.valor)} <span className="font-medium text-slate-700">· {pct}%</span>
+                <span className="flex flex-col items-end leading-tight">
+                  <span className="text-sm font-medium text-slate-700">{formatarMoeda(d.valor)}</span>
+                  <span className="text-xs text-slate-400">{pct}%</span>
                 </span>
               </div>
             )
@@ -198,50 +209,58 @@ export function AreaEvolucao({ evolucao }: { evolucao: DashboardMes['evolucao'] 
   )
 }
 
-// Base compartilhada dos dois gráficos de barra mensais abaixo — mesmos 6 pontos de
-// dashboard-mes.ts:evolucao (já estendido com totalDescontoRastreador/qtdPlacasAtivadas), só
-// muda a cor/campo/formatação. Não exportado: só existe pra não duplicar as duas variações.
-function GraficoBarraMensal({
-  titulo,
-  valorAtual,
-  evolucao,
-  campo,
-  cor,
-  formatarTooltip,
-  formatarRotulo,
-}: {
-  titulo: string
-  valorAtual: string
-  evolucao: DashboardMes['evolucao']
-  campo: 'qtdPlacasAtivadas' | 'totalDescontoRastreador'
-  cor: string
-  formatarTooltip: (valor: number) => string
-  formatarRotulo: (valor: number) => string
-}) {
-  // A métrica só passou a ser registrada a partir de um certo mês (o resto da história do
-  // sistema é zero de verdade, não "sem dado") — corta os meses iniciais zerados pra não
-  // desperdiçar a largura do gráfico com barras vazias. Se TODOS os meses forem zero, mantém a
-  // janela cheia (não faz sentido cortar tudo).
+// Os 3 cards de indicador (ver grid "Composição e indicadores" em page.tsx) dividem a largura
+// com o donut de composição — 6 meses de barra+rótulo nesse espaço estreito colidem (rótulos de
+// moeda se sobrepõem). Mostra só os últimos 4 dessa janela; o gráfico principal de Evolução
+// (AreaEvolucao, sozinho na linha) continua mostrando os 6 meses completos.
+const MESES_MINI_GRAFICO = 4
+
+// A métrica só passou a ser registrada a partir de um certo mês (o resto da história do sistema
+// é zero de verdade, não "sem dado") — corta os meses iniciais zerados pra não desperdiçar a
+// largura do gráfico com barras/área vazias. Se TODOS os meses forem zero, mantém a janela
+// cheia (não faz sentido cortar tudo). Compartilhado pelos 3 gráficos abaixo.
+function recortarInicioZerado(
+  evolucao: DashboardMes['evolucao'],
+  campo: 'qtdPlacasAtivadas' | 'totalDescontoRastreador' | 'totalLiquido'
+) {
   const inicio = evolucao.findIndex((p) => p[campo] > 0)
-  const evolucaoExibida = inicio <= 0 ? evolucao : evolucao.slice(inicio)
+  const semZerosIniciais = inicio <= 0 ? evolucao : evolucao.slice(inicio)
+  return semZerosIniciais.length <= MESES_MINI_GRAFICO
+    ? semZerosIniciais
+    : semZerosIniciais.slice(-MESES_MINI_GRAFICO)
+}
+
+// Barras mensais + linha de referência da média do período, com o mês atual destacado em laranja
+// (os demais em navy translúcido) — substitui a antiga leitura só pelo texto grande acima do
+// donut/área. Diferente dos outros dois gráficos desta página de propósito (pedido do Samuel,
+// 10/08/2026: "gráficos melhores e diferentes"): aqui o ponto é comparar o mês atual contra a
+// própria média histórica, não contra o mês anterior isolado.
+export function GraficoTotalLiquido({ evolucao, atual }: { evolucao: DashboardMes['evolucao']; atual: number }) {
+  const dados = recortarInicioZerado(evolucao, 'totalLiquido')
+  const media = dados.length > 0 ? dados.reduce((soma, p) => soma + p.totalLiquido, 0) / dados.length : 0
+  const rotuloAtual = dados[dados.length - 1]?.rotulo
 
   return (
     <Cartao className="p-5 transition-shadow hover:shadow-md">
-      <p className="text-sm font-medium text-slate-700">{titulo}</p>
-      <p className="mt-2 text-2xl font-semibold text-slate-900">{valorAtual}</p>
+      <p className="text-sm font-medium text-slate-700">Total líquido no mês</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-900">{formatarMoeda(atual)}</p>
       <div className="mt-3 h-36">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={evolucaoExibida} margin={{ top: 20, right: 8, left: 8, bottom: 0 }} barCategoryGap="30%">
+          <BarChart data={dados} margin={{ top: 20, right: 8, left: 8, bottom: 0 }} barCategoryGap="30%">
             <XAxis dataKey="rotulo" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
             <YAxis hide />
-            <Tooltip formatter={(valor) => [formatarTooltip(Number(valor)), '']} cursor={{ fill: '#f8fafc' }} {...ESTILO_TOOLTIP} />
-            <Bar dataKey={campo} radius={[6, 6, 0, 0]} fill={cor} maxBarSize={48} animationDuration={500}>
+            <Tooltip formatter={(valor) => [formatarMoeda(Number(valor)), '']} cursor={{ fill: '#f8fafc' }} {...ESTILO_TOOLTIP} />
+            <ReferenceLine y={media} stroke="#cbd5e1" strokeDasharray="4 4" />
+            <Bar dataKey="totalLiquido" radius={[6, 6, 0, 0]} maxBarSize={48} animationDuration={500}>
+              {dados.map((p) => (
+                <Cell key={p.rotulo} fill="#002a54" opacity={p.rotulo === rotuloAtual ? 1 : 0.3} />
+              ))}
               <LabelList
-                dataKey={campo}
+                dataKey="totalLiquido"
                 position="top"
                 formatter={(valor: unknown) => {
                   const numero = Number(valor)
-                  return numero > 0 ? formatarRotulo(numero) : ''
+                  return numero > 0 ? formatarMoeda(numero) : ''
                 }}
                 style={{ fill: '#475569', fontSize: 11, fontWeight: 600 }}
               />
@@ -249,34 +268,99 @@ function GraficoBarraMensal({
           </BarChart>
         </ResponsiveContainer>
       </div>
+      <p className="mt-2 text-[11px] text-slate-400">Linha pontilhada: média do período exibido</p>
     </Cartao>
   )
 }
 
+// Combo barra (novas placas no mês) + linha (acumulado no período, eixo próprio oculto) — conta
+// a história de crescimento, não só o valor isolado do mês. Diferente dos outros dois gráficos
+// de propósito (ver comentário de GraficoTotalLiquido acima).
 export function GraficoPlacasAtivadas({ evolucao, atual }: { evolucao: DashboardMes['evolucao']; atual: number }) {
+  const base = recortarInicioZerado(evolucao, 'qtdPlacasAtivadas')
+  const dados = base.reduce<(DashboardMes['evolucao'][number] & { acumulado: number })[]>((acc, p) => {
+    const acumulado = (acc[acc.length - 1]?.acumulado ?? 0) + p.qtdPlacasAtivadas
+    acc.push({ ...p, acumulado })
+    return acc
+  }, [])
+
   return (
-    <GraficoBarraMensal
-      titulo="Placas ativadas no mês"
-      valorAtual={String(atual)}
-      evolucao={evolucao}
-      campo="qtdPlacasAtivadas"
-      cor="#f19100"
-      formatarTooltip={(valor) => `${valor} placa(s)`}
-      formatarRotulo={(valor) => String(valor)}
-    />
+    <Cartao className="p-5 transition-shadow hover:shadow-md">
+      <p className="text-sm font-medium text-slate-700">Placas ativadas no mês</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-900">{atual}</p>
+      <div className="mt-3 h-36">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={dados} margin={{ top: 20, right: 8, left: 8, bottom: 0 }} barCategoryGap="30%">
+            <XAxis dataKey="rotulo" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+            <YAxis yAxisId="qtd" hide />
+            <YAxis yAxisId="acumulado" hide />
+            <Tooltip
+              formatter={(valor, nome) => [
+                nome === 'acumulado' ? `${valor} no total` : `${valor} placa(s)`,
+                nome === 'acumulado' ? 'Acumulado no período' : 'No mês',
+              ]}
+              {...ESTILO_TOOLTIP}
+            />
+            <Bar yAxisId="qtd" dataKey="qtdPlacasAtivadas" radius={[6, 6, 0, 0]} fill="#f19100" maxBarSize={40} animationDuration={500}>
+              <LabelList
+                dataKey="qtdPlacasAtivadas"
+                position="top"
+                formatter={(valor: unknown) => (Number(valor) > 0 ? String(valor) : '')}
+                style={{ fill: '#475569', fontSize: 11, fontWeight: 600 }}
+              />
+            </Bar>
+            <Line
+              yAxisId="acumulado"
+              type="monotone"
+              dataKey="acumulado"
+              stroke="#002a54"
+              strokeWidth={2}
+              dot={{ r: 3, strokeWidth: 0, fill: '#002a54' }}
+              activeDot={{ r: 5 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-400">Barra: novas placas no mês · Linha: acumulado no período exibido</p>
+    </Cartao>
   )
 }
 
+// Área preenchida com gradiente (em vez de barra) — leitura mais "custo acumulado" do que
+// "evento discreto", coerente com o que a métrica representa (valor descontado dos consultores,
+// não uma contagem). Diferente dos outros dois gráficos de propósito (ver comentário de
+// GraficoTotalLiquido acima).
 export function GraficoDescontoRastreador({ evolucao, atual }: { evolucao: DashboardMes['evolucao']; atual: number }) {
+  const dados = recortarInicioZerado(evolucao, 'totalDescontoRastreador')
+
   return (
-    <GraficoBarraMensal
-      titulo="Desconto rastreador no mês"
-      valorAtual={formatarMoeda(atual)}
-      evolucao={evolucao}
-      campo="totalDescontoRastreador"
-      cor="#002a54"
-      formatarTooltip={formatarMoeda}
-      formatarRotulo={formatarMoeda}
-    />
+    <Cartao className="p-5 transition-shadow hover:shadow-md">
+      <p className="text-sm font-medium text-slate-700">Desconto rastreador no mês</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-900">{formatarMoeda(atual)}</p>
+      <div className="mt-3 h-36">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={dados} margin={{ top: 20, right: 8, left: 8, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gradiente-desconto-rastreador" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#002a54" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="#002a54" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="rotulo" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+            <YAxis hide />
+            <Tooltip formatter={(valor) => [formatarMoeda(Number(valor)), '']} {...ESTILO_TOOLTIP} />
+            <Area
+              type="monotone"
+              dataKey="totalDescontoRastreador"
+              stroke="#002a54"
+              strokeWidth={2.5}
+              fill="url(#gradiente-desconto-rastreador)"
+              dot={{ r: 3, strokeWidth: 0, fill: '#002a54' }}
+              activeDot={{ r: 5 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </Cartao>
   )
 }
