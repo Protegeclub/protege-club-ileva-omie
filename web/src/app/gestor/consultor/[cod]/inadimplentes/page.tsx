@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import type { ApuracaoRow } from '@/app/consultor/tipos'
-import { formatarDataBr, formatarMoeda, formatarTelefone } from '@/app/consultor/tipos'
+import { formatarMoeda } from '@/app/consultor/tipos'
+import { TabelaInadimplentes } from '@/app/consultor/tabelas-listagem'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
-import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 // Estado atual (quem está atrasado agora), igual web/src/app/consultor/inadimplentes/page.tsx —
@@ -26,7 +26,6 @@ export default async function GestorInadimplentesPage({
     .maybeSingle<Pick<ApuracaoRow, 'ano' | 'mes' | 'detalhe'>>()
 
   const inadimplentes = linha?.detalhe?.inadimplentes ?? []
-  const totalBoletos = inadimplentes.reduce((soma, i) => soma + i.valorBoleto, 0)
   const totalRecorrenciaEstimada = linha?.detalhe?.totalRecorrenciaEstimadaInadimplentes ?? 0
 
   return (
@@ -61,39 +60,7 @@ export default async function GestorInadimplentesPage({
             </p>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-brand-navy text-white">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Vencimento</th>
-                  <th className="px-4 py-2 font-medium">Associado</th>
-                  <th className="px-4 py-2 font-medium">Telefone</th>
-                  <th className="px-4 py-2 font-medium">Consultor</th>
-                  <th className="px-4 py-2 font-medium text-right">Valor boleto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inadimplentes.map((item, i) => (
-                  <tr key={i} className="border-t border-slate-100">
-                    <td className="px-4 py-2">{formatarDataBr(item.dt_vencimento)}</td>
-                    <td className="px-4 py-2">{item.associado}</td>
-                    <td className="px-4 py-2">{formatarTelefone(item.telefone)}</td>
-                    <td className="px-4 py-2">{item.consultorNome}</td>
-                    <td className="px-4 py-2 text-right">{formatarMoeda(item.valorBoleto)}</td>
-                  </tr>
-                ))}
-                {inadimplentes.length === 0 && (
-                  <LinhaVazia colSpan={5} texto="Nenhum inadimplente na carteira." />
-                )}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-brand-navy bg-slate-50 font-semibold">
-                  <td className="px-4 py-2" colSpan={4}>Total</td>
-                  <td className="px-4 py-2 text-right">{formatarMoeda(totalBoletos)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+          <TabelaInadimplentes linhas={inadimplentes} />
         </>
       )}
     </div>

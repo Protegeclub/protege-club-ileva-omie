@@ -1,7 +1,7 @@
-import { formatarDataBr, formatarMoeda, juntarItens } from '@/app/consultor/tipos'
+import { juntarItens } from '@/app/consultor/tipos'
+import { TabelaAdesoes } from '@/app/consultor/tabelas-listagem'
 import { Banner } from '@/lib/ui/banner'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
-import { LinhaVazia } from '@/lib/ui/linha-vazia'
 import { carregarContextoGestorConsultor } from '../dados'
 
 export default async function GestorAdesoesPage({
@@ -23,7 +23,6 @@ export default async function GestorAdesoesPage({
   const { ano, mes, equipeAtiva, linhasEquipe } = contexto
   const qs = `ano=${ano}&mes=${mes}&equipe=${equipeAtiva ? 1 : 0}`
   const adesoes = juntarItens(linhasEquipe, 'adesoes')
-  const total = adesoes.reduce((soma, item) => soma + item.valor, 0)
 
   return (
     <div className="space-y-4">
@@ -32,37 +31,7 @@ export default async function GestorAdesoesPage({
         voltarHref={`/gestor/consultor/${codConsultor}?${qs}`}
       />
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-brand-navy text-white">
-            <tr>
-              <th className="px-4 py-2 font-medium">Data Pagamento</th>
-              <th className="px-4 py-2 font-medium">Associado</th>
-              <th className="px-4 py-2 font-medium">Consultor</th>
-              <th className="px-4 py-2 font-medium text-right">Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            {adesoes.map((item, i) => (
-              <tr key={i} className="border-t border-slate-100">
-                <td className="px-4 py-2">{formatarDataBr(item.dt_pagamento)}</td>
-                <td className="px-4 py-2">{item.associado}</td>
-                <td className="px-4 py-2">{item.consultorNome}</td>
-                <td className="px-4 py-2 text-right">{formatarMoeda(item.valor)}</td>
-              </tr>
-            ))}
-            {adesoes.length === 0 && (
-              <LinhaVazia colSpan={4} texto="Nenhuma adesão no período." />
-            )}
-          </tbody>
-          <tfoot>
-            <tr className="border-t-2 border-brand-navy bg-slate-50 font-semibold">
-              <td className="px-4 py-2" colSpan={3}>Total</td>
-              <td className="px-4 py-2 text-right">{formatarMoeda(total)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      <TabelaAdesoes linhas={adesoes} />
     </div>
   )
 }
