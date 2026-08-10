@@ -71,15 +71,34 @@ export interface CategoriaOmie {
   conta_receita: 'S' | 'N'
 }
 
+interface ListarCategoriasResposta {
+  pagina: number
+  total_de_paginas: number
+  categoria_cadastro: CategoriaOmie[]
+}
+
 // Só as categorias de despesa (a comissão do consultor é sempre uma saída de caixa) — usado na
 // tela de configuração (Gestor escolhe uma vez, ver omie_configuracao). Categoria financeira é
 // decisão contábil do cliente, o sistema não deveria supor uma.
+//
+// Pagina até o fim (mesmo padrão de listarTodosClientesOmie acima) — bug real encontrado em
+// 10/08/2026: só buscava a página 1 (500 registros_por_pagina, mas a Omie limita ~100 por
+// página de verdade); a conta tem 156 categorias no total, então a página 2 inteira ficava de
+// fora do dropdown — "Comissões s/ adesões e mensalidades" (2.09.99), que o cliente precisa
+// usar, estava exatamente nela.
 export async function listarCategoriasDespesaOmie(): Promise<CategoriaOmie[]> {
-  const resposta = await omieCall<{ categoria_cadastro: CategoriaOmie[] }>('geral/categorias', {
-    call: 'ListarCategorias',
-    param: [{ pagina: 1, registros_por_pagina: 500, filtrar_apenas_ativo: 'S' }],
-  })
-  return resposta.categoria_cadastro.filter((c) => c.conta_despesa === 'S')
+  const todas: CategoriaOmie[] = []
+  let pagina = 1
+  while (true) {
+    const resposta = await omieCall<ListarCategoriasResposta>('geral/categorias', {
+      call: 'ListarCategorias',
+      param: [{ pagina, registros_por_pagina: 500, filtrar_apenas_ativo: 'S' }],
+    })
+    todas.push(...resposta.categoria_cadastro)
+    if (pagina >= resposta.total_de_paginas) break
+    pagina++
+  }
+  return todas.filter((c) => c.conta_despesa === 'S')
 }
 
 export interface ContaCorrenteOmie {

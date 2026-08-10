@@ -35,6 +35,85 @@ function paraDataBr(dataIso: string): string {
   return `${dia}/${mes}/${ano}`
 }
 
+// Categoria financeira tem ~130 opções e conta corrente também acumula bastante (ver
+// lib/omie/client.ts) — um <select> nativo simples exigia rolar a lista inteira pra achar uma.
+// Mesmo padrão de busca já usado abaixo (vínculo de cliente Omie por nome): campo de texto filtra
+// uma lista clicável. Genérico (não só categoria) pra reaproveitar exatamente a mesma busca na
+// conta corrente, em vez de duplicar o mesmo componente com nomes diferentes.
+function SeletorBusca<T>({
+  itens,
+  valorEscolhido,
+  onEscolher,
+  obterValor,
+  obterRotulo,
+  placeholder,
+}: {
+  itens: T[]
+  valorEscolhido: string
+  onEscolher: (valor: string) => void
+  obterValor: (item: T) => string
+  obterRotulo: (item: T) => string
+  placeholder: string
+}) {
+  const [termo, setTermo] = useState('')
+  const [buscando, setBuscando] = useState(!valorEscolhido)
+  const itemAtual = itens.find((item) => obterValor(item) === valorEscolhido)
+
+  const filtrados = useMemo(() => {
+    const termoNormalizado = termo.trim().toLowerCase()
+    if (!termoNormalizado) return itens
+    return itens.filter((item) => obterRotulo(item).toLowerCase().includes(termoNormalizado))
+  }, [itens, termo, obterRotulo])
+
+  if (!buscando && itemAtual) {
+    return (
+      <div className="mt-1.5 flex h-10 items-center justify-between gap-2 rounded-lg border border-slate-300 px-3 text-sm">
+        <span className="truncate text-slate-700">{obterRotulo(itemAtual)}</span>
+        <button type="button" className="shrink-0 text-xs text-brand-blue hover:underline" onClick={() => setBuscando(true)}>
+          Trocar
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={termo}
+        onChange={(e) => setTermo(e.target.value)}
+        className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
+      />
+      <div className="mt-1.5 max-h-48 overflow-y-auto rounded-lg border border-slate-200">
+        {filtrados.length === 0 ? (
+          <p className="p-2 text-xs text-slate-400">Nenhum resultado encontrado.</p>
+        ) : (
+          filtrados.map((item) => {
+            const valor = obterValor(item)
+            return (
+              <button
+                key={valor}
+                type="button"
+                onClick={() => {
+                  onEscolher(valor)
+                  setTermo('')
+                  setBuscando(false)
+                }}
+                className={`block w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 ${
+                  valor === valorEscolhido ? 'bg-sky-50 font-medium text-brand-navy' : 'text-slate-700'
+                }`}
+              >
+                {obterRotulo(item)}
+              </button>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ConfiguracaoOmieCard({
   configuracaoInicial,
 }: {
@@ -125,33 +204,25 @@ function ConfiguracaoOmieCard({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-medium text-slate-500">Categoria financeira</label>
-                  <select
-                    value={categoriaEscolhida}
-                    onChange={(e) => setCategoriaEscolhida(e.target.value)}
-                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
-                  >
-                    <option value="">Selecione…</option>
-                    {opcoes.categorias.map((c) => (
-                      <option key={c.codigo} value={c.codigo}>
-                        {c.codigo} — {c.descricao}
-                      </option>
-                    ))}
-                  </select>
+                  <SeletorBusca
+                    itens={opcoes.categorias}
+                    valorEscolhido={categoriaEscolhida}
+                    onEscolher={setCategoriaEscolhida}
+                    obterValor={(c) => c.codigo}
+                    obterRotulo={(c) => c.descricao}
+                    placeholder="Buscar categoria…"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500">Conta corrente</label>
-                  <select
-                    value={contaEscolhida}
-                    onChange={(e) => setContaEscolhida(e.target.value)}
-                    className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
-                  >
-                    <option value="">Selecione…</option>
-                    {opcoes.contas.map((c) => (
-                      <option key={c.nCodCC} value={String(c.nCodCC)}>
-                        {c.descricao} ({c.tipo})
-                      </option>
-                    ))}
-                  </select>
+                  <SeletorBusca
+                    itens={opcoes.contas}
+                    valorEscolhido={contaEscolhida}
+                    onEscolher={setContaEscolhida}
+                    obterValor={(c) => String(c.nCodCC)}
+                    obterRotulo={(c) => `${c.descricao} (${c.tipo})`}
+                    placeholder="Buscar conta corrente…"
+                  />
                 </div>
               </div>
               {erro && <p className="text-sm text-red-600">{erro}</p>}
