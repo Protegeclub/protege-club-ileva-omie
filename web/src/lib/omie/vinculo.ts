@@ -6,28 +6,60 @@ const DURACAO_CACHE_MS = 30 * 60 * 1000
 let cache: { dados: ClienteOmie[]; expiraEm: number } | null = null
 let buscaEmAndamento: Promise<ClienteOmie[]> | null = null
 
-// Cacheado por 30min em memória do processo — a lista de clientes/fornecedores da Omie
-// (~3.900 registros, ~4.9MB serializada) não muda a ponto de precisar ser buscada a cada
-// abertura da tela de vínculo. Não usa unstable_cache: o Data Cache da Vercel rejeita entradas
-// acima de 2MB (falha silenciosa, só um warning no log), então o cache nunca gravava e toda
-// visita refazia as 8 chamadas paginadas à API — e quando duas coincidiam (navegação + prefetch,
-// reload rápido, múltiplas instâncias serverless concorrentes), a própria Omie rejeitava como
-// "consumo redundante" (e o cooldown dela parece renovar a cada nova tentativa durante a janela
-// de bloqueio). A dedupe de busca em andamento evita rodar a paginação duas vezes ao mesmo tempo
-// na mesma instância; o fallback pro cache expirado abaixo cobre o caso de outra instância ter
-// disparado o bloqueio — melhor servir dado com alguns minutos de atraso do que derrubar a tela.
+async function lerCacheSupabase(): Promise<{ dados: ClienteOmie[]; atualizadoEm: number } | null> {
+  const admin = createSupabaseAdminClient()
+  const { data } = await admin
+    .from('omie_clientes_cache')
+    .select('dados, atualizado_em')
+    .eq('id', 1)
+    .maybeSingle()
+  if (!data) return null
+  return { dados: data.dados as ClienteOmie[], atualizadoEm: new Date(data.atualizado_em).getTime() }
+}
+
+async function gravarCacheSupabase(dados: ClienteOmie[]) {
+  const admin = createSupabaseAdminClient()
+  await admin
+    .from('omie_clientes_cache')
+    .upsert({ id: 1, dados, atualizado_em: new Date().toISOString() })
+}
+
+// Cacheado por 30min, em duas camadas: memória do processo (rápido, mas some a cada instância
+// fria da Vercel) + tabela omie_clientes_cache no Supabase (compartilhada entre instâncias). A
+// lista de clientes/fornecedores da Omie (~3.900 registros, ~4.9MB serializada) não muda a ponto
+// de precisar ser buscada a cada abertura da tela de vínculo, e buscar isso na Omie é lento (~8
+// chamadas paginadas sequenciais, 10-40s de espera visível pro Gestor) — sem a camada
+// compartilhada, toda instância fria paga esse custo de novo, mesmo dentro da mesma janela de
+// 30min. Não usa unstable_cache: o Data Cache da Vercel rejeita entradas acima de 2MB (falha
+// silenciosa, só um warning no log), então esse cache nunca gravava de fato. A dedupe de busca em
+// andamento evita rodar a paginação duas vezes ao mesmo tempo na mesma instância; os fallbacks
+// pro cache (local ou remoto, mesmo expirado) cobrem o caso de a Omie rejeitar como "consumo
+// redundante" — melhor servir dado com alguns minutos de atraso do que derrubar a tela.
 export async function listarTodosClientesOmieCacheado(): Promise<ClienteOmie[]> {
   if (cache && cache.expiraEm > Date.now()) return cache.dados
   if (buscaEmAndamento) return buscaEmAndamento
 
-  buscaEmAndamento = listarTodosClientesOmie()
+  buscaEmAndamento = (async () => {
+    const remoto = await lerCacheSupabase().catch(() => null)
+    if (remoto && Date.now() - remoto.atualizadoEm < DURACAO_CACHE_MS) {
+      cache = { dados: remoto.dados, expiraEm: remoto.atualizadoEm + DURACAO_CACHE_MS }
+      return remoto.dados
+    }
+
+    try {
+      const dados = await listarTodosClientesOmie()
+      cache = { dados, expiraEm: Date.now() + DURACAO_CACHE_MS }
+      gravarCacheSupabase(dados).catch((e) => console.error('Falha ao gravar cache de clientes Omie:', e))
+      return dados
+    } catch (e) {
+      if (cache) return cache.dados
+      if (remoto) return remoto.dados
+      throw e
+    }
+  })()
+
   try {
-    const dados = await buscaEmAndamento
-    cache = { dados, expiraEm: Date.now() + DURACAO_CACHE_MS }
-    return dados
-  } catch (e) {
-    if (cache) return cache.dados
-    throw e
+    return await buscaEmAndamento
   } finally {
     buscaEmAndamento = null
   }
