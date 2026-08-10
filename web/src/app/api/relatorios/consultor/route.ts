@@ -114,17 +114,30 @@ export async function GET(request: NextRequest) {
           .filter((l) => l.cod_equipe === linhaPropria.cod_equipe)
           .reduce((soma, l) => soma + (l.detalhe?.adesoes?.length ?? 0), 0) - totalAdesoes
 
-      const pdf = await gerarPdfDashboard(nomeConsultor, ano, mes, {
-        totalAdesoes,
-        totalEquipe: Math.max(totalEquipe, 0),
-        totalPremiacaoIndividual: linhaPropria.total_premiacao_individual,
-        totalPremiacaoEquipe: linhaPropria.total_premiacao_equipe,
-        totalAdesao: linhaPropria.total_adesao,
-        totalRecorrencia: linhaPropria.total_recorrencia,
-        totalDescontoRastreador: linhaPropria.total_desconto_rastreador,
-        totalComissaoGerencial: linhaPropria.total_comissao_gerencial,
-        totalBonusNivel: linhaPropria.total_bonus_nivel,
-      })
+      const pdf = await gerarPdfDashboard(
+        nomeConsultor,
+        ano,
+        mes,
+        {
+          totalAdesoes,
+          totalEquipe: Math.max(totalEquipe, 0),
+          totalPremiacaoIndividual: linhaPropria.total_premiacao_individual,
+          totalPremiacaoEquipe: linhaPropria.total_premiacao_equipe,
+          totalAdesao: linhaPropria.total_adesao,
+          totalRecorrencia: linhaPropria.total_recorrencia,
+          totalDescontoRastreador: linhaPropria.total_desconto_rastreador,
+          totalComissaoGerencial: linhaPropria.total_comissao_gerencial,
+          totalBonusNivel: linhaPropria.total_bonus_nivel,
+        },
+        {
+          adesoes: linhasEquipe.flatMap((l) => l.detalhe?.adesoes ?? []),
+          recorrencias: linhasEquipe.flatMap((l) => l.detalhe?.recorrencias ?? []),
+          descontosRastreador: linhasEquipe.flatMap((l) => l.detalhe?.descontosRastreador ?? []),
+          placasAtivadas: linhasEquipe.flatMap((l) => l.detalhe?.placasAtivadas ?? []),
+          inadimplentes: linhaPropria.detalhe?.inadimplentes ?? [],
+          totalRecorrenciaEstimadaInadimplentes: linhaPropria.detalhe?.totalRecorrenciaEstimadaInadimplentes ?? 0,
+        }
+      )
       return responderPdf(pdf, `apuracao-${codConsultor}-${ano}-${mes}`)
     }
 

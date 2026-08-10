@@ -5,7 +5,7 @@ import type {
   PlacaAtivadaItem,
   RecorrenciaItem,
 } from '@/lib/apuracao/mensal'
-import { criarDocumento, desenharCabecalho, desenharTabela, formatarMoeda, rodape, type ColunaTabela } from './pdf-utils'
+import { AZUL, CINZA, MARGEM, criarDocumento, desenharCabecalho, desenharTabela, formatarMoeda, rodape, type ColunaTabela } from './pdf-utils'
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -57,6 +57,38 @@ function colunasBoleto<T extends ItemComBoleto>(): ColunaTabela<T>[] {
   ]
 }
 
+function colunasRastreadores(): ColunaTabela<DescontoRastreadorItem>[] {
+  return [
+    { titulo: 'Contrato', largura: 75, valor: (i) => formatarDataBr(i.dt_contrato) },
+    { titulo: 'Associado', largura: 250, valor: (i) => i.associado },
+    { titulo: 'Placa', largura: 80, valor: (i) => i.placa },
+    { titulo: 'Consultor', largura: 230, valor: (i) => i.consultorNome },
+    { titulo: 'Valor', largura: 90, alinhar: 'right', valor: (i) => formatarMoeda(i.valor) },
+  ]
+}
+
+function colunasPlacasAtivadas(): ColunaTabela<PlacaAtivadaItem>[] {
+  return [
+    { titulo: 'Data Contrato', largura: 80, valor: (i) => formatarDataBr(i.dt_contrato) },
+    { titulo: 'Associado', largura: 280, valor: (i) => i.associado },
+    { titulo: 'Placa', largura: 90, valor: (i) => i.placa },
+    { titulo: 'Consultor', largura: 250, valor: (i) => i.consultorNome },
+  ]
+}
+
+function colunasInadimplentes(): ColunaTabela<InadimplenteItem>[] {
+  return [
+    { titulo: 'Vencimento', largura: 70, valor: (i) => formatarDataBr(i.dt_vencimento) },
+    { titulo: 'Cód. Boleto', largura: 65, valor: (i) => formatarCodCobranca(i.cod_cobranca) },
+    { titulo: 'Referência', largura: 65, valor: (i) => formatarReferenciaMensalidade(i.referencia) },
+    { titulo: 'Associado', largura: 160, valor: (i) => i.associado },
+    { titulo: 'Placa', largura: 65, valor: (i) => i.placa },
+    { titulo: 'Telefone', largura: 90, valor: (i) => i.telefone || '—' },
+    { titulo: 'Consultor', largura: 155, valor: (i) => i.consultorNome },
+    { titulo: 'Valor boleto', largura: 80, alinhar: 'right', valor: (i) => formatarMoeda(i.valorBoleto) },
+  ]
+}
+
 export interface ResumoDashboard {
   totalAdesoes: number
   totalEquipe: number
@@ -74,13 +106,27 @@ interface LinhaResumoDashboard {
   valor: string
 }
 
+export interface DetalhesDashboard {
+  adesoes: AdesaoItem[]
+  recorrencias: RecorrenciaItem[]
+  descontosRastreador: DescontoRastreadorItem[]
+  placasAtivadas: PlacaAtivadaItem[]
+  inadimplentes: InadimplenteItem[]
+  totalRecorrenciaEstimadaInadimplentes: number
+}
+
+// "Dashboard completo" — o resumo de sempre, seguido de uma seção por tipo de lançamento (cada
+// uma numa página nova, mesmas colunas dos relatórios individuais). Landscape do início ao fim
+// porque 4 das 5 seções de detalhe precisam da largura extra; o resumo (2 colunas) cabe folgado
+// nela também.
 export async function gerarPdfDashboard(
   nomeConsultor: string,
   ano: number,
   mes: number,
-  resumo: ResumoDashboard
+  resumo: ResumoDashboard,
+  detalhes: DetalhesDashboard
 ): Promise<Buffer> {
-  const { doc, fim } = criarDocumento()
+  const { doc, fim } = criarDocumento({ layout: 'landscape' })
   desenharCabecalho(doc, 'Apuração de Comissão — ProtegeClub', [nomeConsultor, periodo(ano, mes)])
 
   const totalReceber =
@@ -91,10 +137,6 @@ export async function gerarPdfDashboard(
     resumo.totalPremiacaoEquipe +
     resumo.totalComissaoGerencial +
     resumo.totalBonusNivel
-
-  doc.fontSize(12).fillColor('#1F3B57').font('Helvetica-Bold').text('Total a receber')
-  doc.fontSize(22).fillColor('#111111').text(formatarMoeda(totalReceber))
-  doc.moveDown(1)
 
   const linhas: LinhaResumoDashboard[] = [
     { rotulo: 'Total de adesões', valor: String(resumo.totalAdesoes) },
@@ -114,11 +156,74 @@ export async function gerarPdfDashboard(
   desenharTabela<LinhaResumoDashboard>(
     doc,
     [
-      { titulo: 'Métrica', largura: 380, valor: (l) => l.rotulo },
-      { titulo: 'Valor', largura: 135, alinhar: 'right', valor: (l) => l.valor },
+      { titulo: 'Métrica', largura: 540, valor: (l) => l.rotulo },
+      { titulo: 'Valor', largura: 190, alinhar: 'right', valor: (l) => l.valor },
     ],
     linhas
   )
+
+  doc.moveDown(0.8)
+  doc.fontSize(12).fillColor(AZUL).font('Helvetica-Bold').text('Total a receber')
+  doc.fontSize(22).fillColor('#111111').text(formatarMoeda(totalReceber))
+  doc.moveDown(1)
+
+  function novaSecao(titulo: string) {
+    doc.addPage()
+    doc.fillColor(AZUL).fontSize(15).font('Helvetica-Bold').text(titulo, { align: 'center' })
+    doc.fillColor(CINZA).fontSize(10).font('Helvetica').text(`${nomeConsultor} — ${periodo(ano, mes)}`, {
+      align: 'center',
+    })
+    doc.moveDown(0.8)
+    doc.strokeColor(AZUL).lineWidth(1).moveTo(MARGEM, doc.y).lineTo(doc.page.width - MARGEM, doc.y).stroke()
+    doc.moveDown(0.8)
+  }
+
+  novaSecao('Adesões (a receber no período)')
+  const totalAdesoesValor = detalhes.adesoes.reduce((s, i) => s + i.valor, 0)
+  desenharTabela(doc, colunasBoleto<AdesaoItem>(), detalhes.adesoes, {
+    linhaTotal: { rotulo: 'Total', valor: formatarMoeda(totalAdesoesValor) },
+  })
+
+  novaSecao('Recorrência')
+  const totalRecorrenciaValor = detalhes.recorrencias.reduce((s, i) => s + i.valor, 0)
+  desenharTabela(doc, colunasBoleto<RecorrenciaItem>(), detalhes.recorrencias, {
+    linhaTotal: { rotulo: 'Total', valor: formatarMoeda(totalRecorrenciaValor) },
+  })
+
+  novaSecao('Desconto Rastreadores')
+  const totalRastreadoresValor = detalhes.descontosRastreador.reduce((s, i) => s + i.valor, 0)
+  desenharTabela(doc, colunasRastreadores(), detalhes.descontosRastreador, {
+    linhaTotal: { rotulo: 'Total', valor: formatarMoeda(totalRastreadoresValor) },
+  })
+
+  novaSecao('Placas Ativadas')
+  doc
+    .fontSize(9)
+    .fillColor('#7A7A7A')
+    .text(
+      'Veículos cujo contrato começou no período — visão operacional (igual ao painel ' +
+        '"Ativações" do Ileva), diferente da comissão de adesão (que só conta quando o boleto é ' +
+        'efetivamente pago).'
+    )
+  doc.moveDown(0.6)
+  desenharTabela(doc, colunasPlacasAtivadas(), detalhes.placasAtivadas, {
+    linhaTotal: { rotulo: 'Total de placas ativadas', valor: String(detalhes.placasAtivadas.length) },
+  })
+
+  novaSecao('Inadimplentes')
+  doc
+    .fontSize(11)
+    .fillColor(AZUL)
+    .font('Helvetica-Bold')
+    .text(
+      `Valor estimado de recorrência a receber em caso de pagamento: ${formatarMoeda(detalhes.totalRecorrenciaEstimadaInadimplentes)}`
+    )
+  doc.moveDown(0.6)
+  doc.font('Helvetica')
+  const totalInadimplentesValor = detalhes.inadimplentes.reduce((s, i) => s + i.valorBoleto, 0)
+  desenharTabela(doc, colunasInadimplentes(), detalhes.inadimplentes, {
+    linhaTotal: { rotulo: 'Total', valor: formatarMoeda(totalInadimplentesValor) },
+  })
 
   rodape(doc)
   doc.end()
@@ -173,23 +278,9 @@ export async function gerarPdfRastreadores(
   desenharCabecalho(doc, 'Desconto Rastreadores', [nomeConsultor, periodo(ano, mes)])
 
   const total = itens.reduce((s, i) => s + i.valor, 0)
-  desenharTabela(
-    doc,
-    [
-      { titulo: 'Contrato', largura: 75, valor: (i: DescontoRastreadorItem) => formatarDataBr(i.dt_contrato) },
-      { titulo: 'Associado', largura: 250, valor: (i: DescontoRastreadorItem) => i.associado },
-      { titulo: 'Placa', largura: 80, valor: (i: DescontoRastreadorItem) => i.placa },
-      { titulo: 'Consultor', largura: 230, valor: (i: DescontoRastreadorItem) => i.consultorNome },
-      {
-        titulo: 'Valor',
-        largura: 90,
-        alinhar: 'right',
-        valor: (i: DescontoRastreadorItem) => formatarMoeda(i.valor),
-      },
-    ],
-    itens,
-    { linhaTotal: { rotulo: 'Total', valor: formatarMoeda(total) } }
-  )
+  desenharTabela(doc, colunasRastreadores(), itens, {
+    linhaTotal: { rotulo: 'Total', valor: formatarMoeda(total) },
+  })
 
   rodape(doc)
   doc.end()
@@ -215,17 +306,9 @@ export async function gerarPdfPlacasAtivadas(
     )
   doc.moveDown(0.6)
 
-  desenharTabela(
-    doc,
-    [
-      { titulo: 'Data Contrato', largura: 80, valor: (i: PlacaAtivadaItem) => formatarDataBr(i.dt_contrato) },
-      { titulo: 'Associado', largura: 280, valor: (i: PlacaAtivadaItem) => i.associado },
-      { titulo: 'Placa', largura: 90, valor: (i: PlacaAtivadaItem) => i.placa },
-      { titulo: 'Consultor', largura: 250, valor: (i: PlacaAtivadaItem) => i.consultorNome },
-    ],
-    itens,
-    { linhaTotal: { rotulo: 'Total de placas ativadas', valor: String(itens.length) } }
-  )
+  desenharTabela(doc, colunasPlacasAtivadas(), itens, {
+    linhaTotal: { rotulo: 'Total de placas ativadas', valor: String(itens.length) },
+  })
 
   rodape(doc)
   doc.end()
@@ -249,26 +332,9 @@ export async function gerarPdfInadimplentes(
   doc.font('Helvetica')
 
   const total = itens.reduce((s, i) => s + i.valorBoleto, 0)
-  desenharTabela(
-    doc,
-    [
-      { titulo: 'Vencimento', largura: 70, valor: (i: InadimplenteItem) => formatarDataBr(i.dt_vencimento) },
-      { titulo: 'Cód. Boleto', largura: 65, valor: (i: InadimplenteItem) => formatarCodCobranca(i.cod_cobranca) },
-      { titulo: 'Referência', largura: 65, valor: (i: InadimplenteItem) => formatarReferenciaMensalidade(i.referencia) },
-      { titulo: 'Associado', largura: 160, valor: (i: InadimplenteItem) => i.associado },
-      { titulo: 'Placa', largura: 65, valor: (i: InadimplenteItem) => i.placa },
-      { titulo: 'Telefone', largura: 90, valor: (i: InadimplenteItem) => i.telefone || '—' },
-      { titulo: 'Consultor', largura: 155, valor: (i: InadimplenteItem) => i.consultorNome },
-      {
-        titulo: 'Valor boleto',
-        largura: 80,
-        alinhar: 'right',
-        valor: (i: InadimplenteItem) => formatarMoeda(i.valorBoleto),
-      },
-    ],
-    itens,
-    { linhaTotal: { rotulo: 'Total', valor: formatarMoeda(total) } }
-  )
+  desenharTabela(doc, colunasInadimplentes(), itens, {
+    linhaTotal: { rotulo: 'Total', valor: formatarMoeda(total) },
+  })
 
   rodape(doc)
   doc.end()

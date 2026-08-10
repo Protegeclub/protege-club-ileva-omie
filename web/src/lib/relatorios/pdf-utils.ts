@@ -8,10 +8,10 @@ export const MARGEM = 40
 // mediria uma altura de "quebra" desproporcional) — acima disso a célula volta a truncar com
 // "..." em vez de deixar 1 dado sujo esticar a linha inteira e distorcer o layout da tabela.
 const ALTURA_MAX_CELULA = 120
-const PAD_V_CABECALHO = 8
-const PAD_V_CORPO = 6
-const PISO_CABECALHO = 12
-const PISO_CORPO = 11
+const PAD_V_CABECALHO = 11
+const PAD_V_CORPO = 10
+const PISO_CABECALHO = 13
+const PISO_CORPO = 12
 
 export function formatarMoeda(valor: number) {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -137,11 +137,15 @@ export function desenharTabela<T>(
 
     const y = doc.y
     if (i % 2 === 1) {
-      doc.rect(MARGEM, y - 2, larguraTotal, alturaLinha).fill('#EAF1F8')
+      doc.rect(MARGEM, y, larguraTotal, alturaLinha).fill('#EAF1F8')
       doc.fillColor('#222222')
     }
+    // Texto centralizado verticalmente na faixa da linha (mesma técnica já usada no cabeçalho,
+    // ver cabecalhoTabela acima) — antes o texto era desenhado colado no topo da faixa
+    // (offset 0), com toda a folga do PAD_V_CORPO acumulada só embaixo, o que lia como "linha
+    // colada na de cima" mesmo depois de aumentar a altura da linha.
     colunas.forEach((c, j) => {
-      doc.text(celulas[j].texto, xs[j] + 4, y, {
+      doc.text(celulas[j].texto, xs[j] + 4, y + PAD_V_CORPO / 2, {
         width: c.largura - 8,
         align: c.alinhar ?? 'left',
         height: alturaConteudo,
