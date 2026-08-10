@@ -1,15 +1,17 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { NOMES_MESES } from '@/app/consultor/tipos'
-import { Botao } from '@/lib/ui/botao'
-import { IconeAtualizar, IconeUsuarios } from '@/lib/ui/icones-sidebar'
+import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
+import { Cartao } from '@/lib/ui/cartao'
+import { IconeUsuarios } from '@/lib/ui/icones-sidebar'
 
 // Igual a web/src/app/consultor/filtros-toolbar.tsx, mas sem o botão Sair (o menu lateral do
-// Gestor já tem um no rodapé) e com um link de volta para a lista de consultores. Era uma
-// sidebar vertical; virou uma barra horizontal no topo do conteúdo quando o menu lateral de
-// navegação (SidebarGestor) passou a ocupar a coluna esquerda da tela.
+// Gestor já tem um no rodapé). Era uma sidebar vertical; virou uma barra horizontal no topo do
+// conteúdo quando o menu lateral de navegação (SidebarGestor) passou a ocupar a coluna esquerda
+// da tela. O link "Voltar para lista" que existia aqui foi removido — cada sub-tela já tem seu
+// próprio "Voltar ao resumo" (ver CabecalhoPagina), então os dois juntos só duplicavam a mesma
+// ação e confundiam qual usar.
 export function FiltrosToolbarGestor() {
   const pathname = usePathname()
   const router = useRouter()
@@ -32,67 +34,59 @@ export function FiltrosToolbarGestor() {
     router.push(`${pathname}?${params.toString()}`)
   }
 
+  if (ocultarPeriodo) {
+    return (
+      <Cartao className="mb-6 flex items-center justify-end p-3">
+        <BotaoAtualizarPagina />
+      </Cartao>
+    )
+  }
+
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
-      <Link href="/gestor/consultores" className="text-sm text-slate-500 hover:text-brand-navy hover:underline">
-        ← Voltar para lista
-      </Link>
+    <Cartao className="mb-6 flex flex-wrap items-center gap-3 p-3">
+      <div className="flex h-11 items-center gap-1 rounded-lg bg-slate-100 p-1">
+        {anosDisponiveis.map((a) => (
+          <button
+            key={a}
+            type="button"
+            onClick={() => irPara({ ano: a })}
+            className={`h-full rounded-md px-3 text-sm font-medium transition-colors ${
+              a === ano ? 'bg-white text-brand-navy shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {a}
+          </button>
+        ))}
+      </div>
 
-      {!ocultarPeriodo && (
-        <>
-          <div className="h-6 w-px bg-slate-200" aria-hidden />
+      <select
+        value={mes}
+        onChange={(e) => irPara({ mes: Number(e.target.value) })}
+        className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
+      >
+        {NOMES_MESES.map((nome, i) => (
+          <option key={nome} value={i + 1}>
+            {nome}
+          </option>
+        ))}
+      </select>
 
-          <div>
-            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Ano</p>
-            <div className="flex gap-1.5">
-              {anosDisponiveis.map((a) => (
-                <button
-                  key={a}
-                  onClick={() => irPara({ ano: a })}
-                  className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                    a === ano
-                      ? 'border-brand-navy bg-brand-navy text-white'
-                      : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="h-6 w-px bg-slate-200" aria-hidden />
 
-          <div>
-            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Mês</p>
-            <select
-              value={mes}
-              onChange={(e) => irPara({ mes: Number(e.target.value) })}
-              className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
-            >
-              {NOMES_MESES.map((nome, i) => (
-                <option key={nome} value={i + 1}>
-                  {nome}
-                </option>
-              ))}
-            </select>
-          </div>
+      <label className="flex h-11 items-center gap-2 text-sm text-slate-600">
+        <input
+          type="checkbox"
+          checked={equipe}
+          onChange={(e) => irPara({ equipe: e.target.checked })}
+          className="rounded border-slate-300 text-brand-navy focus-visible:ring-brand-blue"
+        />
+        <IconeUsuarios className="h-4 w-4 text-slate-400" />
+        Visualizar dados da equipe
+      </label>
 
-          <label className="flex items-center gap-2 text-sm text-slate-600">
-            <input
-              type="checkbox"
-              checked={equipe}
-              onChange={(e) => irPara({ equipe: e.target.checked })}
-              className="rounded border-slate-300 text-brand-navy focus-visible:ring-brand-blue"
-            />
-            <IconeUsuarios className="h-4 w-4 text-slate-400" />
-            Visualizar dados da equipe
-          </label>
-        </>
-      )}
-
-      <Botao type="button" variante="fantasma" className="ml-auto h-11" onClick={() => router.refresh()}>
-        <IconeAtualizar className="h-4 w-4" />
-        Atualizar
-      </Botao>
-    </div>
+      <div className="ml-auto">
+        <BotaoAtualizarPagina />
+      </div>
+    </Cartao>
   )
 }

@@ -1,8 +1,9 @@
 'use client'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Botao } from '@/lib/ui/botao'
-import { IconeAtualizar, IconeUsuarios } from '@/lib/ui/icones-sidebar'
+import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
+import { Cartao } from '@/lib/ui/cartao'
+import { IconeUsuarios } from '@/lib/ui/icones-sidebar'
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -42,42 +43,37 @@ export function FiltrosToolbar() {
   }
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
-      <div>
-        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Ano</p>
-        <div className="flex gap-1.5">
-          {anosDisponiveis.map((a) => (
-            <button
-              key={a}
-              onClick={() => irPara({ ano: a })}
-              className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                a === ano
-                  ? 'border-brand-navy bg-brand-navy text-white'
-                  : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {a}
-            </button>
-          ))}
-        </div>
+    <Cartao className="mb-6 flex flex-wrap items-center gap-3 p-3">
+      <div className="flex h-11 items-center gap-1 rounded-lg bg-slate-100 p-1">
+        {anosDisponiveis.map((a) => (
+          <button
+            key={a}
+            type="button"
+            onClick={() => irPara({ ano: a })}
+            className={`h-full rounded-md px-3 text-sm font-medium transition-colors ${
+              a === ano ? 'bg-white text-brand-navy shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {a}
+          </button>
+        ))}
       </div>
 
-      <div>
-        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Mês</p>
-        <select
-          value={mes}
-          onChange={(e) => irPara({ mes: Number(e.target.value) })}
-          className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
-        >
-          {NOMES_MESES.map((nome, i) => (
-            <option key={nome} value={i + 1}>
-              {nome}
-            </option>
-          ))}
-        </select>
-      </div>
+      <select
+        value={mes}
+        onChange={(e) => irPara({ mes: Number(e.target.value) })}
+        className="h-11 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-700 focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
+      >
+        {NOMES_MESES.map((nome, i) => (
+          <option key={nome} value={i + 1}>
+            {nome}
+          </option>
+        ))}
+      </select>
 
-      <label className="flex items-center gap-2 text-sm text-slate-600">
+      <div className="h-6 w-px bg-slate-200" aria-hidden />
+
+      <label className="flex h-11 items-center gap-2 text-sm text-slate-600">
         <input
           type="checkbox"
           checked={equipe}
@@ -88,10 +84,9 @@ export function FiltrosToolbar() {
         Visualizar dados da equipe
       </label>
 
-      <Botao type="button" variante="fantasma" className="ml-auto h-11" onClick={() => router.refresh()}>
-        <IconeAtualizar className="h-4 w-4" />
-        Atualizar
-      </Botao>
-    </div>
+      <div className="ml-auto">
+        <BotaoAtualizarPagina />
+      </div>
+    </Cartao>
   )
 }
