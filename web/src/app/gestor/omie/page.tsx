@@ -1,7 +1,8 @@
+import { Suspense } from 'react'
 import { Botao } from '@/lib/ui/botao'
 import { Cartao } from '@/lib/ui/cartao'
-import { buscarDadosOmiePeriodo } from './actions'
-import { TabelaOmie } from './tabela-omie'
+import { IconeSpinner } from './icones'
+import { TabelaOmieContainer } from './tabela-omie-container'
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -17,8 +18,6 @@ export default async function GestorOmiePage({
   const hoje = new Date()
   const ano = Number(params.ano) || hoje.getFullYear()
   const mes = Number(params.mes) || hoje.getMonth() + 1
-
-  const dados = await buscarDadosOmiePeriodo(ano, mes)
 
   return (
     <div className="space-y-6">
@@ -62,23 +61,17 @@ export default async function GestorOmiePage({
         </form>
       </Cartao>
 
-      {'erro' in dados ? (
-        <Cartao className="border-red-200 bg-red-50 p-4 text-sm text-red-700">{dados.erro}</Cartao>
-      ) : (
-        <>
-          {dados.avisoSugestoes && (
-            <Cartao className="border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-              {dados.avisoSugestoes}
-            </Cartao>
-          )}
-          <TabelaOmie
-            linhasIniciais={dados.linhas}
-            configuracaoInicial={dados.configuracao}
-            ano={ano}
-            mes={mes}
-          />
-        </>
-      )}
+      <Suspense
+        key={`${ano}-${mes}`}
+        fallback={
+          <Cartao className="flex items-center gap-2.5 p-4 text-sm text-slate-500">
+            <IconeSpinner className="h-4 w-4" />
+            Carregando apurações e sugestões de vínculo com a Omie…
+          </Cartao>
+        }
+      >
+        <TabelaOmieContainer ano={ano} mes={mes} />
+      </Suspense>
     </div>
   )
 }
