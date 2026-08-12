@@ -141,6 +141,24 @@ export function IconeColapsar({ className }: { className?: string }) {
   )
 }
 
+// Menu mobile (hambúrguer/fechar) — sidebar dos dois painéis vira um menu off-canvas abaixo de
+// lg (ver gestor/sidebar.tsx e consultor/sidebar.tsx).
+export function IconeMenuHamburguer({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function IconeFecharMenu({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 // Ícones de KPI compartilhados entre Consultores, Gerar apuração e Dashboard.
 export function IconeCarteira({ className }: { className?: string }) {
   return (
