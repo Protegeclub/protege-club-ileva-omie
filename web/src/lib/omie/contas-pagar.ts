@@ -1,5 +1,5 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { incluirContaPagar } from './client'
+import { incluirAnexo, incluirContaPagar } from './client'
 
 export interface EnviarContaPagarParams {
   apuracaoId: string
@@ -7,9 +7,13 @@ export interface EnviarContaPagarParams {
   codigoClienteOmie: number
   valor: number
   dataVencimento: string // formato DD/MM/AAAA (padrão Omie)
+  dataEmissao?: string // último dia do mês apurado — ver actions.ts (calcularUltimoDiaMes)
   codigoCategoria: string
   idContaCorrente: number
   criadoPor: string
+  // Relatório (dashboard completo, sem inadimplentes) a anexar ao título no Omie — opcional
+  // porque uma falha ao montar o PDF não deve impedir o pagamento em si (ver actions.ts).
+  anexo?: { conteudo: Buffer; nomeArquivo: string }
 }
 
 // Único ponto do sistema que de fato cria um título a pagar real no Omie. Sempre:
@@ -19,6 +23,9 @@ export interface EnviarContaPagarParams {
 //    uma chamada de escrita sem rastro, mesmo se o processo cair no meio.
 // 3. Se já existe uma tentativa com status 'enviado' pro mesmo código, recusa (idempotência —
 //    ver CONTEXTO_E_CHECKLIST.md seção 6.5).
+// 4. Depois do título criado, tenta anexar o relatório — falha aqui NÃO desfaz nem marca o
+//    envio como erro (o pagamento já existe de verdade no Omie); só registra em
+//    anexo_status/anexo_erro pra auditoria.
 export async function enviarContaPagar(p: EnviarContaPagarParams): Promise<{
   codigo_lancamento_omie: number
   codigo_lancamento_integracao: string
@@ -61,6 +68,7 @@ export async function enviarContaPagar(p: EnviarContaPagarParams): Promise<{
       codigoClienteOmie: p.codigoClienteOmie,
       valor: p.valor,
       dataVencimento: p.dataVencimento,
+      dataEmissao: p.dataEmissao,
       codigoCategoria: p.codigoCategoria,
       idContaCorrente: p.idContaCorrente,
       codigoLancamentoIntegracao: codigoIntegracao,
@@ -68,6 +76,26 @@ export async function enviarContaPagar(p: EnviarContaPagarParams): Promise<{
     })
 
     await admin.from('auditoria_omie').update({ status: 'enviado', retorno_omie: resposta }).eq('id', registro.id)
+
+    if (p.anexo) {
+      try {
+        await incluirAnexo({
+          cCodIntAnexo: `${codigoIntegracao}-anexo`,
+          cTabela: 'conta-pagar',
+          nId: resposta.codigo_lancamento_omie,
+          cNomeArquivo: p.anexo.nomeArquivo,
+          cTipoArquivo: 'pdf',
+          conteudo: p.anexo.conteudo,
+        })
+        await admin.from('auditoria_omie').update({ anexo_status: 'enviado' }).eq('id', registro.id)
+      } catch (e) {
+        const mensagemAnexo = e instanceof Error ? e.message : String(e)
+        await admin
+          .from('auditoria_omie')
+          .update({ anexo_status: 'erro', anexo_erro: mensagemAnexo })
+          .eq('id', registro.id)
+      }
+    }
 
     return { codigo_lancamento_omie: resposta.codigo_lancamento_omie, codigo_lancamento_integracao: codigoIntegracao }
   } catch (e) {

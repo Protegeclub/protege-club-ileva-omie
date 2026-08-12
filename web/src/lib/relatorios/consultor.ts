@@ -124,8 +124,10 @@ export async function gerarPdfDashboard(
   ano: number,
   mes: number,
   resumo: ResumoDashboard,
-  detalhes: DetalhesDashboard
+  detalhes: DetalhesDashboard,
+  opcoes?: { incluirInadimplentes?: boolean }
 ): Promise<Buffer> {
+  const incluirInadimplentes = opcoes?.incluirInadimplentes ?? true
   const { doc, fim } = criarDocumento({ layout: 'landscape' })
   desenharCabecalho(doc, 'Apuração de Comissão — ProtegeClub', [nomeConsultor, periodo(ano, mes)])
 
@@ -210,20 +212,22 @@ export async function gerarPdfDashboard(
     linhaTotal: { rotulo: 'Total de placas ativadas', valor: String(detalhes.placasAtivadas.length) },
   })
 
-  novaSecao('Inadimplentes')
-  doc
-    .fontSize(11)
-    .fillColor(AZUL)
-    .font('Helvetica-Bold')
-    .text(
-      `Valor estimado de recorrência a receber em caso de pagamento: ${formatarMoeda(detalhes.totalRecorrenciaEstimadaInadimplentes)}`
-    )
-  doc.moveDown(0.6)
-  doc.font('Helvetica')
-  const totalInadimplentesValor = detalhes.inadimplentes.reduce((s, i) => s + i.valorBoleto, 0)
-  desenharTabela(doc, colunasInadimplentes(), detalhes.inadimplentes, {
-    linhaTotal: { rotulo: 'Total', valor: formatarMoeda(totalInadimplentesValor) },
-  })
+  if (incluirInadimplentes) {
+    novaSecao('Inadimplentes')
+    doc
+      .fontSize(11)
+      .fillColor(AZUL)
+      .font('Helvetica-Bold')
+      .text(
+        `Valor estimado de recorrência a receber em caso de pagamento: ${formatarMoeda(detalhes.totalRecorrenciaEstimadaInadimplentes)}`
+      )
+    doc.moveDown(0.6)
+    doc.font('Helvetica')
+    const totalInadimplentesValor = detalhes.inadimplentes.reduce((s, i) => s + i.valorBoleto, 0)
+    desenharTabela(doc, colunasInadimplentes(), detalhes.inadimplentes, {
+      linhaTotal: { rotulo: 'Total', valor: formatarMoeda(totalInadimplentesValor) },
+    })
+  }
 
   rodape(doc)
   doc.end()

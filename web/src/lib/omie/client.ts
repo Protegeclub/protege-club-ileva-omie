@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+import JSZip from 'jszip'
 import { env } from '@/lib/env'
 
 // Convenção real da API da Omie: endpoints por "call" dentro de um recurso, autenticação por
@@ -120,6 +122,9 @@ export interface IncluirContaPagarParams {
   codigoClienteOmie: number
   valor: number
   dataVencimento: string // formato DD/MM/AAAA (padrão Omie)
+  dataEmissao?: string // "Data de Emissão" — pedido do cliente (10/08/2026): sempre o último dia
+  // do mês apurado, não a data em que o Gestor efetivamente clica em enviar. Confirmado na
+  // documentação oficial da Omie que esse campo existe em IncluirContaPagar, formato DD/MM/AAAA.
   dataPrevisao?: string // "Data da Previsão de Pagamento" — campo obrigatório na Omie; sem
   // negociação de prazo próprio, usamos a mesma data do vencimento (ver chamador).
   codigoCategoria: string
@@ -153,11 +158,55 @@ export async function incluirContaPagar(p: IncluirContaPagarParams): Promise<Inc
         codigo_lancamento_integracao: p.codigoLancamentoIntegracao,
         codigo_cliente_fornecedor: p.codigoClienteOmie,
         data_vencimento: p.dataVencimento,
+        ...(p.dataEmissao ? { data_emissao: p.dataEmissao } : {}),
         data_previsao: p.dataPrevisao ?? p.dataVencimento,
         valor_documento: p.valor,
         codigo_categoria: p.codigoCategoria,
         id_conta_corrente: p.idContaCorrente,
         observacao: p.observacao ?? '',
+      },
+    ],
+  })
+}
+
+export interface IncluirAnexoParams {
+  cCodIntAnexo: string
+  cTabela: string // "conta-pagar" pro nosso caso — a Omie também suporta outras tabelas
+  nId: number // codigo_lancamento_omie do título já criado
+  cNomeArquivo: string
+  cTipoArquivo?: string
+  conteudo: Buffer
+}
+
+export interface IncluirAnexoResposta {
+  nIdAnexo: number
+  cCodStatus: string
+  cDesStatus: string
+}
+
+// A Omie exige o conteúdo compactado em .zip e depois em base64, com o MD5 do próprio .zip (não
+// do arquivo original) na tag cMd5 — confirmado na documentação oficial (geral/anexo,
+// IncluirAnexo, 10/08/2026). Não bloqueia o título em si: falha de anexo não deve derrubar o
+// envio do contas a pagar, que já foi criado com sucesso antes desta chamada (ver chamador em
+// lib/omie/contas-pagar.ts).
+export async function incluirAnexo(p: IncluirAnexoParams): Promise<IncluirAnexoResposta> {
+  const zip = new JSZip()
+  zip.file(p.cNomeArquivo, p.conteudo)
+  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' })
+  const cArquivo = zipBuffer.toString('base64')
+  const cMd5 = createHash('md5').update(zipBuffer).digest('hex')
+
+  return omieCall<IncluirAnexoResposta>('geral/anexo', {
+    call: 'IncluirAnexo',
+    param: [
+      {
+        cCodIntAnexo: p.cCodIntAnexo,
+        cTabela: p.cTabela,
+        nId: p.nId,
+        cNomeArquivo: p.cNomeArquivo,
+        cTipoArquivo: p.cTipoArquivo ?? 'pdf',
+        cArquivo,
+        cMd5,
       },
     ],
   })

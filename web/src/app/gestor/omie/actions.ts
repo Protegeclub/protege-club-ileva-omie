@@ -16,8 +16,20 @@ import {
   sugerirClientesOmie,
   type SugestaoVinculo,
 } from '@/lib/omie/vinculo'
+import { gerarPdfDashboard } from '@/lib/relatorios/consultor'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+// Último dia do mês apurado, formato DD/MM/AAAA (padrão Omie) — pedido do cliente (10/08/2026):
+// a "Data de Emissão" no Omie deve ser sempre essa data, não o dia em que o Gestor efetivamente
+// clica em enviar. Mesmo truque de "dia 0 do mês seguinte" já usado em lib/apuracao/mensal.ts
+// (intervaloMes).
+function calcularUltimoDiaMesBr(ano: number, mes: number): string {
+  const data = new Date(ano, mes, 0)
+  const dd = String(data.getDate()).padStart(2, '0')
+  const mm = String(data.getMonth() + 1).padStart(2, '0')
+  return `${dd}/${mm}/${data.getFullYear()}`
+}
 
 type Autorizacao = { userId: string } | { erro: string }
 
@@ -227,7 +239,9 @@ export async function confirmarVinculoAction(
 
 // A ação que de fato escreve no financeiro do cliente — exige vínculo E configuração já
 // resolvidos (ver enviarContaPagar em lib/omie/contas-pagar.ts, que também checa idempotência
-// contra auditoria_omie antes de chamar a Omie de verdade).
+// contra auditoria_omie antes de chamar a Omie de verdade). Também monta e anexa o relatório
+// (dashboard completo, sem inadimplentes) e calcula a Data de Emissão como o último dia do mês
+// apurado — pedidos do cliente, 10/08/2026.
 export async function enviarContaPagarAction(
   apuracaoId: string,
   codConsultor: number,
@@ -238,13 +252,20 @@ export async function enviarContaPagarAction(
   if ('erro' in auth) return { ok: false, erro: auth.erro }
 
   const admin = createSupabaseAdminClient()
-  const [{ data: vinculo }, { data: config }] = await Promise.all([
+  const [{ data: vinculo }, { data: config }, { data: apuracao }] = await Promise.all([
     admin
       .from('consultor_omie_vinculo')
       .select('codigo_cliente_omie')
       .eq('cod_consultor', codConsultor)
       .maybeSingle(),
     admin.from('omie_configuracao').select('*').eq('id', 1).maybeSingle(),
+    admin
+      .from('apuracoes_mensais')
+      .select(
+        'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_bonus_nivel, detalhe'
+      )
+      .eq('id', apuracaoId)
+      .maybeSingle(),
   ])
 
   if (!vinculo) {
@@ -252,6 +273,44 @@ export async function enviarContaPagarAction(
   }
   if (!config?.codigo_categoria || !config?.codigo_conta_corrente) {
     return { ok: false, erro: 'Configure a categoria e a conta corrente do Omie antes de enviar.' }
+  }
+  if (!apuracao) {
+    return { ok: false, erro: 'Apuração não encontrada.' }
+  }
+
+  const nomeConsultor = apuracao.detalhe?.nomeConsultor ?? `Consultor #${codConsultor}`
+
+  // Falha ao montar o PDF não pode impedir o pagamento — segue sem anexo, só loga.
+  let anexo: { conteudo: Buffer; nomeArquivo: string } | undefined
+  try {
+    const pdf = await gerarPdfDashboard(
+      nomeConsultor,
+      apuracao.ano,
+      apuracao.mes,
+      {
+        totalAdesoes: apuracao.detalhe?.adesoes?.length ?? 0,
+        totalEquipe: 0,
+        totalPremiacaoIndividual: apuracao.total_premiacao_individual,
+        totalPremiacaoEquipe: apuracao.total_premiacao_equipe,
+        totalAdesao: apuracao.total_adesao,
+        totalRecorrencia: apuracao.total_recorrencia,
+        totalDescontoRastreador: apuracao.total_desconto_rastreador,
+        totalComissaoGerencial: apuracao.total_comissao_gerencial,
+        totalBonusNivel: apuracao.total_bonus_nivel,
+      },
+      {
+        adesoes: apuracao.detalhe?.adesoes ?? [],
+        recorrencias: apuracao.detalhe?.recorrencias ?? [],
+        descontosRastreador: apuracao.detalhe?.descontosRastreador ?? [],
+        placasAtivadas: apuracao.detalhe?.placasAtivadas ?? [],
+        inadimplentes: [],
+        totalRecorrenciaEstimadaInadimplentes: 0,
+      },
+      { incluirInadimplentes: false }
+    )
+    anexo = { conteudo: pdf, nomeArquivo: `relatorio-consultor-${codConsultor}-${apuracao.ano}-${apuracao.mes}.pdf` }
+  } catch (e) {
+    console.error('Falha ao gerar PDF pra anexar ao título do Omie:', e)
   }
 
   try {
@@ -261,9 +320,11 @@ export async function enviarContaPagarAction(
       codigoClienteOmie: vinculo.codigo_cliente_omie,
       valor,
       dataVencimento: dataVencimentoBr,
+      dataEmissao: calcularUltimoDiaMesBr(apuracao.ano, apuracao.mes),
       codigoCategoria: config.codigo_categoria,
       idContaCorrente: config.codigo_conta_corrente,
       criadoPor: auth.userId,
+      anexo,
     })
     revalidatePath('/gestor/omie')
     return { ok: true }
