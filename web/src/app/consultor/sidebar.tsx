@@ -103,17 +103,17 @@ export function SidebarConsultor({ nome, children }: { nome: string | null; chil
     <>
       {/* Barra mobile fixa (hambúrguer) — some a partir de lg, onde a aside abaixo já é sempre
           visível. */}
-      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+      <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-brand-navy px-4 py-3 lg:hidden">
         <button
           type="button"
           onClick={() => setAbertoMobile(true)}
           aria-label="Abrir menu"
-          className="rounded-md p-1.5 text-brand-navy hover:bg-slate-100"
+          className="rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
         >
           <IconeMenuHamburguer className="h-5 w-5" />
         </button>
         <Image src="/Logo Protege Club.png" alt="ProtegeClub" width={28} height={28} className="h-7 w-7" />
-        <span className="text-sm font-semibold text-brand-navy">ProtegeClub</span>
+        <span className="text-sm font-semibold text-white">ProtegeClub</span>
       </div>
 
       {/* Overlay escuro atrás do menu mobile — clicar fora fecha. */}
