@@ -184,17 +184,19 @@ export interface IncluirAnexoResposta {
   cDesStatus: string
 }
 
-// A Omie exige o conteúdo compactado em .zip e depois em base64, com o MD5 do próprio .zip (não
-// do arquivo original) na tag cMd5 — confirmado na documentação oficial (geral/anexo,
-// IncluirAnexo, 10/08/2026). Não bloqueia o título em si: falha de anexo não deve derrubar o
-// envio do contas a pagar, que já foi criado com sucesso antes desta chamada (ver chamador em
-// lib/omie/contas-pagar.ts).
+// A Omie exige o conteúdo compactado em .zip e depois em base64, com o MD5 na tag cMd5 —
+// confirmado com dado real (12/08/2026): MD5 do .zip BRUTO (antes do base64) sempre voltava
+// "MD5 inválido" — a Omie recalcula sobre a STRING em base64 que efetivamente vai na tag
+// cArquivo, não sobre os bytes brutos por trás dela (mesmo padrão usado no cMd5NFe da API de
+// NF-e: hash sobre o conteúdo textual que é transmitido, não sobre um estágio intermediário).
+// Não bloqueia o título em si: falha de anexo não deve derrubar o envio do contas a pagar, que
+// já foi criado com sucesso antes desta chamada (ver chamador em lib/omie/contas-pagar.ts).
 export async function incluirAnexo(p: IncluirAnexoParams): Promise<IncluirAnexoResposta> {
   const zip = new JSZip()
   zip.file(p.cNomeArquivo, p.conteudo)
   const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' })
   const cArquivo = zipBuffer.toString('base64')
-  const cMd5 = createHash('md5').update(zipBuffer).digest('hex')
+  const cMd5 = createHash('md5').update(cArquivo, 'utf-8').digest('hex')
 
   return omieCall<IncluirAnexoResposta>('geral/anexo', {
     call: 'IncluirAnexo',

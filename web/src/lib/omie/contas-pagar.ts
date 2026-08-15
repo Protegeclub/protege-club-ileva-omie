@@ -79,8 +79,12 @@ export async function enviarContaPagar(p: EnviarContaPagarParams): Promise<{
 
     if (p.anexo) {
       try {
+        // cCodIntAnexo tem limite de 20 caracteres na Omie (erro real em produção, 12/08/2026:
+        // `${codigoIntegracao}-anexo`, com o uuid da apuração, tinha 51 e sempre falhava, mesmo
+        // com o pagamento já criado com sucesso). codigo_lancamento_omie (numérico, gerado pela
+        // própria Omie) já é único por título, então "anexo-<id>" cabe com folga.
         await incluirAnexo({
-          cCodIntAnexo: `${codigoIntegracao}-anexo`,
+          cCodIntAnexo: `anexo-${resposta.codigo_lancamento_omie}`,
           cTabela: 'conta-pagar',
           nId: resposta.codigo_lancamento_omie,
           cNomeArquivo: p.anexo.nomeArquivo,
