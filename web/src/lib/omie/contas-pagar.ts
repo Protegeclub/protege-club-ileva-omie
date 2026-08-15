@@ -14,6 +14,8 @@ export interface EnviarContaPagarParams {
   // Relatório (dashboard completo, sem inadimplentes) a anexar ao título no Omie — opcional
   // porque uma falha ao montar o PDF não deve impedir o pagamento em si (ver actions.ts).
   anexo?: { conteudo: Buffer; nomeArquivo: string }
+  // Chave PIX do consultor (ver lib/omie/client.ts) — preenche a forma de pagamento do título.
+  chavePix?: string
 }
 
 // Único ponto do sistema que de fato cria um título a pagar real no Omie. Sempre:
@@ -73,6 +75,7 @@ export async function enviarContaPagar(p: EnviarContaPagarParams): Promise<{
       idContaCorrente: p.idContaCorrente,
       codigoLancamentoIntegracao: codigoIntegracao,
       observacao: `Comissão consultor #${p.codConsultor} — ProtegeClub`,
+      chavePix: p.chavePix,
     })
 
     await admin.from('auditoria_omie').update({ status: 'enviado', retorno_omie: resposta }).eq('id', registro.id)

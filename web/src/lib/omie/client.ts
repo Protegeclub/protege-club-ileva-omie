@@ -131,6 +131,9 @@ export interface IncluirContaPagarParams {
   idContaCorrente: number
   codigoLancamentoIntegracao: string
   observacao?: string
+  // Chave PIX do consultor (pedido do cliente, 15/08/2026) — preenche o título já com a forma de
+  // pagamento certa, ver comentário abaixo sobre cnab_integracao_bancaria.
+  chavePix?: string
 }
 
 export interface IncluirContaPagarResposta {
@@ -164,6 +167,21 @@ export async function incluirContaPagar(p: IncluirContaPagarParams): Promise<Inc
         codigo_categoria: p.codigoCategoria,
         id_conta_corrente: p.idContaCorrente,
         observacao: p.observacao ?? '',
+        // Transferência por chave Pix (não é o mesmo que codigo_forma_pagamento="PIX", que é só
+        // pra QR Code) — confirmado em documentação oficial da Omie (15/08/2026):
+        // codigo_forma_pagamento="TRA" + finalidade_transferencia="01.3" exige a chave na tag
+        // pix_qrcode (nome de campo reaproveitado pela própria Omie pra chave também, não só
+        // QR Code de verdade). Ainda não testado ao vivo — testar com 1 envio real antes de
+        // confiar pra todo mundo (mesmo cuidado do bug do anexo).
+        ...(p.chavePix
+          ? {
+              cnab_integracao_bancaria: {
+                codigo_forma_pagamento: 'TRA',
+                finalidade_transferencia: '01.3',
+                pix_qrcode: p.chavePix,
+              },
+            }
+          : {}),
       },
     ],
   })

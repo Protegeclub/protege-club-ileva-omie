@@ -13,6 +13,7 @@ import {
   buscarVinculosConfirmados,
   confirmarVinculo,
   listarTodosClientesOmieCacheado,
+  salvarChavePix,
   sugerirClientesOmie,
   type SugestaoVinculo,
 } from '@/lib/omie/vinculo'
@@ -59,6 +60,7 @@ export interface LinhaOmie {
   apuracaoId: string | null
   totalLiquido: number
   vinculo: { codigo_cliente_omie: number; nome_omie: string } | null
+  chavePix: string | null
   sugestoes: SugestaoVinculo[]
   statusEnvio: 'nao_enviado' | 'enviado' | 'erro'
 }
@@ -139,6 +141,7 @@ export async function buscarDadosOmiePeriodo(
       apuracaoId: a.id,
       totalLiquido: a.total_liquido,
       vinculo: vinculo ? { codigo_cliente_omie: vinculo.codigo_cliente_omie, nome_omie: vinculo.nome_omie } : null,
+      chavePix: vinculo?.chave_pix ?? null,
       sugestoes: vinculo ? [] : sugerirClientesOmie(nomeConsultor, clientesOmie, 3),
       statusEnvio: status === 'enviado' ? 'enviado' : status === 'erro' ? 'erro' : 'nao_enviado',
     }
@@ -255,7 +258,7 @@ export async function enviarContaPagarAction(
   const [{ data: vinculo }, { data: config }, { data: apuracao }] = await Promise.all([
     admin
       .from('consultor_omie_vinculo')
-      .select('codigo_cliente_omie')
+      .select('codigo_cliente_omie, chave_pix')
       .eq('cod_consultor', codConsultor)
       .maybeSingle(),
     admin.from('omie_configuracao').select('*').eq('id', 1).maybeSingle(),
@@ -273,6 +276,9 @@ export async function enviarContaPagarAction(
   }
   if (!config?.codigo_categoria || !config?.codigo_conta_corrente) {
     return { ok: false, erro: 'Configure a categoria e a conta corrente do Omie antes de enviar.' }
+  }
+  if (!vinculo.chave_pix) {
+    return { ok: false, erro: 'Defina a chave PIX do consultor antes de enviar.' }
   }
   if (!apuracao) {
     return { ok: false, erro: 'Apuração não encontrada.' }
@@ -325,11 +331,35 @@ export async function enviarContaPagarAction(
       idContaCorrente: config.codigo_conta_corrente,
       criadoPor: auth.userId,
       anexo,
+      chavePix: vinculo.chave_pix,
     })
     revalidatePath('/gestor/omie')
     return { ok: true }
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : 'Erro desconhecido ao enviar para o Omie.' }
+  }
+}
+
+// Salva/edita a chave PIX do consultor (exige vínculo já confirmado — ver salvarChavePix em
+// lib/omie/vinculo.ts). Reaproveitada em todo envio futuro, sem pedir de novo todo mês.
+export async function salvarChavePixAction(
+  codConsultor: number,
+  chavePix: string
+): Promise<{ ok: boolean; erro?: string }> {
+  const auth = await autorizarGestor()
+  if ('erro' in auth) return { ok: false, erro: auth.erro }
+
+  const chaveLimpa = chavePix.trim()
+  if (!chaveLimpa) {
+    return { ok: false, erro: 'Informe a chave PIX.' }
+  }
+
+  try {
+    await salvarChavePix(codConsultor, chaveLimpa)
+    revalidatePath('/gestor/omie')
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : 'Erro desconhecido.' }
   }
 }
 

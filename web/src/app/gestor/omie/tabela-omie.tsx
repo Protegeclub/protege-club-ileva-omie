@@ -11,6 +11,7 @@ import {
   buscarOpcoesConfiguracao,
   confirmarVinculoAction,
   enviarContaPagarAction,
+  salvarChavePixAction,
   salvarConfiguracaoOmieAction,
   type ConfiguracaoOmie,
   type LinhaOmie,
@@ -244,6 +245,95 @@ function ConfiguracaoOmieCard({
   )
 }
 
+// Chave PIX do consultor — pedido do cliente (15/08/2026): preenche a forma de pagamento do
+// título no Omie (transferência via chave Pix). Guardada uma vez junto do vínculo, editável a
+// qualquer momento (não precisa reabrir "Enviar" pra trocar).
+function EditorChavePix({
+  chavePix,
+  onSalvar,
+}: {
+  chavePix: string | null
+  onSalvar: (chavePix: string) => Promise<{ ok: boolean; erro?: string }>
+}) {
+  const [editando, setEditando] = useState(!chavePix)
+  const [valor, setValor] = useState(chavePix ?? '')
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
+
+  async function salvar() {
+    if (!valor.trim()) {
+      setErro('Informe a chave PIX.')
+      return
+    }
+    setSalvando(true)
+    setErro('')
+    const resultado = await onSalvar(valor.trim())
+    setSalvando(false)
+    if (!resultado.ok) {
+      setErro(resultado.erro ?? 'Erro ao salvar.')
+      return
+    }
+    setEditando(false)
+  }
+
+  if (!editando && chavePix) {
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <span className="text-slate-500">
+          PIX: <span className="font-medium text-slate-700">{chavePix}</span>
+        </span>
+        <button
+          type="button"
+          className="text-brand-blue hover:underline"
+          onClick={() => {
+            setValor(chavePix)
+            setEditando(true)
+          }}
+        >
+          Trocar
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5">
+        <input
+          type="text"
+          placeholder="Chave PIX…"
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+          className="h-7 w-36 rounded-md border border-slate-300 px-2 text-xs focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
+        />
+        <button
+          type="button"
+          disabled={salvando}
+          className="shrink-0 text-xs font-medium text-brand-blue hover:underline disabled:opacity-50"
+          onClick={salvar}
+        >
+          {salvando ? 'Salvando…' : 'Salvar'}
+        </button>
+        {chavePix && (
+          <button
+            type="button"
+            className="shrink-0 text-xs text-slate-400 hover:underline"
+            onClick={() => {
+              setValor(chavePix)
+              setEditando(false)
+              setErro('')
+            }}
+          >
+            Cancelar
+          </button>
+        )}
+      </div>
+      {!chavePix && !erro && <p className="text-[11px] text-amber-600">Chave PIX pendente</p>}
+      {erro && <p className="text-[11px] text-red-600">{erro}</p>}
+    </div>
+  )
+}
+
 function LinhaConsultorOmie({
   linha,
   configurado,
@@ -269,6 +359,13 @@ function LinhaConsultorOmie({
   const [enviando, setEnviando] = useState(false)
   const [erroEnvio, setErroEnvio] = useState('')
   const [statusEnvio, setStatusEnvio] = useState(linha.statusEnvio)
+  const [chavePix, setChavePix] = useState(linha.chavePix)
+
+  async function salvarPix(novaChave: string) {
+    const resultado = await salvarChavePixAction(linha.cod_consultor, novaChave)
+    if (resultado.ok) setChavePix(novaChave)
+    return resultado
+  }
 
   async function confirmarVinculo(codigoClienteOmie: number, nome: string) {
     setVinculando(true)
@@ -314,7 +411,10 @@ function LinhaConsultorOmie({
       <td className="px-4 py-3 font-semibold text-slate-800">{formatarMoeda(linha.totalLiquido)}</td>
       <td className="px-4 py-3">
         {linha.vinculo ? (
-          <p className="text-emerald-700">✓ {linha.vinculo.nome_omie}</p>
+          <div className="space-y-1.5">
+            <p className="text-emerald-700">✓ {linha.vinculo.nome_omie}</p>
+            <EditorChavePix chavePix={chavePix} onSalvar={salvarPix} />
+          </div>
         ) : (
           <div className="space-y-2">
             {linha.sugestoes.length > 0 && (
@@ -379,8 +479,16 @@ function LinhaConsultorOmie({
             type="button"
             variante="secundaria"
             tamanho="sm"
-            disabled={!linha.vinculo || !configurado}
-            title={!linha.vinculo ? 'Confirme o vínculo primeiro' : !configurado ? 'Configure categoria/conta corrente primeiro' : ''}
+            disabled={!linha.vinculo || !configurado || !chavePix}
+            title={
+              !linha.vinculo
+                ? 'Confirme o vínculo primeiro'
+                : !chavePix
+                  ? 'Defina a chave PIX do consultor primeiro'
+                  : !configurado
+                    ? 'Configure categoria/conta corrente primeiro'
+                    : ''
+            }
             onClick={() => setEnviarAberto(true)}
           >
             Enviar

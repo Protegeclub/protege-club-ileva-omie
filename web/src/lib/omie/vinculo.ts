@@ -118,13 +118,14 @@ export interface VinculoConfirmado {
   codigo_cliente_omie: number
   nome_omie: string
   confirmado_em: string
+  chave_pix: string | null
 }
 
 export async function buscarVinculosConfirmados(): Promise<Map<number, VinculoConfirmado>> {
   const admin = createSupabaseAdminClient()
   const { data } = await admin
     .from('consultor_omie_vinculo')
-    .select('cod_consultor, codigo_cliente_omie, nome_omie, confirmado_em')
+    .select('cod_consultor, codigo_cliente_omie, nome_omie, confirmado_em, chave_pix')
   return new Map((data ?? []).map((v) => [v.cod_consultor, v as VinculoConfirmado]))
 }
 
@@ -146,4 +147,20 @@ export async function confirmarVinculo(
     { onConflict: 'cod_consultor' }
   )
   if (error) throw new Error(`Erro ao salvar vínculo: ${error.message}`)
+}
+
+// Chave PIX do consultor — guardada uma vez (ver 0012_omie_chave_pix.sql), reaproveitada em todo
+// envio futuro; editável a qualquer momento pela tela. Só faz sentido depois do vínculo já
+// confirmado (a linha em consultor_omie_vinculo precisa existir).
+export async function salvarChavePix(codConsultor: number, chavePix: string) {
+  const admin = createSupabaseAdminClient()
+  const { data, error } = await admin
+    .from('consultor_omie_vinculo')
+    .update({ chave_pix: chavePix })
+    .eq('cod_consultor', codConsultor)
+    .select('cod_consultor')
+    .maybeSingle()
+
+  if (error) throw new Error(`Erro ao salvar chave PIX: ${error.message}`)
+  if (!data) throw new Error('Confirme o vínculo com um cliente/fornecedor do Omie antes de definir a chave PIX.')
 }
