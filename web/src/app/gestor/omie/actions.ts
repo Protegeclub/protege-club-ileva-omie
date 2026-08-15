@@ -8,7 +8,7 @@ import {
   type CategoriaOmie,
   type ContaCorrenteOmie,
 } from '@/lib/omie/client'
-import { enviarContaPagar } from '@/lib/omie/contas-pagar'
+import { enviarContaPagar, estornarContaPagar } from '@/lib/omie/contas-pagar'
 import {
   buscarVinculosConfirmados,
   confirmarVinculo,
@@ -62,7 +62,7 @@ export interface LinhaOmie {
   vinculo: { codigo_cliente_omie: number; nome_omie: string } | null
   chavePix: string | null
   sugestoes: SugestaoVinculo[]
-  statusEnvio: 'nao_enviado' | 'enviado' | 'erro'
+  statusEnvio: 'nao_enviado' | 'enviado' | 'erro' | 'estornado'
 }
 
 export interface ConfiguracaoOmie {
@@ -125,7 +125,8 @@ export async function buscarDadosOmiePeriodo(
   const statusPorApuracao = new Map<string, string>()
   for (const a of auditoriaReal ?? []) {
     if (!a.apuracao_id) continue
-    // 'enviado' tem prioridade sobre 'erro'/'pendente' se houver mais de uma tentativa.
+    // 'enviado' tem prioridade sobre 'erro'/'pendente'/'estornado' se houver mais de uma
+    // tentativa (ex.: reenviado com sucesso depois de um estorno).
     if (a.status === 'enviado' || !statusPorApuracao.has(a.apuracao_id)) {
       statusPorApuracao.set(a.apuracao_id, a.status)
     }
@@ -143,7 +144,8 @@ export async function buscarDadosOmiePeriodo(
       vinculo: vinculo ? { codigo_cliente_omie: vinculo.codigo_cliente_omie, nome_omie: vinculo.nome_omie } : null,
       chavePix: vinculo?.chave_pix ?? null,
       sugestoes: vinculo ? [] : sugerirClientesOmie(nomeConsultor, clientesOmie, 3),
-      statusEnvio: status === 'enviado' ? 'enviado' : status === 'erro' ? 'erro' : 'nao_enviado',
+      statusEnvio:
+        status === 'enviado' ? 'enviado' : status === 'erro' ? 'erro' : status === 'estornado' ? 'estornado' : 'nao_enviado',
     }
   })
 
@@ -337,6 +339,23 @@ export async function enviarContaPagarAction(
     return { ok: true }
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : 'Erro desconhecido ao enviar para o Omie.' }
+  }
+}
+
+// Estorna (exclui) o título já criado no Omie pra esta apuração — pedido do cliente (15/08/2026),
+// pra corrigir um envio feito com o vínculo de fornecedor errado sem precisar do suporte da
+// Omie. Depois do estorno, o botão "Enviar" volta a ficar disponível pra reenviar (ver
+// estornarContaPagar em lib/omie/contas-pagar.ts).
+export async function estornarContaPagarAction(apuracaoId: string): Promise<{ ok: boolean; erro?: string }> {
+  const auth = await autorizarGestor()
+  if ('erro' in auth) return { ok: false, erro: auth.erro }
+
+  try {
+    await estornarContaPagar(apuracaoId)
+    revalidatePath('/gestor/omie')
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : 'Erro desconhecido ao estornar no Omie.' }
   }
 }
 

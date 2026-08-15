@@ -187,6 +187,33 @@ export async function incluirContaPagar(p: IncluirContaPagarParams): Promise<Inc
   })
 }
 
+export interface ExcluirContaPagarResposta {
+  codigo_lancamento_omie: number
+  codigo_lancamento_integracao: string
+  codigo_status: string
+  descricao_status: string
+}
+
+// Remove o título inteiro do Contas a Pagar — pedido do cliente (15/08/2026), pra corrigir um
+// envio feito por engano (ex.: vínculo de fornecedor errado) sem depender do suporte da Omie.
+// Diferente de CancelarPagamento (que desfaria uma BAIXA/pagamento já registrado) — este sistema
+// nunca chama LancarPagamento, então o título criado por IncluirContaPagar está sempre em aberto
+// do nosso lado; exclusão é a operação certa. Estrutura conferida via documentação oficial
+// (15/08/2026) — ainda não testada ao vivo, testar com 1 caso real antes de confiar amplamente
+// (mesmo cuidado do anexo/chave PIX).
+export async function excluirContaPagar(codigoLancamentoOmie: number): Promise<ExcluirContaPagarResposta> {
+  return omieCall<ExcluirContaPagarResposta>('financas/contapagar', {
+    call: 'ExcluirContaPagar',
+    param: [
+      {
+        conta_pagar_cadastro_chave: {
+          codigo_lancamento_omie: codigoLancamentoOmie,
+        },
+      },
+    ],
+  })
+}
+
 export interface IncluirAnexoParams {
   cCodIntAnexo: string
   cTabela: string // "conta-pagar" pro nosso caso — a Omie também suporta outras tabelas

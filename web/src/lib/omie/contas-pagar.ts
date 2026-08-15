@@ -1,5 +1,5 @@
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { incluirAnexo, incluirContaPagar } from './client'
+import { excluirContaPagar, incluirAnexo, incluirContaPagar } from './client'
 
 export interface EnviarContaPagarParams {
   apuracaoId: string
@@ -113,4 +113,32 @@ export async function enviarContaPagar(p: EnviarContaPagarParams): Promise<{
       .eq('id', registro.id)
     throw e
   }
+}
+
+// Estorna (exclui) o título já criado no Omie pra esta apuração — pedido do cliente (15/08/2026),
+// pra corrigir um envio feito com o vínculo de fornecedor errado sem precisar chamar o suporte
+// da Omie. Depois do estorno, `enviarContaPagar` aceita reenviar normalmente (o guard de
+// idempotência só bloqueia quando o status ainda é 'enviado').
+export async function estornarContaPagar(apuracaoId: string): Promise<void> {
+  const admin = createSupabaseAdminClient()
+  const codigoIntegracao = `apuracao-${apuracaoId}`
+
+  const { data: registro } = await admin
+    .from('auditoria_omie')
+    .select('id, status, retorno_omie')
+    .eq('codigo_integracao', codigoIntegracao)
+    .maybeSingle()
+
+  if (!registro || registro.status !== 'enviado') {
+    throw new Error('Nenhum título enviado ao Omie encontrado para esta apuração.')
+  }
+
+  const codigoLancamentoOmie = (registro.retorno_omie as { codigo_lancamento_omie?: number } | null)
+    ?.codigo_lancamento_omie
+  if (!codigoLancamentoOmie) {
+    throw new Error('Título sem codigo_lancamento_omie salvo — não é possível estornar automaticamente.')
+  }
+
+  await excluirContaPagar(codigoLancamentoOmie)
+  await admin.from('auditoria_omie').update({ status: 'estornado' }).eq('id', registro.id)
 }

@@ -11,6 +11,7 @@ import {
   buscarOpcoesConfiguracao,
   confirmarVinculoAction,
   enviarContaPagarAction,
+  estornarContaPagarAction,
   salvarChavePixAction,
   salvarConfiguracaoOmieAction,
   type ConfiguracaoOmie,
@@ -353,6 +354,10 @@ function LinhaConsultorOmie({
     { codigo_cliente_omie: number; nome: string; cnpj_cpf: string }[] | null
   >(null)
   const [vinculando, setVinculando] = useState(false)
+  // Vínculo errado (associado a fornecedor errado, ou trocou de PF pra PJ etc.) precisa poder
+  // ser corrigido depois de já confirmado — pedido do cliente (15/08/2026). Reabre a mesma busca
+  // manual já usada na primeira confirmação.
+  const [trocandoVinculo, setTrocandoVinculo] = useState(false)
 
   const [enviarAberto, setEnviarAberto] = useState(false)
   const [vencimento, setVencimento] = useState(vencimentoPadrao(ano, mes))
@@ -360,6 +365,13 @@ function LinhaConsultorOmie({
   const [erroEnvio, setErroEnvio] = useState('')
   const [statusEnvio, setStatusEnvio] = useState(linha.statusEnvio)
   const [chavePix, setChavePix] = useState(linha.chavePix)
+
+  // Estornar (excluir) o título já criado no Omie — pra corrigir um envio feito com o vínculo
+  // errado, sem precisar do suporte da Omie. Confirmação em 2 passos por ser uma ação que mexe
+  // direto no financeiro do cliente.
+  const [confirmandoEstorno, setConfirmandoEstorno] = useState(false)
+  const [estornando, setEstornando] = useState(false)
+  const [erroEstorno, setErroEstorno] = useState('')
 
   async function salvarPix(novaChave: string) {
     const resultado = await salvarChavePixAction(linha.cod_consultor, novaChave)
@@ -373,7 +385,24 @@ function LinhaConsultorOmie({
     setVinculando(false)
     if (resultado.ok) {
       onVinculado(linha.cod_consultor, { codigo_cliente_omie: codigoClienteOmie, nome_omie: nome })
+      setTrocandoVinculo(false)
+      setTermoBusca('')
+      setResultadosBusca(null)
     }
+  }
+
+  async function confirmarEstorno() {
+    if (!linha.apuracaoId) return
+    setEstornando(true)
+    setErroEstorno('')
+    const resultado = await estornarContaPagarAction(linha.apuracaoId)
+    setEstornando(false)
+    if (!resultado.ok) {
+      setErroEstorno(resultado.erro ?? 'Erro desconhecido.')
+      return
+    }
+    setStatusEnvio('estornado')
+    setConfirmandoEstorno(false)
   }
 
   async function buscarManualmente(valor: string) {
@@ -410,13 +439,35 @@ function LinhaConsultorOmie({
       </td>
       <td className="px-4 py-3 font-semibold text-slate-800">{formatarMoeda(linha.totalLiquido)}</td>
       <td className="px-4 py-3">
-        {linha.vinculo ? (
+        {linha.vinculo && !trocandoVinculo ? (
           <div className="space-y-1.5">
-            <p className="text-emerald-700">✓ {linha.vinculo.nome_omie}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-emerald-700">✓ {linha.vinculo.nome_omie}</p>
+              <button
+                type="button"
+                className="shrink-0 text-xs text-brand-blue hover:underline"
+                onClick={() => setTrocandoVinculo(true)}
+              >
+                Trocar
+              </button>
+            </div>
             <EditorChavePix chavePix={chavePix} onSalvar={salvarPix} />
           </div>
         ) : (
           <div className="space-y-2">
+            {linha.vinculo && (
+              <button
+                type="button"
+                className="text-xs text-slate-400 hover:underline"
+                onClick={() => {
+                  setTrocandoVinculo(false)
+                  setTermoBusca('')
+                  setResultadosBusca(null)
+                }}
+              >
+                ← Cancelar troca de vínculo
+              </button>
+            )}
             {linha.sugestoes.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {linha.sugestoes.map((s) => (
@@ -467,13 +518,40 @@ function LinhaConsultorOmie({
           <Selo tom="sucesso">Enviado</Selo>
         ) : statusEnvio === 'erro' ? (
           <Selo tom="erro">Erro no envio</Selo>
+        ) : statusEnvio === 'estornado' ? (
+          <Selo tom="neutro">Estornado</Selo>
         ) : (
           <Selo tom="neutro">Não enviado</Selo>
         )}
       </td>
       <td className="px-4 py-3">
         {statusEnvio === 'enviado' ? (
-          <span className="text-xs text-slate-400">—</span>
+          !confirmandoEstorno ? (
+            <Botao type="button" variante="fantasma" tamanho="sm" onClick={() => setConfirmandoEstorno(true)}>
+              Estornar
+            </Botao>
+          ) : (
+            <div className="w-48 space-y-1.5">
+              <p className="text-xs text-slate-500">Excluir o título já criado no Omie?</p>
+              {erroEstorno && <p className="text-xs text-red-600">{erroEstorno}</p>}
+              <div className="flex gap-1.5">
+                <Botao type="button" variante="destaque" tamanho="sm" disabled={estornando} onClick={confirmarEstorno}>
+                  {estornando ? 'Estornando…' : 'Confirmar estorno'}
+                </Botao>
+                <Botao
+                  type="button"
+                  variante="fantasma"
+                  tamanho="sm"
+                  onClick={() => {
+                    setConfirmandoEstorno(false)
+                    setErroEstorno('')
+                  }}
+                >
+                  Cancelar
+                </Botao>
+              </div>
+            </div>
+          )
         ) : !enviarAberto ? (
           <Botao
             type="button"
