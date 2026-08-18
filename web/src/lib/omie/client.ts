@@ -198,17 +198,19 @@ export interface ExcluirContaPagarResposta {
 // envio feito por engano (ex.: vínculo de fornecedor errado) sem depender do suporte da Omie.
 // Diferente de CancelarPagamento (que desfaria uma BAIXA/pagamento já registrado) — este sistema
 // nunca chama LancarPagamento, então o título criado por IncluirContaPagar está sempre em aberto
-// do nosso lado; exclusão é a operação certa. Estrutura conferida via documentação oficial
-// (15/08/2026) — ainda não testada ao vivo, testar com 1 caso real antes de confiar amplamente
-// (mesmo cuidado do anexo/chave PIX).
+// do nosso lado; exclusão é a operação certa.
+//
+// Campo direto no param (sem wrapper) — corrigido com erro real em produção (18/08/2026): a
+// primeira tentativa envolvia o campo num objeto "conta_pagar_cadastro_chave" (baseado só em
+// documentação, nunca testado ao vivo) e a Omie respondia "preenchimento das tags
+// [codigo_lancamento_omie] ou [codigo_lancamento_integracao] é obrigatório" — ou seja, ela
+// espera os campos soltos no param, igual IncluirContaPagar, não dentro de um objeto aninhado.
 export async function excluirContaPagar(codigoLancamentoOmie: number): Promise<ExcluirContaPagarResposta> {
   return omieCall<ExcluirContaPagarResposta>('financas/contapagar', {
     call: 'ExcluirContaPagar',
     param: [
       {
-        conta_pagar_cadastro_chave: {
-          codigo_lancamento_omie: codigoLancamentoOmie,
-        },
+        codigo_lancamento_omie: codigoLancamentoOmie,
       },
     ],
   })
