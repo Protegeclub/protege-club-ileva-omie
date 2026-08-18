@@ -519,7 +519,7 @@ function LinhaConsultorOmie({
         ) : statusEnvio === 'erro' ? (
           <Selo tom="erro">Erro no envio</Selo>
         ) : statusEnvio === 'estornado' ? (
-          <Selo tom="neutro">Estornado</Selo>
+          <Selo tom="erro">Estornado</Selo>
         ) : (
           <Selo tom="neutro">Não enviado</Selo>
         )}
