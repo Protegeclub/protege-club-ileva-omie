@@ -26,10 +26,35 @@ export async function omieCall<T>(resource: string, params: OmieCallParams): Pro
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`Erro na API da Omie em ${resource}/${params.call} (${res.status}): ${body}`)
+    throw new Error(formatarErroOmie(body, resource, params.call, res.status))
   }
 
   return res.json() as Promise<T>
+}
+
+// A Omie devolve o erro de verdade dentro de "faultstring" (formato de resposta estilo SOAP,
+// mesmo em endpoint JSON) — sem isso, qualquer falha aparecia pro Gestor como um bloco de JSON
+// cru e ilegível (visto de verdade, 18/08/2026: bloqueio por "consumo redundante" apareceu assim
+// na tela). Extrai só o texto útil e dá uma mensagem específica pro caso mais comum de todos
+// (limite de chamadas), que sempre se resolve sozinho em menos de 1 minuto.
+function formatarErroOmie(corpoResposta: string, resource: string, call: string, status: number): string {
+  let faultstring: string | undefined
+  try {
+    faultstring = (JSON.parse(corpoResposta) as { faultstring?: string }).faultstring
+  } catch {
+    // Corpo não é JSON — segue pro fallback com o texto cru mesmo.
+  }
+
+  if (!faultstring) {
+    return `Erro na API da Omie em ${resource}/${call} (${status}): ${corpoResposta}`
+  }
+
+  const consumoRedundante = faultstring.match(/consumo redundante.*aguarde (\d+) segundos/i)
+  if (consumoRedundante) {
+    return `A Omie está limitando chamadas repetidas em pouco tempo — aguarde ${consumoRedundante[1]} segundos e tente de novo.`
+  }
+
+  return faultstring.replace(/^ERROR:\s*/i, '')
 }
 
 export interface ClienteOmie {

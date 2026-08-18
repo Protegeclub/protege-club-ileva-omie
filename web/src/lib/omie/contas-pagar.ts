@@ -139,6 +139,18 @@ export async function estornarContaPagar(apuracaoId: string): Promise<void> {
     throw new Error('Título sem codigo_lancamento_omie salvo — não é possível estornar automaticamente.')
   }
 
-  await excluirContaPagar(codigoLancamentoOmie)
+  try {
+    await excluirContaPagar(codigoLancamentoOmie)
+  } catch (e) {
+    // Se a Omie diz que o lançamento não existe mais (ex.: já foi excluído manualmente por lá,
+    // fora do nosso sistema), o resultado que a gente queria — título fora do Contas a Pagar —
+    // já está garantido. Trata como estorno bem-sucedido em vez de travar o Gestor num erro sem
+    // saída (caso real, 18/08/2026: consultor #303, lançamento já inexistente na Omie).
+    const mensagem = e instanceof Error ? e.message : String(e)
+    if (!/n[aã]o cadastrado/i.test(mensagem)) {
+      throw e
+    }
+  }
+
   await admin.from('auditoria_omie').update({ status: 'estornado' }).eq('id', registro.id)
 }
