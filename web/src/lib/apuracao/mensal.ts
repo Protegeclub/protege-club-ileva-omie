@@ -44,6 +44,10 @@ export interface DescontoRastreadorItem {
   placa: string
   associado: string
   consultorNome: string
+  // De quem é a apuração (não só o nome) — necessário pra saber qual apuração atualizar ao
+  // excluir manualmente um desconto (ver gestor/consultor/[cod]/rastreadores), mesmo quando a
+  // lista exibida junta vários consultores (toggle "ver equipe").
+  cod_consultor: number
   dt_contrato: string
   valor: number
 }
@@ -206,6 +210,7 @@ export async function apurarConsultorMes(
       placa: v.placa,
       associado: v.associado,
       consultorNome: nomeConsultor,
+      cod_consultor: codConsultor,
       dt_contrato: v.dt_contrato,
       valor: VALOR_DESCONTO_RASTREADOR,
     }))

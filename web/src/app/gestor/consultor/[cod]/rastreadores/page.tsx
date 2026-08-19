@@ -1,8 +1,8 @@
 import { juntarItens } from '@/app/consultor/tipos'
-import { TabelaRastreadores } from '@/app/consultor/tabelas-listagem'
 import { Banner } from '@/lib/ui/banner'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
 import { carregarContextoGestorConsultor } from '../dados'
+import { TabelaRastreadoresGestor } from './tabela-rastreadores-gestor'
 
 export default async function GestorRastreadoresPage({
   params,
@@ -31,7 +31,7 @@ export default async function GestorRastreadoresPage({
         voltarHref={`/gestor/consultor/${codConsultor}?${qs}`}
       />
 
-      <TabelaRastreadores linhas={descontos} />
+      <TabelaRastreadoresGestor linhas={descontos} ano={ano} mes={mes} />
     </div>
   )
 }

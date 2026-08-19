@@ -29,6 +29,17 @@ export async function gerarESalvarApuracao(
 ): Promise<ResumoGeracao> {
   const resultado = await apurarConsultorMes(codConsultor, ano, mes)
 
+  const admin = createSupabaseAdminClient()
+
+  // Exclusões manuais de desconto de rastreador (Gestor decide não cobrar de propósito, ver
+  // gestor/consultor/[cod]/rastreadores/actions.ts) — aplicadas por cima do cálculo puro da
+  // Ileva. mensal.ts nunca sabe dessa exceção (sempre recalcula o desconto completo), então isso
+  // sobrevive a qualquer regeração futura.
+  const { data: exclusoes } = await admin.from('rastreador_exclusoes').select('cod_veiculo')
+  const codVeiculosExcluidos = new Set((exclusoes ?? []).map((e) => e.cod_veiculo))
+  const descontosRastreador = resultado.descontosRastreador.filter((d) => !codVeiculosExcluidos.has(d.cod_veiculo))
+  const totalDescontoRastreador = descontosRastreador.reduce((soma, item) => soma + item.valor, 0)
+
   // Só calcula pro consultor #302 (Thiago, gerente) — pra todo mundo mais isso é uma query a
   // menos no Supabase, sem custo nenhum. Ver comissao-gerencial.ts pra regra completa.
   const comissaoGerencial =
@@ -48,12 +59,11 @@ export async function gerarESalvarApuracao(
   const totalLiquido =
     resultado.totalAdesao +
     resultado.totalRecorrencia -
-    resultado.totalDescontoRastreador +
+    totalDescontoRastreador +
     premiacaoIndividual.valorTotal +
     bonusNivel.valor +
     (comissaoGerencial?.valorTotal ?? 0)
 
-  const admin = createSupabaseAdminClient()
   const { error } = await admin.from('apuracoes_mensais').upsert(
     {
       cod_consultor: codConsultor,
@@ -62,7 +72,7 @@ export async function gerarESalvarApuracao(
       mes,
       total_adesao: resultado.totalAdesao,
       total_recorrencia: resultado.totalRecorrencia,
-      total_desconto_rastreador: resultado.totalDescontoRastreador,
+      total_desconto_rastreador: totalDescontoRastreador,
       total_premiacao_individual: premiacaoIndividual.valorTotal,
       total_premiacao_equipe: 0,
       total_bonus_nivel: bonusNivel.valor,
@@ -75,7 +85,7 @@ export async function gerarESalvarApuracao(
         adesoes: resultado.adesoes,
         recorrencias: resultado.recorrencias,
         veiculosComRastreador: resultado.veiculosComRastreador,
-        descontosRastreador: resultado.descontosRastreador,
+        descontosRastreador,
         placasAtivadas: resultado.placasAtivadas,
         inadimplentes: resultado.inadimplentes,
         totalRecorrenciaEstimadaInadimplentes: resultado.totalRecorrenciaEstimadaInadimplentes,
@@ -95,7 +105,7 @@ export async function gerarESalvarApuracao(
     nomeConsultor: resultado.nomeConsultor,
     totalAdesao: resultado.totalAdesao,
     totalRecorrencia: resultado.totalRecorrencia,
-    totalDescontoRastreador: resultado.totalDescontoRastreador,
+    totalDescontoRastreador,
     totalPremiacaoIndividual: premiacaoIndividual.valorTotal,
     totalBonusNivel: bonusNivel.valor,
     totalLiquido,
