@@ -11,6 +11,14 @@ import {
 const MESES_EVOLUCAO = 6
 const SELECT_EVOLUCAO = 'mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_bonus_nivel, total_premiacao_individual, total_comissao_gerencial, total_liquido, detalhe'
 
+// Só o Gestor (visão de equipe) precisa saber a que consultor cada linha pertence pra atribuir
+// corretamente uma ação por item (ex.: excluir desconto de rastreador) quando "ver equipe" junta
+// linhas de vários consultores — o dashboard do próprio Consultor (app/consultor/tipos.ts) nunca
+// precisa disso, por isso o campo extra fica só aqui, não no ApuracaoRow compartilhado.
+export interface ApuracaoRowGestor extends ApuracaoRow {
+  cod_consultor: number
+}
+
 export interface ContextoGestorConsultor {
   codConsultor: number
   nomeConsultor: string
@@ -18,16 +26,16 @@ export interface ContextoGestorConsultor {
   ano: number
   mes: number
   equipeAtiva: boolean
-  linhaPropria: ApuracaoRow | null
-  linhasEquipe: ApuracaoRow[]
-  anterior: ApuracaoRow | null
+  linhaPropria: ApuracaoRowGestor | null
+  linhasEquipe: ApuracaoRowGestor[]
+  anterior: ApuracaoRowGestor | null
   evolucao: PontoEvolucaoConsultor[]
 }
 
 export type ResultadoContextoGestor = ContextoGestorConsultor | { erro: string }
 
 const SELECT_APURACAO =
-  'ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_bonus_nivel, total_liquido, cod_equipe, gerado_em, detalhe'
+  'cod_consultor, ano, mes, total_adesao, total_recorrencia, total_desconto_rastreador, total_premiacao_individual, total_premiacao_equipe, total_comissao_gerencial, total_bonus_nivel, total_liquido, cod_equipe, gerado_em, detalhe'
 
 // Equivalente a web/src/app/consultor/dados.ts, mas para o Gestor olhar a apuração de
 // QUALQUER consultor (não só a própria) — por isso usa direto o cliente admin (bypassa a RLS de
@@ -64,14 +72,14 @@ export async function carregarContextoGestorConsultor(
       .eq('cod_consultor', codConsultor)
       .eq('ano', ano)
       .eq('mes', mes)
-      .maybeSingle<ApuracaoRow>(),
+      .maybeSingle<ApuracaoRowGestor>(),
     admin
       .from('apuracoes_mensais')
       .select(SELECT_APURACAO)
       .eq('cod_consultor', codConsultor)
       .eq('ano', periodoAnt.ano)
       .eq('mes', periodoAnt.mes)
-      .maybeSingle<ApuracaoRow>(),
+      .maybeSingle<ApuracaoRowGestor>(),
     Promise.all(
       periodos.map(({ ano: a, mes: m }) =>
         admin
@@ -85,7 +93,7 @@ export async function carregarContextoGestorConsultor(
     ),
   ])
 
-  let linhasEquipe: ApuracaoRow[] = linhaPropria ? [linhaPropria] : []
+  let linhasEquipe: ApuracaoRowGestor[] = linhaPropria ? [linhaPropria] : []
   let nomeConsultor = linhaPropria?.detalhe?.nomeConsultor ?? ''
   let codEquipeConsultor = linhaPropria?.cod_equipe ?? null
   let equipeNome = ''
@@ -106,7 +114,7 @@ export async function carregarContextoGestorConsultor(
       .eq('cod_equipe', codEquipeConsultor)
       .eq('ano', ano)
       .eq('mes', mes)
-    linhasEquipe = (data ?? []) as ApuracaoRow[]
+    linhasEquipe = (data ?? []) as ApuracaoRowGestor[]
   }
 
   return {

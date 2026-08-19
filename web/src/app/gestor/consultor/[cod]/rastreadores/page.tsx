@@ -1,4 +1,3 @@
-import { juntarItens } from '@/app/consultor/tipos'
 import { Banner } from '@/lib/ui/banner'
 import { CabecalhoPagina } from '@/lib/ui/cabecalho-pagina'
 import { carregarContextoGestorConsultor } from '../dados'
@@ -22,7 +21,16 @@ export default async function GestorRastreadoresPage({
 
   const { ano, mes, equipeAtiva, linhasEquipe } = contexto
   const qs = `ano=${ano}&mes=${mes}&equipe=${equipeAtiva ? 1 : 0}`
-  const descontos = juntarItens(linhasEquipe, 'descontosRastreador')
+  // Apurações geradas antes do item ganhar `cod_consultor` embutido (ver mensal.ts) ainda têm
+  // esse campo ausente no detalhe salvo — completa com o cod_consultor da própria linha (sempre
+  // correto, já que cada linha em linhasEquipe é a apuração de um único consultor) em vez de
+  // usar juntarItens puro, que deixaria o item sem dono nesses casos legados.
+  const descontos = linhasEquipe.flatMap((linha) =>
+    (linha.detalhe?.descontosRastreador ?? []).map((item) => ({
+      ...item,
+      cod_consultor: item.cod_consultor ?? linha.cod_consultor,
+    }))
+  )
 
   return (
     <div className="space-y-4">
