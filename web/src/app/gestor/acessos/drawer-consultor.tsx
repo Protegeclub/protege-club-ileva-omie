@@ -214,16 +214,22 @@ function ConteudoDrawer({ consultor, onFechar }: { consultor: LinhaAcesso; onFec
               </Botao>
             </form>
             {estadoLink.link && (
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
-                <p className="flex-1 truncate text-xs text-slate-500">{estadoLink.link}</p>
-                <button
-                  type="button"
-                  onClick={copiarLink}
-                  className="shrink-0 text-xs font-medium text-brand-blue hover:underline"
-                >
-                  {linkCopiado ? 'Copiado!' : 'Copiar'}
-                </button>
-              </div>
+              <>
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
+                  <p className="flex-1 truncate text-xs text-slate-500">{estadoLink.link}</p>
+                  <button
+                    type="button"
+                    onClick={copiarLink}
+                    className="shrink-0 text-xs font-medium text-brand-blue hover:underline"
+                  >
+                    {linkCopiado ? 'Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+                <p className="text-xs text-amber-600">
+                  Link de uso único e com validade curta — não abra ele você mesmo pra conferir
+                  (isso já consome o acesso). Envie direto pro consultor assim que copiar.
+                </p>
+              </>
             )}
             {estadoLink.erro && <p className="text-xs text-red-600">{estadoLink.erro}</p>}
           </>

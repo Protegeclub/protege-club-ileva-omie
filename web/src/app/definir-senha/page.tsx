@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Botao } from '@/lib/ui/botao'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -20,9 +20,30 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 // navegador consegue processar os dois formatos.
 export default function DefinirSenhaPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<Layout><p className="text-center text-sm text-slate-500">Carregando…</p></Layout>}>
       <DefinirSenhaConteudo />
     </Suspense>
+  )
+}
+
+function Layout({ children }: { children: ReactNode }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-sm space-y-5 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="space-y-2 text-center">
+          <Image
+            src="/Logo Protege Club.png"
+            alt="ProtegeClub"
+            width={56}
+            height={56}
+            priority
+            className="mx-auto h-14 w-14"
+          />
+          <p className="text-sm text-slate-500">ProtegeClub — Apuração de comissões</p>
+        </div>
+        {children}
+      </div>
+    </main>
   )
 }
 
@@ -42,21 +63,38 @@ function DefinirSenhaConteudo() {
     const tipo = searchParams.get('type')
 
     async function estabelecerSessao() {
+      // Checa se já existe sessão ANTES de tentar validar o token — cobre um caso real: o
+      // consultor abre o link, a aba recarrega/é reaberta antes de definir a senha (comum em
+      // navegador mobile, ou só clicar de novo no mesmo link do WhatsApp pra "voltar" pra tela).
+      // `token_hash` é de uso único — a primeira abertura já consumiu ele e criou a sessão, mas
+      // a sessão em si continua válida neste navegador. Sem essa checagem, qualquer reabertura
+      // do mesmo link caía direto em "Link inválido ou expirado", mesmo já estando logado.
+      const { data: sessaoExistente } = await supabase.auth.getSession()
+      if (sessaoExistente.session) {
+        if (tokenHash) router.replace('/definir-senha')
+        setTemSessao(true)
+        setCarregandoSessao(false)
+        return
+      }
+
       if (tokenHash && (tipo === 'invite' || tipo === 'recovery')) {
         const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: tipo })
-        if (error) {
-          setTemSessao(false)
+        if (!error) {
+          // Limpa o token da URL assim que a sessão é estabelecida — evita reenviar o mesmo
+          // token (já consumido) num F5 acidental antes de a pessoa salvar a senha.
+          router.replace('/definir-senha')
+          setTemSessao(true)
           setCarregandoSessao(false)
           return
         }
       }
-      const { data } = await supabase.auth.getSession()
-      setTemSessao(!!data.session)
+
+      setTemSessao(false)
       setCarregandoSessao(false)
     }
 
     estabelecerSessao()
-  }, [searchParams])
+  }, [searchParams, router])
 
   async function aoSubmeter(e: React.FormEvent) {
     e.preventDefault()
@@ -86,41 +124,28 @@ function DefinirSenhaConteudo() {
   }
 
   if (carregandoSessao) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-sm text-slate-500">Carregando…</p>
-      </main>
-    )
+    return <Layout><p className="text-center text-sm text-slate-500">Carregando…</p></Layout>
   }
 
   if (!temSessao) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-        <p className="max-w-sm text-center text-sm text-slate-500">
-          Link inválido ou expirado. Peça para o Gestor enviar um novo convite.
-        </p>
-      </main>
+      <Layout>
+        <div className="space-y-2 text-center">
+          <h1 className="text-lg font-semibold text-brand-navy">Link inválido ou expirado</h1>
+          <p className="text-sm text-slate-500">
+            Esse link já foi usado ou não é mais válido. Peça para o Gestor gerar um novo convite
+            e reenviar assim que possível — não abra o link mais de uma vez antes de definir a
+            senha.
+          </p>
+        </div>
+      </Layout>
     )
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <form
-        onSubmit={aoSubmeter}
-        className="w-full max-w-sm space-y-5 rounded-xl border border-slate-200 bg-white p-8 shadow-sm"
-      >
-        <div className="space-y-2 text-center">
-          <Image
-            src="/Logo Protege Club.png"
-            alt="ProtegeClub"
-            width={56}
-            height={56}
-            priority
-            className="mx-auto h-14 w-14"
-          />
-          <h1 className="text-lg font-semibold text-brand-navy">Defina sua senha</h1>
-          <p className="text-sm text-slate-500">ProtegeClub — Apuração de comissões</p>
-        </div>
+    <Layout>
+      <form onSubmit={aoSubmeter} className="space-y-5">
+        <h1 className="text-center text-lg font-semibold text-brand-navy">Defina sua senha</h1>
 
         <div className="space-y-1">
           <label htmlFor="senha" className="text-sm font-medium text-slate-700">
@@ -156,6 +181,6 @@ function DefinirSenhaConteudo() {
           {enviando ? 'Salvando…' : 'Salvar e entrar'}
         </Botao>
       </form>
-    </main>
+    </Layout>
   )
 }
