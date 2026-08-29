@@ -125,6 +125,19 @@ sistema.
 
 ## 5. Status atual
 
+> **Atualização real (29/08/2026)** — a lista abaixo é o log histórico desde o início do projeto
+> (julho/2026) e não foi mais editada depois disso; várias entradas aqui (ex.: "chave de teste da
+> Omie ainda não obtida", "painel do Gestor ainda placeholder") descrevem uma fase muito anterior
+> à atual. **Status de verdade hoje**: sistema **entregue, pago (R$2.000) e em produção real**,
+> recebendo pedidos de ajuste incremental do cliente — não é mais desenvolvimento inicial. Ver
+> seções 6.22 a 6.32 pro que foi construído entre 09/08 e 29/08/2026 (reforma dos PDFs, correção
+> financeira real do desconto de rastreador, painel do Consultor no celular, Omie com anexo/PIX/
+> estorno/troca de vínculo em uso real — 29 comissões já pagas —, exclusão manual de desconto de
+> rastreador). **Pendências reais que restam**: convite em massa dos ~206 consultores (só 4
+> consultores + 2 gestores têm acesso hoje, verificado no Supabase — ver seção 6.3), chave PIX de
+> ~49 consultores vinculados (seção 6.30), rotina automática/cron de geração (ainda manual pelo
+> Gestor), SMTP próprio (seção 6.16, limitação conhecida sem solução ainda).
+
 - ✅ Requisitos extraídos e documentados.
 - ✅ API do Ileva mapeada e validada com dados reais (usuário de API só-leitura).
 - ✅ Proposta comercial enviada ao cliente (06/07/2026).
@@ -518,15 +531,17 @@ sistema.
       comparando com os ~3.900 clientes/fornecedores da Omie) e o Gestor confirma manualmente na
       tela, uma vez por consultor (fica salvo em `consultor_omie_vinculo`). Migration
       `0006_omie_vinculo.sql` **aplicada no Supabase em 29/07/2026** (tabelas confirmadas).
-- [ ] **Conta corrente**: categoria financeira já definida (**2.06.99 — Salários**), mas a conta
-      corrente ainda não — Samuel vai confirmar com o financeiro. Configurar pela tela
-      `/gestor/omie` assim que souber (tabela `omie_configuracao`, coluna de categoria já pode
-      ser preenchida, falta só `codigo_conta_corrente`). O botão de enviar fica desabilitado até
-      as duas estarem preenchidas.
-- [ ] **Teste real supervisionado**: combinado com o Samuel (29/07/2026) fazer o primeiro envio
-      de verdade acompanhado em tempo real (valor simbólico, conferir no Omie, e permitir
-      excluir se precisar) — ainda não feito, só a leitura (ListarClientes/Categorias/Contas) foi
-      testada de verdade até agora. **Bloqueado pela conta corrente acima.**
+- [x] **Conta corrente definida e configurada** (atualizado 29/08/2026): categoria final ficou
+      **2.09.99 — Comissões s/ adesões e mensalidades** (não a 2.06.99 cogitada inicialmente) +
+      conta corrente **Sicredi** (`codigo_conta_corrente` 2838775812) — `omie_configuracao`
+      preenchida desde 10/08/2026, confirmado ao vivo no Supabase.
+- [x] **Teste supervisionado feito e superado — integração em uso real de produção**
+      (atualizado 29/08/2026): não é mais só teste, `auditoria_omie` tem **29 títulos enviados
+      com sucesso**, 1 erro, 1 estornado (ver seções 6.28/6.30/6.31 pra tudo que foi construído
+      em cima disso: anexo de PDF, chave PIX, estorno, troca de vínculo).
+- [ ] **Chave PIX pendente pra ~49 consultores** (ver seção 6.30) — dos 58 já vinculados a um
+      fornecedor da Omie, só 9 têm chave PIX cadastrada; sem ela, o envio de comissão desse
+      consultor fica bloqueado.
 
 ### 6.6 Motor de apuração de comissão
 - [x] Cálculo da adesão — validado com dado real (consultor 313, maio/2026: R$ 200,00)
@@ -1356,3 +1371,204 @@ sistema.
       afeta nenhuma decisão de negócio. "Colocar em modo de produção" não é uma mudança de
       código — é fechar as pendências reais de negócio (Omie + convite dos consultores, ver
       Seção 6.5 e a memória `project_proposta_protege_club`).
+
+> **Nota (29/08/2026)**: as seções 6.1 a 6.21 acima e a Seção 5 (Status atual) ficaram sem
+> atualização entre ~08/08 e 29/08/2026 — o sistema **foi entregue, pago e está em produção real
+> desde então**, recebendo pedidos de ajuste do cliente como qualquer sistema já em uso, não mais
+> em desenvolvimento inicial. As seções abaixo (6.22 em diante) cobrem esse período. Sempre
+> conferir `git log` também, não confiar só neste arquivo como a fonte mais recente.
+
+### 6.22 Reformulação completa dos PDFs de relatório (09/08/2026)
+- [x] **Plano de redesign executado** (o mesmo planejado numa sessão de plan-mode anterior, não
+      ficou só no papel): todos os PDFs (5 telas de detalhe do Consultor, Dashboard, "Todos os
+      Consultores", Consolidado) trocaram de layout fixo com corte por reticências
+      (`ellipsis: true`, texto longo sempre truncado) pra **wrap dinâmico de altura** —
+      `pdf-utils.ts` agora mede a altura real de cada célula (`doc.heightOfString`) e desenha a
+      linha inteira na altura da maior célula, sem cortar texto; só um caso patológico (célula
+      passando de ~120pt) cai de volta pro `ellipsis` como último recurso, pra não deixar 1 dado
+      sujo quebrar a tabela inteira.
+  - **Orientação landscape** nas 5 tabelas de detalhe (Adesões/Recorrência/Rastreadores/Placas/
+    Inadimplentes) e no resumo "Todos os Consultores" — mais largura pra caber as colunas novas
+    sem forçar quebra de linha constante; Dashboard e Consolidado continuam em portrait (menos
+    colunas, funcionam como "capa"/visão agregada).
+  - **Campos novos**: `cod_cobranca` (Cód. Boleto) e `referencia` (Ref:MM/AAAA) passaram a existir
+    também em `AdesaoItem` e `InadimplenteItem` (`mensal.ts`) — já existiam só em
+    `RecorrenciaItem`. Estritamente aditivo (o `BoletoResumo` da Ileva já trazia esses campos, só
+    não eram copiados). **Meses apurados antes desse deploy mostram "—" nessas colunas novas até
+    serem gerados de novo** — mesmo comportamento já visto antes com outros campos novos
+    (`dt_pagamento`, `placasAtivadas`).
+  - `gerarPdfDashboard` virou uma tabela real de 2 colunas (Métrica | Valor) em vez de linhas de
+    texto solto. `gerarPdfTodosConsultores` virou tabela de resumo por equipe (com subtotal) em
+    vez de um bloco de texto por consultor; placas ativadas passou a ser uma tabela por equipe
+    (não mais por consultor individual). `gerarPdfConsolidado` (`pdf.ts`) foi reescrito pra usar a
+    mesma infraestrutura compartilhada (`criarDocumento`/`desenharTabela`) em vez de posições fixas
+    manuais — elimina uma classe de bug onde nome longo desalinhava a linha seguinte.
+  - Datas formatadas em `DD/MM/AAAA` (`formatarDataBr`) em vez de ISO cru em Adesões/
+    Inadimplentes/Rastreadores/Placas Ativadas — mesmo padrão já usado em Recorrência.
+  - **Verificação**: `web/scripts/test-pdf-utils.mts` (fixture sintética, sem API/banco) testa
+    nome longo não cortado, campo nulo com fallback `—`, tabela multi-página com repetição de
+    cabeçalho, tabela vazia, as duas orientações — gerado no scratchpad e conferido manualmente
+    antes do deploy. `npx tsc --noEmit`, `npm run build` e `npm run lint` confirmados limpos.
+  - **Redeploy do Trigger.dev necessário e feito** — a única mudança deste pacote que toca
+    `lib/apuracao/mensal.ts` (campos novos em `AdesaoItem`/`InadimplenteItem`) é dependência direta
+    da task `gerar-apuracao` (ver regra da seção 6.4); as mudanças em `lib/relatorios/*` não
+    exigem redeploy do Trigger.dev, só deploy normal da Vercel.
+
+### 6.23 Correção financeira real: desconto de rastreador não detectava todas as variantes do benefício (10/08/2026)
+- [x] **Achado real, mesmo estilo de investigação das seções 6.19/6.20** (comparação contra o
+      próprio painel do Ileva): o campo `possui_rastreador` do veículo só reflete o benefício
+      "Rastreamento Obrigatório" (incluído no plano) — um veículo com rastreamento **comercial
+      avulso** (adicional pago à parte) vem com `possui_rastreador: "Não"` mesmo tendo rastreador
+      de verdade instalado. Confirmado com dado real (consultor #9, placas RVC2H97/PXT6B78,
+      13-14/07/2026) contra o filtro "Benefícios: Rastreamento*" do próprio Ileva, que agrupa
+      todas as variantes (Rastreamento, Rastreamento Obrigatório, Rastreamento - Planos,
+      Rastreamento - Plano Partner, Rastreamento Obrigatório Motorista de aplicativo) como a
+      mesma coisa.
+  - **Direção do erro**: ao contrário das seções 6.19/6.20 (que inflavam recorrência/pagavam a
+    mais), este bug fazia o sistema **deixar de detectar** alguns veículos com rastreador real —
+    ou seja, o desconto de R$100 não era aplicado nesses casos, e o consultor recebia **a mais**
+    do que deveria nos meses em que isso ocorreu.
+  - **Corrigido** em `mensal.ts`: nova função `temBeneficioRastreador(veiculo)` checa se algum
+    item de `veiculo.beneficios` tem `beneficio_nome` contendo "rastreamento" (case-insensitive),
+    em vez de confiar só no campo `possui_rastreador`. Usada tanto na lista de veículos com
+    rastreador (aba "Veículos com Rastreador") quanto no cálculo do desconto em si.
+  - **Pendente de verificar**: como isso muda `mensal.ts` (dependência da task `gerar-apuracao`
+    do Trigger.dev), precisa de redeploy manual antes de valer em produção de verdade e de
+    regeração dos meses afetados pra corrigir o valor retroativamente — conferir se isso já foi
+    feito antes de assumir que apurações antigas já refletem o valor certo.
+
+### 6.24 Navegação e visualização: busca/ordenação nas tabelas, KPIs novos, filtros (10/08/2026)
+- [x] **Busca e ordenação nas 5 tabelas de detalhe** (Adesões/Recorrência/Rastreadores/Placas/
+      Inadimplentes, Consultor + Gestor espelhados) — novo componente compartilhado
+      `TabelaListagem` (`lib/ui/tabela-listagem.tsx`, Client Component): campo de busca que filtra
+      por qualquer coluna, clique no cabeçalho ordena (asc/desc/nenhum), rodapé (total/contagem)
+      é função das linhas já filtradas. Extraído de `consultor/tabelas-listagem.tsx`
+      (`TabelaAdesoes`/`TabelaRecorrencia`/`TabelaRastreadores`/`TabelaPlacasAtivadas`/
+      `TabelaInadimplentes`), reaproveitado sem duplicar entre Consultor e Gestor. **Esse é o
+      mesmo componente usado depois na tela de exclusão manual de rastreador (seção 6.32).**
+  - **Novos cards de KPI na visão geral** (Consultor + Gestor espelhados): "Descontos
+    rastreadores" (contagem, com tendência vs. mês anterior) e "Inadimplentes" (contagem de
+    boletos em aberto) — grid de KPIs foi de 4 pra 6 colunas em telas grandes.
+  - **Redesenho da barra de filtro**: removido um link "Voltar" duplicado/confuso nas 10 telas de
+    relatório (o rótulo genérico "Voltar" competia visualmente com o "← Voltar para consultores"
+    da barra de filtro do Gestor, embora fossem destinos diferentes) — `CabecalhoPagina` ganhou
+    corpo de botão de verdade (`Botao variante="fantasma"`) em vez de texto solto sublinhado.
+  - **Bug de hidratação corrigido** no seletor de relatórios (`/gestor/relatorios`): lia o filtro
+    inicial de `window.location.search` diretamente, que não existe durante o SSR — o HTML do
+    servidor sempre assumia os valores padrão enquanto o cliente já lia a URL real, gerando erro
+    de hidratação toda vez que a página abria/recarregava com algum filtro na URL. Corrigido
+    trocando pra `useSearchParams()` (preenchido pelo Next já durante o SSR, servidor e cliente
+    leem o mesmo valor) só pra leitura inicial — a sincronização de URL a cada clique continua via
+    `history.replaceState` puro (sem `router.replace()`), pra não pagar round-trip ao servidor a
+    cada interação de filtro.
+
+### 6.25 Reorganização do menu do Gestor e novos gráficos do Dashboard (10/08/2026)
+- [x] Sidebar do Gestor agrupada em seções (**Visão Geral / Operação / Administração**) em vez de
+      uma lista plana de itens. Cabeçalho do Dashboard trocado por um seletor de competência único
+      + atalhos (em vez dos filtros espalhados de antes). Gráficos de indicadores substituídos por
+      versões mais ricas — média de referência, combo barra+acumulado, área — sem sobrepor rótulos
+      no layout de 4 colunas.
+
+### 6.26 Página de Plano de Carreira no painel do Consultor (10/08/2026)
+- [x] Nova tela (`consultor/plano-carreira/`) mostra o progresso do consultor nos patamares de
+      placas ativadas do mês (bônus por nível, níveis de gestão e premiação individual — ver
+      seção 6.6), com o que falta pro próximo degrau e o ganho potencial ao reverter inadimplentes.
+      **100% reaproveitamento** dos cálculos já existentes em `lib/apuracao/*` — nenhuma regra de
+      negócio nova, só uma visualização nova do que já era calculado.
+
+### 6.27 Correção de paginação de categorias do Omie + busca na configuração (10/08/2026)
+- [x] **Bug real**: `listarCategoriasDespesaOmie` só buscava a 1ª página (100 de 156 categorias
+      cadastradas na Omie), deixando "Comissões s/ adesões e mensalidades" — a categoria que
+      acabou sendo escolhida pra classificar os pagamentos de comissão (ver `omie_configuracao`
+      na seção 6.5) — de fora do seletor. Corrigido paginando até o fim. De quebra, os dois
+      `<select>` nativos da tela de configuração (categoria/conta corrente) viraram um campo de
+      busca que filtra a lista por descrição, sem expor o código contábil bruto.
+
+### 6.28 Omie: anexo automático do relatório em PDF no título financeiro (11/08/2026, corrigido 15/08/2026)
+- [x] **Ao confirmar o envio de uma comissão**, o sistema agora gera o dashboard completo (sem a
+      seção de Inadimplentes — não faz sentido anexar isso ao próprio título de pagamento do
+      consultor) e anexa como arquivo do título no Omie (zip + base64 + MD5, conforme a API
+      oficial `IncluirAnexo`), além de preencher a **Data de Emissão** sempre como o último dia do
+      mês apurado (`calcularUltimoDiaMesBr`), não o dia em que o Gestor efetivamente clica em
+      enviar. Falha ao anexar **não impede o pagamento** — só fica registrada em
+      `anexo_status`/`anexo_erro` (migration `0011_omie_anexo.sql`) pra auditoria.
+  - **Dois bugs reais corrigidos (achados com dado real de produção, não suposição)**:
+    `cCodIntAnexo` tem limite de 20 caracteres na Omie — o identificador original
+    (`${codigo_integracao}-anexo`, com o UUID da apuração) tinha 51 e sempre falhava; corrigido
+    pra `anexo-${codigo_lancamento_omie}` (numérico, gerado pela própria Omie, cabe com folga). O
+    `cMd5` estava sendo calculado sobre os bytes brutos do zip em vez da string base64 que a Omie
+    recalcula pra conferir — corrigido pra hashear a string base64.
+  - **Lição de processo real**: essas duas correções tinham sido feitas localmente mas **nunca
+    chegaram a ser commitadas/enviadas** — todo anexo real criado desde 12/08 continuou batendo no
+    código antigo em produção até o descuido ser percebido (ao reconsultar `auditoria_omie` e ver
+    envios novos ainda falhando com o erro antigo) e corrigido de vez em 15/08. O pagamento em si
+    nunca foi afetado por isso (sempre foi criado com sucesso, só o anexo falhava). Título já
+    criados sem anexo foram reparados por um script pontual
+    (`web/scripts/reenviar-anexos-omie.mts`, mantido como ferramenta reutilizável).
+
+### 6.29 Painel do Consultor acessível no celular (11/08/2026)
+- [x] Abaixo do breakpoint `lg`, o menu lateral deixa de ficar sempre visível e vira uma gaveta
+      off-canvas (hamburguer + slide-in + overlay), fechando ao navegar. A partir de `lg` o
+      comportamento continua idêntico ao anterior (mesma largura, mesmo botão de recolher, sempre
+      visível) — **nenhuma mudança no desktop**. Corrigido logo em seguida: a barra superior
+      mobile tinha fundo branco, deixando a logo (clara) invisível — trocada pra fundo navy, só no
+      mobile.
+
+### 6.30 Omie: chave PIX obrigatória no pagamento (15/08/2026)
+- [x] A pedido do cliente (via WhatsApp): antes de enviar o pagamento de um consultor, a chave PIX
+      dele precisa estar cadastrada. Guardada **uma vez** junto do vínculo confirmado (coluna
+      `chave_pix` em `consultor_omie_vinculo`, migration `0012_omie_chave_pix.sql`), com opção de
+      editar depois — não pede de novo todo mês. Botão "Enviar" fica desabilitado sem isso. O
+      título criado no Omie sai configurado como transferência via chave Pix
+      (`codigo_forma_pagamento=TRA`, `finalidade_transferencia=01.3`, chave no campo
+      `pix_qrcode`) — confirmado via múltiplas fontes da documentação oficial da Omie, já que
+      `codigo_forma_pagamento="PIX"` (a opção óbvia) é só pra QR-code, não pra chave.
+  - **Estado em 29/08/2026** (verificado no Supabase): 58 consultores já vinculados a um
+    fornecedor da Omie, só **9 com chave PIX cadastrada** — os outros ~49 ficam bloqueados de
+    receber via Omie até a chave ser preenchida.
+
+### 6.31 Omie: estorno de lançamento e troca de vínculo de fornecedor (15-18/08/2026)
+- [x] **Estornar**: novo botão (confirmação em 2 passos) que exclui o título já criado no Omie
+      (`ExcluirContaPagar`) quando o envio foi feito com o vínculo errado — depois do estorno, o
+      botão "Enviar" volta a ficar disponível pra reenviar (o guard de idempotência só bloqueia
+      enquanto o status ainda é `'enviado'`). **Trocar vínculo**: reabre a busca de
+      cliente/fornecedor mesmo depois de já confirmado, pra corrigir um vínculo errado (PF/PJ,
+      fornecedor errado) sem mexer direto no banco.
+  - **Bug real corrigido (erro ao vivo em produção, 18/08/2026)**: o campo `codigo_lancamento_omie`
+    do estorno estava dentro de um objeto aninhado (`conta_pagar_cadastro_chave`), baseado só em
+    documentação e nunca testado ao vivo antes — a Omie recusou com "preenchimento das tags...
+    obrigatório". Corrigido pra campo solto no `param`, igual o `IncluirContaPagar`.
+  - **Mensagens de erro traduzidas**: `omieCall` agora extrai só o texto útil (`faultstring`) em
+    vez de devolver o JSON cru pra tela, com mensagem específica pro caso de "consumo redundante"
+    (rate-limit da própria Omie — sempre se resolve sozinho, tipicamente em menos de 1 minuto,
+    às vezes até ~30min segundo o volume recente de chamadas).
+  - **Caso real tratado**: estornar um título que a Omie já não reconhece mais (removido
+    manualmente por lá, fora do nosso sistema — caso real do consultor #303) agora é tratado como
+    estorno bem-sucedido em vez de travar o Gestor num erro sem saída.
+  - Selo de status "Estornado" na tela mudou de tom neutro pra **vermelho**, a pedido do Samuel,
+    pra melhor identificação visual.
+  - **Estado em 29/08/2026** (verificado no Supabase): `auditoria_omie` com 29 títulos
+    `enviado`, 1 `erro`, 1 `estornado` — a integração está em uso real de produção, não é mais só
+    teste supervisionado.
+
+### 6.32 Exclusão manual de desconto de rastreador (18-29/08/2026)
+- [x] A pedido do cliente: alguns consultores não devem ser cobrados pelo rastreador de um
+      veículo específico (decisão caso a caso do Gestor, ex.: cortesia comercial). Novo botão
+      "Excluir" (confirmação em 2 passos, reaproveitando o padrão do "Estornar" da seção 6.31) na
+      tabela de Desconto de Rastreadores — **só na visão do Gestor**, a tabela compartilhada com o
+      Consultor (`TabelaRastreadores`) continua sem essa ação.
+  - Nova tabela `rastreador_exclusoes` (migration `0013_rastreador_exclusoes.sql`, chave primária
+    `cod_veiculo` — como `dt_contrato` de um veículo é fixo, o desconto dele só cai numa única
+    competência, então excluir por veículo já cobre qualquer regeração futura daquele mês) grava a
+    exclusão permanente; `lib/apuracao/gerar.ts` filtra por ela antes de salvar qualquer apuração
+    nova (recalculando `total_desconto_rastreador`/`total_liquido` corretamente). A Server Action
+    também já patcha a apuração do **mês corrente** na hora (remove o item de `detalhe.
+    descontosRastreador`, ajusta os totais), sem precisar esperar uma regeração pra ter efeito
+    imediato.
+  - **Bug real corrigido no mesmo dia**: apurações geradas antes do item de rastreador ganhar
+    `cod_consultor` embutido no JSON salvo (`DescontoRastreadorItem`, adicionado junto desta
+    feature) travavam a exclusão com "null value in column cod_consultor" — o item legado vinha
+    sem esse campo. Corrigido completando o `cod_consultor` a partir da própria coluna da
+    apuração (sempre presente no banco, nunca dependeu do JSON) sempre que o item individual não
+    tiver o campo — resolve pra qualquer apuração já existente, sem precisar regerar nada.
+  - **Estado em 29/08/2026**: 2 rastreadores já excluídos manualmente.
