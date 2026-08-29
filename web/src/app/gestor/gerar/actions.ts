@@ -217,7 +217,7 @@ export interface StatusCompetencia {
   pendentes: number
   processando: number
   erros: number
-  situacao: 'apurado' | 'pendente' | 'parcial' | 'erro'
+  situacao: 'apurado' | 'pendente' | 'parcial' | 'erro' | 'incompleto'
   ultimaExecucao: string | null
   executadoPor: string | null
 }
@@ -260,11 +260,20 @@ export async function buscarStatusCompetencia(
   const pendentes = jobs.filter((j) => j.status === 'pendente').length
   const totalAtivos = codsAtivos.length
 
+  // "parcial" (em andamento de verdade) exige algo pendente ou rodando agora. Sem isso, um mero
+  // gap entre processados e totalAtivos (ex.: 5 consultores ficaram ativos no Ileva depois do
+  // lote ter sido disparado, e nunca tiveram job criado — não é "pendente", nem "erro", é
+  // simplesmente ausente de apuracao_jobs) caía direto no "parcial"/"em andamento" mesmo com
+  // pendentes=0 e processando=0, dando a entender que algo ainda estava rodando quando não
+  // estava (achado real, 29/08/2026: 190 de 195 processados, 0 pendentes/erros, mostrando
+  // "Apuração em andamento" indefinidamente). Esse gap agora vira "incompleto" — mensagem própria
+  // que deixa claro que nada está rodando e que é preciso gerar de novo pra completar.
   let situacao: StatusCompetencia['situacao']
   if (erros > 0) situacao = 'erro'
   else if (processados >= totalAtivos && totalAtivos > 0) situacao = 'apurado'
-  else if (processados === 0 && processando === 0) situacao = 'pendente'
-  else situacao = 'parcial'
+  else if (pendentes > 0 || processando > 0) situacao = 'parcial'
+  else if (processados === 0) situacao = 'pendente'
+  else situacao = 'incompleto'
 
   const apuracoes = apuracoesData ?? []
   const ultimaApuracao = apuracoes.reduce<{ gerado_em: string; gerado_por: string } | null>(

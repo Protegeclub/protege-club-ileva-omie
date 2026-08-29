@@ -223,6 +223,16 @@ const CONFIG_SITUACAO: Record<
     titulo: 'Apuração com erros',
     mensagem: (s) => `${s.erros} consultor(es) não foram processados nesta competência.`,
   },
+  // Nada pendente ou rodando agora, mas nem todo mundo foi processado — ex.: consultor ficou
+  // ativo no Ileva depois do lote já ter sido disparado, e nunca chegou a ter um job criado.
+  // Diferente de "parcial" (que só aparece quando tem algo de fato em andamento).
+  incompleto: {
+    classes: 'border-amber-200 bg-amber-50 text-amber-700',
+    Icone: IconeAlerta,
+    titulo: 'Apuração incompleta',
+    mensagem: (s) =>
+      `${s.totalAtivos - s.processados} consultor(es) ativo(s) ainda sem apuração processada, e nada pendente ou em andamento no momento. Gere a apuração de todos de novo pra completar.`,
+  },
 }
 
 // Elemento de maior destaque da página — mostra de cara se o mês corrente já foi apurado, ainda
@@ -256,7 +266,7 @@ function CardStatusCompetencia({ status, ano, mes }: { status: StatusCompetencia
           Reprocessar competência
         </Botao>
       )}
-      {(status.situacao === 'pendente' || status.situacao === 'erro') && (
+      {(status.situacao === 'pendente' || status.situacao === 'erro' || status.situacao === 'incompleto') && (
         <Botao href="#apuracao-em-lote" variante="destaque" className="h-11 shrink-0">
           Gerar apuração
         </Botao>
