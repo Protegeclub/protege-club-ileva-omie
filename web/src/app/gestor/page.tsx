@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { NOMES_MESES } from '@/app/consultor/tipos'
+import { NOMES_MESES, periodoPadrao } from '@/app/consultor/tipos'
 import { montarDashboardMes, type DashboardMes } from '@/lib/apuracao/dashboard-mes'
 import { Botao } from '@/lib/ui/botao'
 import { CardMetrica, calcularProgresso, calcularTendencia } from '@/lib/ui/card-metrica'
@@ -55,9 +55,9 @@ export default async function GestorDashboardPage({
   searchParams: Promise<{ ano?: string; mes?: string }>
 }) {
   const params = await searchParams
-  const hoje = new Date()
-  const ano = Number(params.ano) || hoje.getFullYear()
-  const mes = Number(params.mes) || hoje.getMonth() + 1
+  const padrao = periodoPadrao()
+  const ano = Number(params.ano) || padrao.ano
+  const mes = Number(params.mes) || padrao.mes
 
   const dados = await montarDashboardMes(ano, mes)
   const evolucaoLiquido = dados.evolucao.map((p) => p.totalLiquido)

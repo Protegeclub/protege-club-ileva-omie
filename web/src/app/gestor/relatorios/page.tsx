@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { periodoPadrao } from '@/app/consultor/tipos'
 import { listarEquipesDisponiveis, listarTodosConsultores } from '@/lib/ileva/api'
 import { SeletorRelatorio } from './seletor-relatorio'
 
@@ -15,9 +16,9 @@ export default async function GestorRelatoriosPage() {
 
   const equipesDisponiveis = listarEquipesDisponiveis(consultores)
 
-  const hoje = new Date()
-  const anoInicial = hoje.getFullYear()
-  const mesInicial = hoje.getMonth() + 1
+  const padrao = periodoPadrao()
+  const anoInicial = padrao.ano
+  const mesInicial = padrao.mes
   const ultimoDiaDoMes = new Date(anoInicial, mesInicial, 0).getDate()
   const dataInicioPadrao = `${anoInicial}-${String(mesInicial).padStart(2, '0')}-01`
   const dataFimPadrao = `${anoInicial}-${String(mesInicial).padStart(2, '0')}-${String(ultimoDiaDoMes).padStart(2, '0')}`

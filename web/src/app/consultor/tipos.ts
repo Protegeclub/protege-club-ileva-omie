@@ -175,6 +175,17 @@ export function periodoAnterior(ano: number, mes: number): { ano: number; mes: n
   return mes === 1 ? { ano: ano - 1, mes: 12 } : { ano, mes: mes - 1 }
 }
 
+// Competência que qualquer tela de dados (Dashboard, Consultores, detalhe do consultor, Omie,
+// Gerar apuração, Relatórios) deve mostrar por padrão ao carregar sem ano/mês na URL — pedido do
+// cliente (29/08/2026): o mês corrente ainda está em andamento (adesão/recorrência seguem sendo
+// lançadas), então o mês "fechado" mais recente pra olhar é sempre o anterior ao atual, nunca o
+// corrente. Todo lugar que hoje faz `Number(x) || hoje.getFullYear()`/`hoje.getMonth() + 1` deve
+// usar isso em vez de `hoje` direto.
+export function periodoPadrao(): { ano: number; mes: number } {
+  const hoje = new Date()
+  return periodoAnterior(hoje.getFullYear(), hoje.getMonth() + 1)
+}
+
 export interface PontoEvolucaoConsultor {
   rotulo: string
   totalAdesao: number

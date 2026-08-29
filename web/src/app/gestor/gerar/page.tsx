@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { periodoPadrao } from '@/app/consultor/tipos'
 import { listarTodosConsultores } from '@/lib/ileva/api'
 import { Botao } from '@/lib/ui/botao'
 import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
@@ -39,9 +40,9 @@ export default async function GestorGerarPage({
   searchParams: Promise<{ ano?: string; mes?: string }>
 }) {
   const params = await searchParams
-  const hoje = new Date()
-  const ano = Number(params.ano) || hoje.getFullYear()
-  const mes = Number(params.mes) || hoje.getMonth() + 1
+  const padrao = periodoPadrao()
+  const ano = Number(params.ano) || padrao.ano
+  const mes = Number(params.mes) || padrao.mes
 
   let consultores: { cod_consultor: number; nome: string; equipe: string }[] = []
   let ilevaOnline = true

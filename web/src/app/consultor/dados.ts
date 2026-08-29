@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import {
   montarEvolucao,
   periodoAnterior,
+  periodoPadrao,
   type ApuracaoRow,
   type LinhaEvolucaoRow,
   type PontoEvolucaoConsultor,
@@ -37,9 +38,9 @@ export async function carregarContextoConsultor(searchParams: {
   mes?: string
   equipe?: string
 }): Promise<ResultadoContexto> {
-  const hoje = new Date()
-  const ano = Number(searchParams.ano) || hoje.getFullYear()
-  const mes = Number(searchParams.mes) || hoje.getMonth() + 1
+  const padrao = periodoPadrao()
+  const ano = Number(searchParams.ano) || padrao.ano
+  const mes = Number(searchParams.mes) || padrao.mes
   const equipeAtiva = searchParams.equipe === '1'
 
   const supabase = await createSupabaseServerClient()

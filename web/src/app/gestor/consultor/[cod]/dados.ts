@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import {
   montarEvolucao,
   periodoAnterior,
+  periodoPadrao,
   type ApuracaoRow,
   type LinhaEvolucaoRow,
   type PontoEvolucaoConsultor,
@@ -50,9 +51,9 @@ export async function carregarContextoGestorConsultor(
     return { erro: 'Código de consultor inválido.' }
   }
 
-  const hoje = new Date()
-  const ano = Number(searchParams.ano) || hoje.getFullYear()
-  const mes = Number(searchParams.mes) || hoje.getMonth() + 1
+  const padrao = periodoPadrao()
+  const ano = Number(searchParams.ano) || padrao.ano
+  const mes = Number(searchParams.mes) || padrao.mes
   const equipeAtiva = searchParams.equipe === '1'
 
   const admin = createSupabaseAdminClient()

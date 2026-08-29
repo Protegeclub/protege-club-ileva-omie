@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { BotaoAtualizarPagina } from '@/lib/ui/botao-atualizar-pagina'
 import { Cartao } from '@/lib/ui/cartao'
 import { IconeUsuarios } from '@/lib/ui/icones-sidebar'
+import { periodoPadrao } from './tipos'
 
 const NOMES_MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -28,8 +29,9 @@ export function FiltrosToolbar() {
   if (ocultarPeriodo) return null
 
   const hoje = new Date()
-  const ano = Number(searchParams.get('ano')) || hoje.getFullYear()
-  const mes = Number(searchParams.get('mes')) || hoje.getMonth() + 1
+  const padrao = periodoPadrao()
+  const ano = Number(searchParams.get('ano')) || padrao.ano
+  const mes = Number(searchParams.get('mes')) || padrao.mes
   const equipe = searchParams.get('equipe') === '1'
 
   const anosDisponiveis = [hoje.getFullYear(), hoje.getFullYear() - 1, hoje.getFullYear() - 2]

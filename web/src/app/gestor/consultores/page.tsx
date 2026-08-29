@@ -1,4 +1,4 @@
-import type { ApuracaoDetalhe } from '@/app/consultor/tipos'
+import { periodoPadrao, type ApuracaoDetalhe } from '@/app/consultor/tipos'
 import { listarEquipesDisponiveis, listarTodosConsultores } from '@/lib/ileva/api'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { Consultor } from '@/types/domain'
@@ -25,9 +25,9 @@ export default async function GestorConsultoresPage({
   searchParams: Promise<{ ano?: string; mes?: string; equipe?: string; q?: string; sort?: string; dir?: string }>
 }) {
   const params = await searchParams
-  const hoje = new Date()
-  const ano = Number(params.ano) || hoje.getFullYear()
-  const mes = Number(params.mes) || hoje.getMonth() + 1
+  const padrao = periodoPadrao()
+  const ano = Number(params.ano) || padrao.ano
+  const mes = Number(params.mes) || padrao.mes
 
   // Só ano/mes exigem uma nova busca no servidor (dataset diferente de apuração). Equipe, busca
   // e ordenação de coluna são aplicadas no cliente (ver TabelaGestor) — sem round-trip nenhum —
