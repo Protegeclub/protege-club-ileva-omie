@@ -14,7 +14,24 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 // depois do lote completo do mês (ver seção 6.6 do CONTEXTO_E_CHECKLIST.md).
 export const COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS = 302
 export const COD_EQUIPE_EXCLUIDA_COMISSAO_GERENCIAL = 7 // equipe "Marcos Cabral" (consultor #19)
+// Equipe separada da acima no próprio Ileva (cod_equipe próprio, 16 consultores — confirmado
+// 29/08/2026 via API real), mas da mesma "família" Marcos Cabral. Pedido do cliente
+// (29/08/2026): a partir da competência 08/2026 ela PASSA a contar na comissão do Thiago — só a
+// equipe "Marcos Cabral" pura (COD_EQUIPE_EXCLUIDA_COMISSAO_GERENCIAL) continua de fora. Em
+// competências anteriores a agosto/2026 as duas continuam excluídas juntas (mesma regra de
+// sempre) — não é recalculado retroativamente.
+export const COD_EQUIPE_SENADOR_CANEDO = 13
+const COMPETENCIA_INCLUI_SENADOR_CANEDO = { ano: 2026, mes: 8 }
 export const VALOR_COMISSAO_GERENCIAL_POR_PLACA = 2
+
+function equipesExcluidasComissaoGerencial(ano: number, mes: number): number[] {
+  const antesDoCorte =
+    ano < COMPETENCIA_INCLUI_SENADOR_CANEDO.ano ||
+    (ano === COMPETENCIA_INCLUI_SENADOR_CANEDO.ano && mes < COMPETENCIA_INCLUI_SENADOR_CANEDO.mes)
+  return antesDoCorte
+    ? [COD_EQUIPE_EXCLUIDA_COMISSAO_GERENCIAL, COD_EQUIPE_SENADOR_CANEDO]
+    : [COD_EQUIPE_EXCLUIDA_COMISSAO_GERENCIAL]
+}
 
 export interface ItemComissaoGerencialPlaca {
   cod_consultor: number
@@ -39,13 +56,14 @@ export async function calcularComissaoGerencialPlacas(
   mes: number
 ): Promise<ComissaoGerencialPlacas> {
   const admin = createSupabaseAdminClient()
+  const excluidas = equipesExcluidasComissaoGerencial(ano, mes)
   const { data } = await admin
     .from('apuracoes_mensais')
     .select('cod_consultor, detalhe')
     .eq('ano', ano)
     .eq('mes', mes)
     .neq('cod_consultor', COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS)
-    .neq('cod_equipe', COD_EQUIPE_EXCLUIDA_COMISSAO_GERENCIAL)
+    .not('cod_equipe', 'in', `(${excluidas.join(',')})`)
 
   const itens: ItemComissaoGerencialPlaca[] = ((data ?? []) as ApuracaoRowParaComissao[])
     .map((row) => {
