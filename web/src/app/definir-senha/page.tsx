@@ -30,15 +30,20 @@ function Layout({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm space-y-5 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="space-y-2 text-center">
-          <Image
-            src="/Logo Protege Club.png"
-            alt="ProtegeClub"
-            width={56}
-            height={56}
-            priority
-            className="mx-auto h-14 w-14"
-          />
+        <div className="space-y-3 text-center">
+          {/* A logo tem preenchimento branco/traço claro (pensada pro fundo navy da sidebar) —
+              sobre o cartão branco desta tela ela ficava invisível. Mesmo chip navy já usado em
+              login-form.tsx pra resolver o mesmo problema, sem reprocessar o arquivo da logo. */}
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-navy">
+            <Image
+              src="/Logo Protege Club.png"
+              alt="ProtegeClub"
+              width={56}
+              height={56}
+              priority
+              className="h-9 w-9"
+            />
+          </div>
           <p className="text-sm text-slate-500">ProtegeClub — Apuração de comissões</p>
         </div>
         {children}
