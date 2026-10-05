@@ -55,7 +55,8 @@ export default async function ConsultorDashboardPage({
   const totalRecorrencias = linhaPropria.detalhe?.recorrencias?.length ?? 0
   const totalDescontosRastreador = linhaPropria.detalhe?.descontosRastreador?.length ?? 0
   const totalInadimplentes = linhaPropria.detalhe?.inadimplentes?.length ?? 0
-  const nivelGestao = calcularNivelGestao(totalPlacasAtivadas)
+  // Líder de equipe: o nível conta as placas da equipe (ver LIDERES_DE_EQUIPE em bonus-nivel.ts).
+  const nivelGestao = calcularNivelGestao(linhaPropria.detalhe?.bonusNivel?.qtdPlacasAtivadas ?? totalPlacasAtivadas)
   const totalEquipe = linhasEquipe
     .filter((l) => l.cod_equipe === linhaPropria.cod_equipe)
     .reduce((soma, l) => soma + (l.detalhe?.adesoes?.length ?? 0), 0) - totalAdesoes

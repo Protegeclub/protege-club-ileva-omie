@@ -1191,7 +1191,10 @@ sistema.
         Fechamento só é processado uma vez, não importa quantas placas do mesmo associado ele
         cubra. Adesão **não** tem esse problema (checado numa amostra de 200 veículos do
         consultor #19: zero boletos de Adesão multi-veículo — faz sentido, adesão é cobrada por
-        veículo individualmente na hora da venda, não em conta agrupada).
+        veículo individualmente na hora da venda, não em conta agrupada). **⚠️ Conclusão
+        desmentida em 05/10/2026 (seção 6.33)**: uma empresa com frota pagou UM boleto de
+        Adesão cobrindo 37 veículos e a adesão inflou. A amostra de 200 veículos não pegou
+        esse caso.
       - **De quebra, corrigido também**: nome do associado em branco em algumas linhas de
         Recorrência — mesma causa raiz relacionada (quando a placa do lançamento não está na
         lista de veículos deste consultor, cai pro `boleto.nome_associado`, já disponível na
@@ -1572,3 +1575,63 @@ sistema.
     apuração (sempre presente no banco, nunca dependeu do JSON) sempre que o item individual não
     tiver o campo — resolve pra qualquer apuração já existente, sem precisar regerar nada.
   - **Estado em 29/08/2026**: 2 rastreadores já excluídos manualmente.
+
+### 6.33 Bug financeiro real: adesão duplicada em boleto de frota com vários veículos (05/10/2026)
+- [x] **Achado ao investigar a consultora #296 (Lara)**: comparando apurações de 09/2026 de todos os
+      consultores, #261 (Lucas Ferreira Nunes) tinha R$96.400 de adesão e #317 (Maria Eduarda
+      Dutra) R$177.600 — o cliente confirmou pela tela que os contratos de R$7.400 estavam
+      duplicados.
+  - **Causa raiz**: o boleto de Adesão **cod_cobranca 40363** (empresa "A Embaixadora Comercial e
+    Serviços Ltda", paga em 23/09/2026) vale **R$7.400 no total e cobre 37 veículos de R$200
+    cada**, vendidos por 2 consultores (13 do #261 + 24 do #317). O boleto aparece na listagem de
+    cobranças de cada veículo e o ramo de Adesão de `mensal.ts` creditava o valor **total** do
+    boleto para cada um — o mesmo erro da seção 6.19, que na época foi dado como inexistente para
+    Adesão (amostra de 200 veículos do #19 só tinha boletos de um veículo).
+  - **Impacto no banco (ainda não regerado até esta entrada)**: #261 líquido R$97.001,25 (correto
+    ≈ R$3.401,25) e #317 líquido R$178.300,00 (correto ≈ R$5.500,00, a confirmar ao regerar).
+    **Nenhum dos dois tinha sido enviado à Omie** (`auditoria_omie` vazia para ambos). Varredura
+    de todas as apurações salvas com adesão > 0: nenhum outro mês tem o mesmo `cod_cobranca`
+    repetido. Itens antigos de mai/jun não têm `cod_cobranca` gravado e não podem ser auditados
+    por esse critério.
+  - **Corrigido** em `mensal.ts`: cada `cod_cobranca` de Adesão é processado uma vez
+    (`cobrancasAdesaoProcessadas`); boleto de um veículo só mantém o comportamento antigo
+    (`valor_pagamento`); boleto com vários veículos credita o `valor` de cada veículo **do
+    consultor** apurado (a listagem já traz `veiculos[].valor`, sem chamada extra à API).
+  - **Verificado**: `tsc` e `eslint` limpos; apuração real do #261 em 09/2026 rodada localmente
+    (`scripts/test-apuracao.mts`) → `totalAdesao` **R$2.800** (13 × R$200 do boleto 40363 + 1 × R$200
+    do boleto 40633), antes R$96.400.
+  - **PENDENTE** (afeta produção — fazer com o Samuel): commit/push, redeploy do Trigger.dev
+    (`mensal.ts` é dependência da task `gerar-apuracao`), regerar 09/2026 do #261 e do #317 e só
+    então liberar o envio à Omie. Até lá **não enviar** a comissão desses dois.
+
+### 6.34 Bônus por nível: 1º patamar errado (25 → 15) + líder de equipe conta as placas da equipe (05/10/2026)
+- [x] **Achado ao investigar a consultora #296 (Lara)**, líder da Equipe Alfa (`cod_equipe` 24):
+      ela não recebia bônus do plano de carreira com 13 placas individuais. O Samuel trouxe a
+      tabela do plano (imagem do cliente: números azuis = placas ativadas, brancos = R$) e dois
+      pontos ficaram claros:
+  1. **Bug na tabela**: o 1º patamar estava como **25 placas → R$600** em `bonus-nivel.ts`; o
+     correto é **15 placas → R$600** (os demais degraus 30…300 já conferiam com a imagem; 360+
+     seguem como estavam, a imagem só vai até 300). Corrigido para 15. Afetava qualquer consultor
+     com 15 a 24 placas no mês: em ago/set de 2026 só **set/2026 — #303 (20), #261 (15), #317 (24)
+     e #19 (20)**, que ficaram com R$0 em vez de R$600. Nenhum desses 4 tinha a apuração de
+     setembro enviada à Omie. (Meses anteriores a agosto não foram conferidos.)
+  2. **Líder de equipe conta as placas da equipe**: `LIDERES_DE_EQUIPE` (`bonus-nivel.ts`, mapa
+     `cod_consultor → cod_equipe`, hoje só `296 → 24`). Em `gerar.ts`, se o consultor é líder e a
+     equipe do Ileva bate com a configurada, o patamar do bônus e o nível de gestão usam
+     **placas próprias + placas dos colegas da equipe** (`totalPlacasAtivadasColegasEquipe` em
+     `equipe.ts`). `detalhe.bonusNivel` ganha `baseEquipe` e `qtdPlacasIndividuais`. A premiação
+     individual (R$50/placa a partir de 10) **continua só com as placas do próprio** consultor.
+     Telas: etiqueta de nível (Consultor e Gestor) e página Plano de Carreira usam a base do
+     bônus; o texto "1º patamar (25 placas)" fixo foi trocado pelo valor da tabela.
+  - **Resultado esperado da Lara em set/2026**: 13 próprias + 5 dos colegas = **18** → bônus
+    **R$600**, nível **Líder Júnior**. Em ago/2026: 9 (abaixo de 15, sem bônus).
+  - **Limitação operacional (igual ao Total Equipe e à comissão do Thiago)**: o total da equipe só
+    soma colegas que **já têm apuração gerada** no mês — **gerar a da Lara por último**.
+  - **Escopo confirmado pelo Samuel (05/10/2026)**: por enquanto a regra de equipe vale **só para a
+    Lara**. O Marcos Cabral (#19, equipe 7) **não** recebe o bônus por equipe. Se isso mudar, é só
+    acrescentar o consultor em `LIDERES_DE_EQUIPE`.
+  - `tsc` e `eslint` limpos; lógica conferida com dado real (sem escrever no banco).
+  - **PENDENTE (afeta produção)**: commit/push, redeploy do Trigger.dev (`gerar.ts`,
+    `bonus-nivel.ts`, `equipe.ts` e `mensal.ts` são dependências da task), e regerar set/2026 de
+    #261, #317 (adesão, seção 6.33), #303, #19 (bônus R$600) e, por último, #296 (Lara).
+    Lara ainda **não tem chave PIX** cadastrada (bloqueia o envio à Omie).

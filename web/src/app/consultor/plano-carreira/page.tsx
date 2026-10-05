@@ -46,15 +46,21 @@ export default async function PlanoCarreiraPage({
     )
   }
 
+  // `qtdPlacas` = placas do próprio consultor (premiação individual). `qtdPlacasNivel` = base do
+  // nível e do bônus por patamar: a equipe inteira quando é líder de equipe, senão igual a
+  // `qtdPlacas` (ver LIDERES_DE_EQUIPE em bonus-nivel.ts).
   const qtdPlacas = linhaPropria.detalhe?.placasAtivadas?.length ?? 0
+  const bonusNivelSalvo = linhaPropria.detalhe?.bonusNivel
+  const qtdPlacasNivel = bonusNivelSalvo?.qtdPlacasAtivadas ?? qtdPlacas
+  const baseEquipe = bonusNivelSalvo?.baseEquipe === true
   const inadimplentes = linhaPropria.detalhe?.inadimplentes ?? []
   const totalRecorrenciaEstimada = linhaPropria.detalhe?.totalRecorrenciaEstimadaInadimplentes ?? 0
-  const nivelGestao = calcularNivelGestao(qtdPlacas)
+  const nivelGestao = calcularNivelGestao(qtdPlacasNivel)
 
-  const patamarAtingido = calcularBonusNivel(qtdPlacas).patamarAtingido
+  const patamarAtingido = calcularBonusNivel(qtdPlacasNivel).patamarAtingido
   const patamarAtualBonus = PATAMARES_BONUS_NIVEL.find((p) => p.placas === patamarAtingido) ?? null
-  const proximoPatamarBonus = PATAMARES_BONUS_NIVEL.find((p) => p.placas > qtdPlacas) ?? null
-  const proximoNivelGestao = NIVEIS_GESTAO.find((n) => n.placas > qtdPlacas) ?? null
+  const proximoPatamarBonus = PATAMARES_BONUS_NIVEL.find((p) => p.placas > qtdPlacasNivel) ?? null
+  const proximoNivelGestao = NIVEIS_GESTAO.find((n) => n.placas > qtdPlacasNivel) ?? null
 
   const elegivelPremiacao = qtdPlacas >= LIMITE_PLACAS_BONUS_PERFORMANCE
   const faltamPremiacao = Math.max(0, LIMITE_PLACAS_BONUS_PERFORMANCE - qtdPlacas)
@@ -143,7 +149,11 @@ export default async function PlanoCarreiraPage({
           cor="orange"
           titulo="Placas ativadas no mês"
           valor={String(qtdPlacas)}
-          descricao="Base de todos os patamares abaixo"
+          descricao={
+            baseEquipe
+              ? `Suas placas. Com a equipe somada: ${qtdPlacasNivel} (base dos patamares)`
+              : 'Base de todos os patamares abaixo'
+          }
         />
         <CardMetrica
           icone={<IconeTrofeu />}
@@ -151,7 +161,9 @@ export default async function PlanoCarreiraPage({
           titulo="Bônus por patamar"
           valor={formatarMoeda(linhaPropria.total_bonus_nivel)}
           selo={patamarAtualBonus ? `${patamarAtualBonus.placas} placas` : undefined}
-          descricao={patamarAtualBonus ? undefined : 'Ainda não atingiu o 1º patamar (25 placas)'}
+          descricao={
+            patamarAtualBonus ? undefined : `Ainda não atingiu o 1º patamar (${PATAMARES_BONUS_NIVEL[0].placas} placas)`
+          }
         />
         <CardMetrica
           icone={<IconeTrofeu />}
@@ -172,11 +184,11 @@ export default async function PlanoCarreiraPage({
           descricao="Seu título evolui com as placas ativadas no mês — reinicia a cada competência."
         />
         <div className="mt-4">
-          <EscadaNiveis qtdPlacasAtivadas={qtdPlacas} />
+          <EscadaNiveis qtdPlacasAtivadas={qtdPlacasNivel} />
         </div>
         {proximoNivelGestao ? (
           <p className="mt-3 text-xs text-slate-400">
-            Faltam <span className="font-semibold text-slate-600">{proximoNivelGestao.placas - qtdPlacas} placas</span> para virar{' '}
+            Faltam <span className="font-semibold text-slate-600">{proximoNivelGestao.placas - qtdPlacasNivel} placas</span> para virar{' '}
             <span className="font-semibold text-brand-navy">{proximoNivelGestao.titulo}</span>.
           </p>
         ) : (
@@ -204,7 +216,7 @@ export default async function PlanoCarreiraPage({
             <div className="mt-3">
               {proximoPatamarBonus ? (
                 <BarraProgressoMeta
-                  atual={qtdPlacas - (patamarAtualBonus?.placas ?? 0)}
+                  atual={qtdPlacasNivel - (patamarAtualBonus?.placas ?? 0)}
                   meta={proximoPatamarBonus.placas - (patamarAtualBonus?.placas ?? 0)}
                   cor="#f19100"
                 />
@@ -214,7 +226,8 @@ export default async function PlanoCarreiraPage({
             </div>
             {proximoPatamarBonus ? (
               <p className="mt-2 text-xs text-slate-500">
-                Ative mais <span className="font-semibold text-slate-700">{proximoPatamarBonus.placas - qtdPlacas} placas</span> este
+                {baseEquipe ? 'A equipe precisa ativar mais' : 'Ative mais'}{' '}
+                <span className="font-semibold text-slate-700">{proximoPatamarBonus.placas - qtdPlacasNivel} placas</span> este
                 mês e o bônus sobe para{' '}
                 <span className="font-semibold text-brand-navy">{formatarMoeda(proximoPatamarBonus.valor)}</span> (+
                 {formatarMoeda(proximoPatamarBonus.valor - (patamarAtualBonus?.valor ?? 0))}).

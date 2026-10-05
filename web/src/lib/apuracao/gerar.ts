@@ -1,5 +1,6 @@
 import { apurarConsultorMes } from './mensal'
-import { calcularBonusNivel } from './bonus-nivel'
+import { calcularBonusNivel, LIDERES_DE_EQUIPE, type BonusNivel } from './bonus-nivel'
+import { totalPlacasAtivadasColegasEquipe } from './equipe'
 import {
   calcularComissaoGerencialPlacas,
   COD_CONSULTOR_COMISSAO_GERENCIAL_PLACAS,
@@ -54,7 +55,19 @@ export async function gerarESalvarApuracao(
 
   // Bônus por Nível do plano de carreira (placas ativadas no mês, não adesões pagas) — ver
   // bonus-nivel.ts pra regra completa e a fonte (PDF "Plano de Carreira Protegeclub", 05/08/2026).
-  const bonusNivel = calcularBonusNivel(resultado.placasAtivadas.length)
+  // Líder de equipe (ex.: Lara #296, Equipe Alfa): o nível conta as placas da equipe inteira.
+  const equipeDoLider = LIDERES_DE_EQUIPE[codConsultor]
+  const lideraEstaEquipe = equipeDoLider !== undefined && resultado.codEquipe === equipeDoLider
+  const placasDosColegas = lideraEstaEquipe
+    ? await totalPlacasAtivadasColegasEquipe(equipeDoLider, codConsultor, ano, mes)
+    : 0
+  const bonusNivel: BonusNivel = lideraEstaEquipe
+    ? {
+        ...calcularBonusNivel(resultado.placasAtivadas.length + placasDosColegas),
+        baseEquipe: true,
+        qtdPlacasIndividuais: resultado.placasAtivadas.length,
+      }
+    : calcularBonusNivel(resultado.placasAtivadas.length)
 
   const totalLiquido =
     resultado.totalAdesao +

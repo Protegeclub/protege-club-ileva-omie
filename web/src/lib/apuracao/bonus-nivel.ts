@@ -7,8 +7,12 @@
 // naquele mês, não a "adesão paga" — confirmado com o Samuel em 05/08/2026):
 //
 // 1. Bônus por Nível (R$, soma na comissão líquida): tabela de patamares do PDF. Paga o valor do
-//    MAIOR patamar atingido (não soma os patamares menores). Abaixo do primeiro patamar (25
+//    MAIOR patamar atingido (não soma os patamares menores). Abaixo do primeiro patamar (15
 //    placas), o bônus é R$0.
+//    **Corrigido em 05/10/2026**: o 1º patamar estava como 25 placas, mas a tabela do plano
+//    (imagem enviada pelo cliente: números azuis = placas ativadas, brancos = R$) começa em
+//    15 placas → R$600. Os demais degraus já conferiam. Afetou, em set/2026, #303, #261, #317 e
+//    #19 (15 a 24 placas, bônus R$0 em vez de R$600).
 // 2. Nível de gestão (só título/tag de exibição, não afeta nenhum valor em R$): os 8 nomes do
 //    PDF (Líder Júnior → Gestor Master), cada um com seu próprio patamar de placas ativadas.
 //    Os patamares NÃO batem com os do bônus em R$ acima (ex.: 100 placas ainda é "Coordenador",
@@ -20,7 +24,7 @@ export interface PatamarBonusNivel {
 }
 
 export const PATAMARES_BONUS_NIVEL: readonly PatamarBonusNivel[] = [
-  { placas: 25, valor: 600 },
+  { placas: 15, valor: 600 },
   { placas: 30, valor: 1200 },
   { placas: 45, valor: 1800 },
   { placas: 60, valor: 2400 },
@@ -65,10 +69,25 @@ function maiorPatamarAtingido<T extends { placas: number }>(
   return atingidos.length > 0 ? atingidos[atingidos.length - 1] : null
 }
 
+// Líderes de equipe: o bônus por nível e o nível de gestão deles contam as placas ativadas da
+// EQUIPE inteira (as do próprio líder + as dos colegas da mesma `cod_equipe`), não só as
+// individuais. Confirmado pelo Samuel em 05/10/2026 para a Lara (#296), líder da Equipe Alfa
+// (`cod_equipe` 24). O mapa é `cod_consultor → cod_equipe`; a equipe é conferida contra a do
+// Ileva na hora de gerar, então se o líder trocar de equipe o bônus volta a ser individual.
+// A premiação individual (R$50/placa a partir de 10) continua usando só as placas do próprio.
+export const LIDERES_DE_EQUIPE: Readonly<Record<number, number>> = {
+  296: 24, // Lara — Equipe Alfa
+}
+
 export interface BonusNivel {
+  // Quantidade usada pra achar o patamar: as placas da equipe inteira quando `baseEquipe`, senão
+  // as individuais.
   qtdPlacasAtivadas: number
   patamarAtingido: number | null
   valor: number
+  // Só presentes na apuração de líder de equipe (ver LIDERES_DE_EQUIPE).
+  baseEquipe?: boolean
+  qtdPlacasIndividuais?: number
 }
 
 export function calcularBonusNivel(qtdPlacasAtivadas: number): BonusNivel {
