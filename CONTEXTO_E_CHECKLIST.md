@@ -1630,6 +1630,12 @@ sistema.
   - **Escopo confirmado pelo Samuel (05/10/2026)**: por enquanto a regra de equipe vale **só para a
     Lara**. O Marcos Cabral (#19, equipe 7) **não** recebe o bônus por equipe. Se isso mudar, é só
     acrescentar o consultor em `LIDERES_DE_EQUIPE`.
+  - **#19 (Marcos Cabral) não recebe bônus por nível (05/10/2026)**: `CONSULTORES_SEM_BONUS_NIVEL`
+    em `bonus-nivel.ts` (hoje `[19]`); `gerar.ts` grava `valor 0`, `patamarAtingido null` e
+    `semBonus true` em `detalhe.bonusNivel`; a página Plano de Carreira mostra "não se aplica ao
+    seu perfil". O título de gestão continua sendo exibido. **Achado**: em 07/2026 e 08/2026 o
+    #19 recebeu **R$600/mês desse bônus (R$1.200 no total), já enviados à Omie** (títulos de
+    R$13.908,10 e R$13.112,02) — a decisão sobre esse valor pago a mais é do Samuel/cliente.
   - `tsc` e `eslint` limpos; lógica conferida com dado real (sem escrever no banco).
   - **PENDENTE (afeta produção)**: commit/push, redeploy do Trigger.dev (`gerar.ts`,
     `bonus-nivel.ts`, `equipe.ts` e `mensal.ts` são dependências da task), e regerar set/2026 de

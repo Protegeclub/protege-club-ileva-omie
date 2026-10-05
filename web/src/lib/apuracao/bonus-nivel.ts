@@ -79,7 +79,15 @@ export const LIDERES_DE_EQUIPE: Readonly<Record<number, number>> = {
   296: 24, // Lara — Equipe Alfa
 }
 
+// Consultores que NÃO recebem o bônus por nível em R$ (o título de gestão continua sendo exibido).
+// Confirmado pelo Samuel em 05/10/2026: Marcos Cabral (#19) não recebe esse bônus. Atenção: nos
+// meses 07/2026 e 08/2026 o #19 recebeu R$600 por mês desse bônus (já enviados à Omie) — os dois
+// meses foram gerados antes desta regra existir.
+export const CONSULTORES_SEM_BONUS_NIVEL: readonly number[] = [19]
+
 export interface BonusNivel {
+  // Só presente quando o consultor está em CONSULTORES_SEM_BONUS_NIVEL: valor fica R$0.
+  semBonus?: boolean
   // Quantidade usada pra achar o patamar: as placas da equipe inteira quando `baseEquipe`, senão
   // as individuais.
   qtdPlacasAtivadas: number

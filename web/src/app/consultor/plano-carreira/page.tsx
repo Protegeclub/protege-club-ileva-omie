@@ -53,11 +53,13 @@ export default async function PlanoCarreiraPage({
   const bonusNivelSalvo = linhaPropria.detalhe?.bonusNivel
   const qtdPlacasNivel = bonusNivelSalvo?.qtdPlacasAtivadas ?? qtdPlacas
   const baseEquipe = bonusNivelSalvo?.baseEquipe === true
+  // Consultor que não recebe o bônus por patamar em R$ (ver CONSULTORES_SEM_BONUS_NIVEL).
+  const semBonusNivel = bonusNivelSalvo?.semBonus === true
   const inadimplentes = linhaPropria.detalhe?.inadimplentes ?? []
   const totalRecorrenciaEstimada = linhaPropria.detalhe?.totalRecorrenciaEstimadaInadimplentes ?? 0
   const nivelGestao = calcularNivelGestao(qtdPlacasNivel)
 
-  const patamarAtingido = calcularBonusNivel(qtdPlacasNivel).patamarAtingido
+  const patamarAtingido = semBonusNivel ? null : calcularBonusNivel(qtdPlacasNivel).patamarAtingido
   const patamarAtualBonus = PATAMARES_BONUS_NIVEL.find((p) => p.placas === patamarAtingido) ?? null
   const proximoPatamarBonus = PATAMARES_BONUS_NIVEL.find((p) => p.placas > qtdPlacasNivel) ?? null
   const proximoNivelGestao = NIVEIS_GESTAO.find((n) => n.placas > qtdPlacasNivel) ?? null
@@ -162,7 +164,11 @@ export default async function PlanoCarreiraPage({
           valor={formatarMoeda(linhaPropria.total_bonus_nivel)}
           selo={patamarAtualBonus ? `${patamarAtualBonus.placas} placas` : undefined}
           descricao={
-            patamarAtualBonus ? undefined : `Ainda não atingiu o 1º patamar (${PATAMARES_BONUS_NIVEL[0].placas} placas)`
+            semBonusNivel
+              ? 'Não se aplica ao seu perfil'
+              : patamarAtualBonus
+                ? undefined
+                : `Ainda não atingiu o 1º patamar (${PATAMARES_BONUS_NIVEL[0].placas} placas)`
           }
         />
         <CardMetrica
@@ -204,6 +210,9 @@ export default async function PlanoCarreiraPage({
             titulo="Bônus por patamar (R$)"
             descricao="Paga o valor do maior patamar de placas ativadas atingido no mês."
           />
+          {semBonusNivel ? (
+            <p className="mt-4 text-sm text-slate-500">O bônus por patamar não se aplica ao seu perfil.</p>
+          ) : (
           <div className="mt-4">
             <div className="flex items-baseline justify-between">
               <p className="text-2xl font-bold text-slate-900">{formatarMoeda(linhaPropria.total_bonus_nivel)}</p>
@@ -236,6 +245,7 @@ export default async function PlanoCarreiraPage({
               <p className="mt-2 text-xs font-medium text-emerald-600">Patamar máximo atingido neste mês (720 placas)!</p>
             )}
           </div>
+          )}
         </Cartao>
 
         <Cartao className="p-5">

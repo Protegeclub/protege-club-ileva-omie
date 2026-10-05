@@ -1,5 +1,10 @@
 import { apurarConsultorMes } from './mensal'
-import { calcularBonusNivel, LIDERES_DE_EQUIPE, type BonusNivel } from './bonus-nivel'
+import {
+  calcularBonusNivel,
+  CONSULTORES_SEM_BONUS_NIVEL,
+  LIDERES_DE_EQUIPE,
+  type BonusNivel,
+} from './bonus-nivel'
 import { totalPlacasAtivadasColegasEquipe } from './equipe'
 import {
   calcularComissaoGerencialPlacas,
@@ -61,13 +66,17 @@ export async function gerarESalvarApuracao(
   const placasDosColegas = lideraEstaEquipe
     ? await totalPlacasAtivadasColegasEquipe(equipeDoLider, codConsultor, ano, mes)
     : 0
-  const bonusNivel: BonusNivel = lideraEstaEquipe
+  const bonusNivelCalculado: BonusNivel = lideraEstaEquipe
     ? {
         ...calcularBonusNivel(resultado.placasAtivadas.length + placasDosColegas),
         baseEquipe: true,
         qtdPlacasIndividuais: resultado.placasAtivadas.length,
       }
     : calcularBonusNivel(resultado.placasAtivadas.length)
+  // Consultores que não recebem o bônus em R$ (ex.: Marcos Cabral #19) — ver bonus-nivel.ts.
+  const bonusNivel: BonusNivel = CONSULTORES_SEM_BONUS_NIVEL.includes(codConsultor)
+    ? { ...bonusNivelCalculado, patamarAtingido: null, valor: 0, semBonus: true }
+    : bonusNivelCalculado
 
   const totalLiquido =
     resultado.totalAdesao +
