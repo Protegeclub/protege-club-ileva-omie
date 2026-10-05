@@ -84,6 +84,12 @@ export const LIDERES_DE_EQUIPE: Readonly<Record<number, number>> = {
 // meses 07/2026 e 08/2026 o #19 recebeu R$600 por mês desse bônus (já enviados à Omie) — os dois
 // meses foram gerados antes desta regra existir.
 export const CONSULTORES_SEM_BONUS_NIVEL: readonly number[] = [19]
+// Equipes inteiras sem o bônus por nível em R$. Confirmado pelo Samuel em 05/10/2026: nenhum
+// consultor da equipe "Marcos Cabral - Senador Canedo" (cod_equipe 13, a mesma de
+// COD_EQUIPE_SENADOR_CANEDO em comissao-gerencial.ts) recebe esse bônus. A equipe é a do Ileva no
+// momento da geração. Em set/2026 o #261 e o #317 (equipe 13) chegaram a ser gerados com R$600
+// antes desta regra — foram regerados sem o bônus; nunca houve envio à Omie com ele.
+export const EQUIPES_SEM_BONUS_NIVEL: readonly number[] = [13]
 
 export interface BonusNivel {
   // Só presente quando o consultor está em CONSULTORES_SEM_BONUS_NIVEL: valor fica R$0.

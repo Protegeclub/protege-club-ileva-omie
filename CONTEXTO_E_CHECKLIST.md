@@ -1643,6 +1643,12 @@ sistema.
     seu perfil". O título de gestão continua sendo exibido. **Achado**: em 07/2026 e 08/2026 o
     #19 recebeu **R$600/mês desse bônus (R$1.200 no total), já enviados à Omie** (títulos de
     R$13.908,10 e R$13.112,02) — a decisão sobre esse valor pago a mais é do Samuel/cliente.
+  - **Equipe "Marcos Cabral - Senador Canedo" (`cod_equipe` 13) inteira sem bônus por nível
+    (05/10/2026)**: `EQUIPES_SEM_BONUS_NIVEL` em `bonus-nivel.ts` (hoje `[13]`), checada em
+    `gerar.ts` contra a equipe do Ileva no momento da geração (mesma flag `semBonus`). Dos 15
+    consultores dessa equipe com apuração salva, só o #261 e o #317 (set/2026, R$600 cada,
+    gerados minutos antes desta regra) tinham bônus — nenhum enviado à Omie; precisam ser
+    regerados. Nenhum outro mês/consultor da equipe teve bônus de nível.
   - `tsc` e `eslint` limpos; lógica conferida com dado real (sem escrever no banco).
   - **CONCLUÍDO em 05/10/2026** (geração manual pelo painel, conferida no banco): #303 bônus de
     nível R$600 (líquido R$3.581,06); **Lara #296**: base 18 placas (13 próprias + 5 da equipe),

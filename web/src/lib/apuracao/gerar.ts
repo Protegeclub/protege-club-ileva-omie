@@ -2,6 +2,7 @@ import { apurarConsultorMes } from './mensal'
 import {
   calcularBonusNivel,
   CONSULTORES_SEM_BONUS_NIVEL,
+  EQUIPES_SEM_BONUS_NIVEL,
   LIDERES_DE_EQUIPE,
   type BonusNivel,
 } from './bonus-nivel'
@@ -73,8 +74,12 @@ export async function gerarESalvarApuracao(
         qtdPlacasIndividuais: resultado.placasAtivadas.length,
       }
     : calcularBonusNivel(resultado.placasAtivadas.length)
-  // Consultores que não recebem o bônus em R$ (ex.: Marcos Cabral #19) — ver bonus-nivel.ts.
-  const bonusNivel: BonusNivel = CONSULTORES_SEM_BONUS_NIVEL.includes(codConsultor)
+  // Consultores/equipes que não recebem o bônus em R$ (Marcos Cabral #19 e a equipe "Marcos Cabral
+  // - Senador Canedo") — ver bonus-nivel.ts.
+  const semBonusNivel =
+    CONSULTORES_SEM_BONUS_NIVEL.includes(codConsultor) ||
+    (resultado.codEquipe != null && EQUIPES_SEM_BONUS_NIVEL.includes(resultado.codEquipe))
+  const bonusNivel: BonusNivel = semBonusNivel
     ? { ...bonusNivelCalculado, patamarAtingido: null, valor: 0, semBonus: true }
     : bonusNivelCalculado
 
