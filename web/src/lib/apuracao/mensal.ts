@@ -271,6 +271,14 @@ export async function apurarConsultorMes(
   // inflando a comissão). Cada `cod_cobranca` de Fechamento só pode ser processado uma vez.
   const cobrancasFechamentoProcessadas = new Set<number>()
 
+  // Mesmo problema, agora na Adesão (bug real encontrado em 05/10/2026): uma empresa com frota
+  // pagou UM boleto de Adesão de R$7.400 cobrindo 37 veículos (R$200 cada), vendidos por 2
+  // consultores. O boleto aparece na listagem de cada veículo, e cada um creditava o valor TOTAL
+  // do boleto — R$96.400 (#261, 13 placas) e R$177.600 (#317, 24 placas) em vez de R$2.600 e
+  // R$4.800. A seção 6.19 tinha concluído que adesão não tinha esse problema, mas só tinha
+  // amostrado boletos de um veículo só.
+  const cobrancasAdesaoProcessadas = new Set<number>()
+
   await comConcorrenciaLimitada(veiculos, 5, async (veiculo) => {
     const { boletos } = await listarCobrancasPorVeiculo({
       cod_veiculo: veiculo.cod_veiculo,
@@ -283,16 +291,44 @@ export async function apurarConsultorMes(
 
     for (const boleto of boletos) {
       if (boleto.tipo_boleto === 'Adesão') {
-        adesoes.push({
-          cod_veiculo: veiculo.cod_veiculo,
-          placa: veiculo.placa,
-          associado: veiculo.associado,
-          consultorNome: nomeConsultor,
-          valor: Number(boleto.valor_pagamento ?? boleto.valor_boleto),
-          dt_pagamento: boleto.dt_pagamento,
-          cod_cobranca: boleto.cod_cobranca,
-          referencia: boleto.referencia ?? null,
-        })
+        // Cada boleto só é processado uma vez, não importa quantos veículos dele este consultor
+        // tenha. O Set é marcado antes de qualquer `await` (não há nenhum aqui), então é seguro
+        // com concorrência 5.
+        if (cobrancasAdesaoProcessadas.has(boleto.cod_cobranca)) continue
+        cobrancasAdesaoProcessadas.add(boleto.cod_cobranca)
+
+        const veiculosDoBoleto = boleto.veiculos ?? []
+        if (veiculosDoBoleto.length <= 1) {
+          // Boleto de um veículo só (o caso comum): o valor pago é do veículo, como sempre foi.
+          adesoes.push({
+            cod_veiculo: veiculo.cod_veiculo,
+            placa: veiculo.placa,
+            associado: veiculo.associado,
+            consultorNome: nomeConsultor,
+            valor: Number(boleto.valor_pagamento ?? boleto.valor_boleto),
+            dt_pagamento: boleto.dt_pagamento,
+            cod_cobranca: boleto.cod_cobranca,
+            referencia: boleto.referencia ?? null,
+          })
+        } else {
+          // Boleto de vários veículos: credita só o valor de cada veículo que é DESTE consultor
+          // (o boleto pode juntar placas de consultores diferentes — o outro consultor recebe a
+          // parte dele na própria apuração).
+          for (const veiculoDoBoleto of veiculosDoBoleto) {
+            const veiculoDoConsultor = veiculoPorCodigo.get(veiculoDoBoleto.cod_veiculo)
+            if (!veiculoDoConsultor) continue
+            adesoes.push({
+              cod_veiculo: veiculoDoConsultor.cod_veiculo,
+              placa: veiculoDoConsultor.placa,
+              associado: veiculoDoConsultor.associado,
+              consultorNome: nomeConsultor,
+              valor: Number(veiculoDoBoleto.valor),
+              dt_pagamento: boleto.dt_pagamento,
+              cod_cobranca: boleto.cod_cobranca,
+              referencia: boleto.referencia ?? null,
+            })
+          }
+        }
       } else if (boleto.tipo_boleto === 'Fechamento') {
         if (cobrancasFechamentoProcessadas.has(boleto.cod_cobranca)) continue
         cobrancasFechamentoProcessadas.add(boleto.cod_cobranca)
