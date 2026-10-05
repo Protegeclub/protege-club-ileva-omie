@@ -1587,8 +1587,8 @@ sistema.
     cobranças de cada veículo e o ramo de Adesão de `mensal.ts` creditava o valor **total** do
     boleto para cada um — o mesmo erro da seção 6.19, que na época foi dado como inexistente para
     Adesão (amostra de 200 veículos do #19 só tinha boletos de um veículo).
-  - **Impacto no banco (ainda não regerado até esta entrada)**: #261 líquido R$97.001,25 (correto
-    ≈ R$3.401,25) e #317 líquido R$178.300,00 (correto ≈ R$5.500,00, a confirmar ao regerar).
+  - **Impacto no banco (antes da regeração)**: #261 líquido R$97.001,25 e #317 líquido
+    R$178.300,00. Depois de regerar (ver "CONCLUÍDO" abaixo): R$4.001,25 e R$6.100,00.
     **Nenhum dos dois tinha sido enviado à Omie** (`auditoria_omie` vazia para ambos). Varredura
     de todas as apurações salvas com adesão > 0: nenhum outro mês tem o mesmo `cod_cobranca`
     repetido. Itens antigos de mai/jun não têm `cod_cobranca` gravado e não podem ser auditados
@@ -1600,9 +1600,16 @@ sistema.
   - **Verificado**: `tsc` e `eslint` limpos; apuração real do #261 em 09/2026 rodada localmente
     (`scripts/test-apuracao.mts`) → `totalAdesao` **R$2.800** (13 × R$200 do boleto 40363 + 1 × R$200
     do boleto 40633), antes R$96.400.
-  - **PENDENTE** (afeta produção — fazer com o Samuel): commit/push, redeploy do Trigger.dev
-    (`mensal.ts` é dependência da task `gerar-apuracao`), regerar 09/2026 do #261 e do #317 e só
-    então liberar o envio à Omie. Até lá **não enviar** a comissão desses dois.
+  - **CONCLUÍDO em 05/10/2026**: commit/push (`a3cbf2a`), deploy do Trigger.dev (versão
+    `20261005.3`, depois `20261005.5`; o build direto do caminho com acento/espaço falha, o
+    deploy sai de `C:\deploy-temp\web` copiada com robocopy) e geração manual de 09/2026 pelo
+    painel. **Resultado conferido no banco**: #261 adesão **R$2.800** (líquido R$4.001,25) e #317
+    adesão **R$4.800** (líquido R$6.100,00), já com o bônus de nível de R$600 da seção 6.34.
+    Varredura contra o Ileva de todos os 112 boletos de Adesão com `cod_cobranca` salvos: o
+    40363 é o **único** com mais de 1 veículo, e as 37 linhas (13 do #261 + 24 do #317) estão
+    corretas a R$200. As 63 linhas antigas (mai/jun) sem `cod_cobranca` não podem ser conferidas
+    por esse critério. (O mesmo `cod_cobranca` aparecendo várias vezes na apuração do #261/#317
+    agora é o comportamento correto: uma linha por veículo do consultor.)
 
 ### 6.34 Bônus por nível: 1º patamar errado (25 → 15) + líder de equipe conta as placas da equipe (05/10/2026)
 - [x] **Achado ao investigar a consultora #296 (Lara)**, líder da Equipe Alfa (`cod_equipe` 24):
@@ -1637,7 +1644,10 @@ sistema.
     #19 recebeu **R$600/mês desse bônus (R$1.200 no total), já enviados à Omie** (títulos de
     R$13.908,10 e R$13.112,02) — a decisão sobre esse valor pago a mais é do Samuel/cliente.
   - `tsc` e `eslint` limpos; lógica conferida com dado real (sem escrever no banco).
-  - **PENDENTE (afeta produção)**: commit/push, redeploy do Trigger.dev (`gerar.ts`,
-    `bonus-nivel.ts`, `equipe.ts` e `mensal.ts` são dependências da task), e regerar set/2026 de
-    #261, #317 (adesão, seção 6.33), #303, #19 (bônus R$600) e, por último, #296 (Lara).
+  - **CONCLUÍDO em 05/10/2026** (geração manual pelo painel, conferida no banco): #303 bônus de
+    nível R$600 (líquido R$3.581,06); **Lara #296**: base 18 placas (13 próprias + 5 da equipe),
+    `baseEquipe`, bônus de nível **R$600**, premiação individual R$650, líquido **R$1.009,44**.
+    O #19 continua com a apuração de set/2026 de antes do deploy (bônus R$0 pela regra antiga de
+    25 placas, líquido R$11.466,13) — numericamente igual ao esperado, mas sem a flag `semBonus`;
+    regerar quando for conveniente. **Nenhuma** dessas apurações foi enviada à Omie ainda.
     Lara ainda **não tem chave PIX** cadastrada (bloqueia o envio à Omie).
