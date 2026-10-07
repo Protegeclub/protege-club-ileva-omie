@@ -71,28 +71,29 @@ function maiorPatamarAtingido<T extends { placas: number }>(
 
 // Líderes de equipe: o bônus por nível e o nível de gestão deles contam as placas ativadas da
 // EQUIPE inteira (as do próprio líder + as dos colegas da mesma `cod_equipe`), não só as
-// individuais. Confirmado pelo Samuel em 05/10/2026 para a Lara (#296), líder da Equipe Alfa
-// (`cod_equipe` 24). O mapa é `cod_consultor → cod_equipe`; a equipe é conferida contra a do
-// Ileva na hora de gerar, então se o líder trocar de equipe o bônus volta a ser individual.
-// A premiação individual (R$50/placa a partir de 10) continua usando só as placas do próprio.
+// individuais. Confirmado pelo Samuel/cliente em 05-06/10/2026 para três líderes. O mapa é
+// `cod_consultor → cod_equipe`; a equipe é conferida contra a do Ileva na hora de gerar, então
+// se o líder trocar de equipe o bônus volta a ser individual. A premiação individual
+// (R$50/placa a partir de 10) continua usando só as placas do próprio.
+// Marcos Cabral (#19) chegou a ser tratado como "sem bônus" em 05/10/2026 (e recebeu R$600 em
+// 07/2026 e 08/2026, já enviados à Omie, contando só as placas próprias); o cliente corrigiu em
+// 06/10/2026: ele recebe, com a equipe somada.
 export const LIDERES_DE_EQUIPE: Readonly<Record<number, number>> = {
   296: 24, // Lara — Equipe Alfa
+  19: 7, // Marcos Aurélio Vieira Cabral — equipe "Marcos Cabral"
+  9: 4, // Sanderlan Martins Gomes — equipe "Master"
 }
 
-// Consultores que NÃO recebem o bônus por nível em R$ (o título de gestão continua sendo exibido).
-// Confirmado pelo Samuel em 05/10/2026: Marcos Cabral (#19) não recebe esse bônus. Atenção: nos
-// meses 07/2026 e 08/2026 o #19 recebeu R$600 por mês desse bônus (já enviados à Omie) — os dois
-// meses foram gerados antes desta regra existir.
-export const CONSULTORES_SEM_BONUS_NIVEL: readonly number[] = [19]
 // Equipes inteiras sem o bônus por nível em R$. Confirmado pelo Samuel em 05/10/2026: nenhum
 // consultor da equipe "Marcos Cabral - Senador Canedo" (cod_equipe 13, a mesma de
 // COD_EQUIPE_SENADOR_CANEDO em comissao-gerencial.ts) recebe esse bônus. A equipe é a do Ileva no
 // momento da geração. Em set/2026 o #261 e o #317 (equipe 13) chegaram a ser gerados com R$600
-// antes desta regra — foram regerados sem o bônus; nunca houve envio à Omie com ele.
+// antes desta regra — foram regerados sem o bônus; nunca houve envio à Omie com ele. Reconfirmado
+// pelo cliente em 06/10/2026 ("as demais mantêm como está").
 export const EQUIPES_SEM_BONUS_NIVEL: readonly number[] = [13]
 
 export interface BonusNivel {
-  // Só presente quando o consultor está em CONSULTORES_SEM_BONUS_NIVEL: valor fica R$0.
+  // Só presente quando o consultor é de uma equipe em EQUIPES_SEM_BONUS_NIVEL: valor fica R$0.
   semBonus?: boolean
   // Quantidade usada pra achar o patamar: as placas da equipe inteira quando `baseEquipe`, senão
   // as individuais.

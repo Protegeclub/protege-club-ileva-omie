@@ -53,7 +53,7 @@ export default async function PlanoCarreiraPage({
   const bonusNivelSalvo = linhaPropria.detalhe?.bonusNivel
   const qtdPlacasNivel = bonusNivelSalvo?.qtdPlacasAtivadas ?? qtdPlacas
   const baseEquipe = bonusNivelSalvo?.baseEquipe === true
-  // Consultor que não recebe o bônus por patamar em R$ (ver CONSULTORES_SEM_BONUS_NIVEL).
+  // Consultor que não recebe o bônus por patamar em R$ (ver EQUIPES_SEM_BONUS_NIVEL).
   const semBonusNivel = bonusNivelSalvo?.semBonus === true
   const inadimplentes = linhaPropria.detalhe?.inadimplentes ?? []
   const totalRecorrenciaEstimada = linhaPropria.detalhe?.totalRecorrenciaEstimadaInadimplentes ?? 0

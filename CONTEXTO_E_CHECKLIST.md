@@ -1634,15 +1634,18 @@ sistema.
     **R$600**, nível **Líder Júnior**. Em ago/2026: 9 (abaixo de 15, sem bônus).
   - **Limitação operacional (igual ao Total Equipe e à comissão do Thiago)**: o total da equipe só
     soma colegas que **já têm apuração gerada** no mês — **gerar a da Lara por último**.
-  - **Escopo confirmado pelo Samuel (05/10/2026)**: por enquanto a regra de equipe vale **só para a
-    Lara**. O Marcos Cabral (#19, equipe 7) **não** recebe o bônus por equipe. Se isso mudar, é só
-    acrescentar o consultor em `LIDERES_DE_EQUIPE`.
-  - **#19 (Marcos Cabral) não recebe bônus por nível (05/10/2026)**: `CONSULTORES_SEM_BONUS_NIVEL`
-    em `bonus-nivel.ts` (hoje `[19]`); `gerar.ts` grava `valor 0`, `patamarAtingido null` e
-    `semBonus true` em `detalhe.bonusNivel`; a página Plano de Carreira mostra "não se aplica ao
-    seu perfil". O título de gestão continua sendo exibido. **Achado**: em 07/2026 e 08/2026 o
-    #19 recebeu **R$600/mês desse bônus (R$1.200 no total), já enviados à Omie** (títulos de
-    R$13.908,10 e R$13.112,02) — a decisão sobre esse valor pago a mais é do Samuel/cliente.
+  - **CORREÇÃO DO CLIENTE (06/10/2026) — substitui as duas notas de 05/10 sobre o #19**: os
+    consultores **#19 (Marcos Aurélio Vieira Cabral, equipe "Marcos Cabral", `cod_equipe` 7)** e
+    **#9 (Sanderlan Martins Gomes, equipe "Master", `cod_equipe` 4)** são líderes e **recebem o
+    bônus por nível** contando as placas ativadas deles + as da equipe, como a Lara. Entraram em
+    `LIDERES_DE_EQUIPE` (`296→24`, `19→7`, `9→4`); a exceção `CONSULTORES_SEM_BONUS_NIVEL` do #19
+    foi removida. Os demais consultores continuam como estavam (inclusive a equipe
+    "Marcos Cabral - Senador Canedo", abaixo). Conferido com dado real em set/2026: #9 = 11
+    próprias + 4 colegas = 15 → R$600; #19 = 20 + 2 = 22 → R$600; #296 = 13 + 5 = 18 → R$600.
+    **Atenção**: nos meses 07/2026 e 08/2026 o #19 recebeu R$600/mês desse bônus (já enviados à
+    Omie) contando só as placas próprias; não foi recalculado retroativamente com a equipe somada
+    — decisão do Samuel/cliente. Como o total da equipe só soma quem já tem apuração gerada, gerar
+    os líderes (#9, #19, #296) por último; em set/2026 a equipe 7 tinha 38 apurações geradas.
   - **Equipe "Marcos Cabral - Senador Canedo" (`cod_equipe` 13) inteira sem bônus por nível
     (05/10/2026)**: `EQUIPES_SEM_BONUS_NIVEL` em `bonus-nivel.ts` (hoje `[13]`), checada em
     `gerar.ts` contra a equipe do Ileva no momento da geração (mesma flag `semBonus`). Dos 15
