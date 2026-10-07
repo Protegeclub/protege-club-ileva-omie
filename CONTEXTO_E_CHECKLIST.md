@@ -1642,10 +1642,10 @@ sistema.
     foi removida. Os demais consultores continuam como estavam (inclusive a equipe
     "Marcos Cabral - Senador Canedo", abaixo). Conferido com dado real em set/2026: #9 = 11
     próprias + 4 colegas = 15 → R$600; #19 = 20 + 2 = 22 → R$600; #296 = 13 + 5 = 18 → R$600.
-    **Atenção**: nos meses 07/2026 e 08/2026 o #19 recebeu R$600/mês desse bônus (já enviados à
-    Omie) contando só as placas próprias; não foi recalculado retroativamente com a equipe somada
-    — decisão do Samuel/cliente. Como o total da equipe só soma quem já tem apuração gerada, gerar
-    os líderes (#9, #19, #296) por último; em set/2026 a equipe 7 tinha 38 apurações geradas.
+    **Meses anteriores (esclarecido pelo Samuel em 06/10/2026)**: o #19 recebeu R$600/mês de bônus
+    de nível em 07/2026 e 08/2026 (já enviados à Omie) e isso estava **correto** — ele deveria ter
+    recebido e recebeu. Nada a corrigir nem recalcular retroativamente. Como o total da equipe só
+    soma quem já tem apuração gerada, gerar os líderes (#9, #19, #296) por último; em set/2026 a equipe 7 tinha 38 apurações geradas.
   - **Equipe "Marcos Cabral - Senador Canedo" (`cod_equipe` 13) inteira sem bônus por nível
     (05/10/2026)**: `EQUIPES_SEM_BONUS_NIVEL` em `bonus-nivel.ts` (hoje `[13]`), checada em
     `gerar.ts` contra a equipe do Ileva no momento da geração (mesma flag `semBonus`). Dos 15
