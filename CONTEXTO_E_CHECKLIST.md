@@ -1529,6 +1529,13 @@ sistema.
   - **Estado em 29/08/2026** (verificado no Supabase): 58 consultores já vinculados a um
     fornecedor da Omie, só **9 com chave PIX cadastrada** — os outros ~49 ficam bloqueados de
     receber via Omie até a chave ser preenchida.
+  - **Obrigatoriedade removida em 15/10/2026 (pedido do cliente)**: a chave PIX passou a ser
+    **opcional**. Com chave, o título continua saindo como transferência Pix (igual antes); sem
+    chave, o botão "Enviar" fica liberado e o título vai sem `cnab_integracao_bancaria` (mesmo
+    payload de antes de 15/08/2026) — o financeiro completa a forma de pagamento direto na Omie.
+    A tela mostra "Sem chave PIX (opcional)" na linha e um aviso âmbar no painel de envio. Travas
+    removidas em `gestor/omie/actions.ts` (servidor) e `tabela-omie.tsx` (botão). Os ~49
+    consultores sem chave deixaram de estar bloqueados.
 
 ### 6.31 Omie: estorno de lançamento e troca de vínculo de fornecedor (15-18/08/2026)
 - [x] **Estornar**: novo botão (confirmação em 2 passos) que exclui o título já criado no Omie

@@ -279,9 +279,8 @@ export async function enviarContaPagarAction(
   if (!config?.codigo_categoria || !config?.codigo_conta_corrente) {
     return { ok: false, erro: 'Configure a categoria e a conta corrente do Omie antes de enviar.' }
   }
-  if (!vinculo.chave_pix) {
-    return { ok: false, erro: 'Defina a chave PIX do consultor antes de enviar.' }
-  }
+  // Chave PIX é opcional (pedido do cliente, 15/10/2026 — antes era obrigatória, ver 15/08/2026):
+  // sem ela o título sai sem forma de pagamento e o financeiro completa direto na Omie.
   if (!apuracao) {
     return { ok: false, erro: 'Apuração não encontrada.' }
   }
@@ -333,7 +332,7 @@ export async function enviarContaPagarAction(
       idContaCorrente: config.codigo_conta_corrente,
       criadoPor: auth.userId,
       anexo,
-      chavePix: vinculo.chave_pix,
+      chavePix: vinculo.chave_pix ?? undefined,
     })
     revalidatePath('/gestor/omie')
     return { ok: true }

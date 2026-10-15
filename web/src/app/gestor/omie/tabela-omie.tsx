@@ -248,7 +248,8 @@ function ConfiguracaoOmieCard({
 
 // Chave PIX do consultor — pedido do cliente (15/08/2026): preenche a forma de pagamento do
 // título no Omie (transferência via chave Pix). Guardada uma vez junto do vínculo, editável a
-// qualquer momento (não precisa reabrir "Enviar" pra trocar).
+// qualquer momento (não precisa reabrir "Enviar" pra trocar). Opcional desde 15/10/2026 (pedido
+// do cliente): sem ela o envio continua liberado, o título só sai sem forma de pagamento.
 function EditorChavePix({
   chavePix,
   onSalvar,
@@ -329,7 +330,7 @@ function EditorChavePix({
           </button>
         )}
       </div>
-      {!chavePix && !erro && <p className="text-[11px] text-amber-600">Chave PIX pendente</p>}
+      {!chavePix && !erro && <p className="text-[11px] text-slate-400">Sem chave PIX (opcional)</p>}
       {erro && <p className="text-[11px] text-red-600">{erro}</p>}
     </div>
   )
@@ -557,15 +558,13 @@ function LinhaConsultorOmie({
             type="button"
             variante="secundaria"
             tamanho="sm"
-            disabled={!linha.vinculo || !configurado || !chavePix}
+            disabled={!linha.vinculo || !configurado}
             title={
               !linha.vinculo
                 ? 'Confirme o vínculo primeiro'
-                : !chavePix
-                  ? 'Defina a chave PIX do consultor primeiro'
-                  : !configurado
-                    ? 'Configure categoria/conta corrente primeiro'
-                    : ''
+                : !configurado
+                  ? 'Configure categoria/conta corrente primeiro'
+                  : ''
             }
             onClick={() => setEnviarAberto(true)}
           >
@@ -580,6 +579,9 @@ function LinhaConsultorOmie({
               onChange={(e) => setVencimento(e.target.value)}
               className="h-8 w-full rounded-md border border-slate-300 px-2 text-xs focus-visible:border-brand-blue focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-blue"
             />
+            {!chavePix && (
+              <p className="text-[11px] text-amber-600">Sem chave PIX: o título vai sem forma de pagamento.</p>
+            )}
             {erroEnvio && <p className="text-xs text-red-600">{erroEnvio}</p>}
             <div className="flex gap-1.5">
               <Botao type="button" variante="destaque" tamanho="sm" disabled={enviando} onClick={confirmarEnvio}>
