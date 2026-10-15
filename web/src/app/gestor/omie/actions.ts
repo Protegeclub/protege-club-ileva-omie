@@ -23,8 +23,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 // Último dia do mês apurado, formato DD/MM/AAAA (padrão Omie) — pedido do cliente (10/08/2026):
 // a "Data de Emissão" no Omie deve ser sempre essa data, não o dia em que o Gestor efetivamente
-// clica em enviar. Mesmo truque de "dia 0 do mês seguinte" já usado em lib/apuracao/mensal.ts
-// (intervaloMes).
+// clica em enviar. A "Data de Registro" usa a mesma data (pedido do cliente, 15/10/2026). Mesmo
+// truque de "dia 0 do mês seguinte" já usado em lib/apuracao/mensal.ts (intervaloMes).
 function calcularUltimoDiaMesBr(ano: number, mes: number): string {
   const data = new Date(ano, mes, 0)
   const dd = String(data.getDate()).padStart(2, '0')
@@ -320,6 +320,8 @@ export async function enviarContaPagarAction(
     console.error('Falha ao gerar PDF pra anexar ao título do Omie:', e)
   }
 
+  const ultimoDiaMesApurado = calcularUltimoDiaMesBr(apuracao.ano, apuracao.mes)
+
   try {
     await enviarContaPagar({
       apuracaoId,
@@ -327,7 +329,8 @@ export async function enviarContaPagarAction(
       codigoClienteOmie: vinculo.codigo_cliente_omie,
       valor,
       dataVencimento: dataVencimentoBr,
-      dataEmissao: calcularUltimoDiaMesBr(apuracao.ano, apuracao.mes),
+      dataEmissao: ultimoDiaMesApurado,
+      dataRegistro: ultimoDiaMesApurado,
       codigoCategoria: config.codigo_categoria,
       idContaCorrente: config.codigo_conta_corrente,
       criadoPor: auth.userId,

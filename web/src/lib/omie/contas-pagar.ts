@@ -8,6 +8,7 @@ export interface EnviarContaPagarParams {
   valor: number
   dataVencimento: string // formato DD/MM/AAAA (padrão Omie)
   dataEmissao?: string // último dia do mês apurado — ver actions.ts (calcularUltimoDiaMes)
+  dataRegistro?: string // idem — "Data de Registro" no Omie (ver lib/omie/client.ts)
   codigoCategoria: string
   idContaCorrente: number
   criadoPor: string
@@ -71,6 +72,7 @@ export async function enviarContaPagar(p: EnviarContaPagarParams): Promise<{
       valor: p.valor,
       dataVencimento: p.dataVencimento,
       dataEmissao: p.dataEmissao,
+      dataRegistro: p.dataRegistro,
       codigoCategoria: p.codigoCategoria,
       idContaCorrente: p.idContaCorrente,
       codigoLancamentoIntegracao: codigoIntegracao,

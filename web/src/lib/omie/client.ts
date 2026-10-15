@@ -150,6 +150,9 @@ export interface IncluirContaPagarParams {
   dataEmissao?: string // "Data de Emissão" — pedido do cliente (10/08/2026): sempre o último dia
   // do mês apurado, não a data em que o Gestor efetivamente clica em enviar. Confirmado na
   // documentação oficial da Omie que esse campo existe em IncluirContaPagar, formato DD/MM/AAAA.
+  dataRegistro?: string // "Data de Registro" (campo `data_entrada` na API — o nome da tela é
+  // outro, conferido na documentação oficial em 15/10/2026). Pedido do cliente (15/10/2026):
+  // mesma data da Emissão; sem ela a Omie grava o dia do envio.
   dataPrevisao?: string // "Data da Previsão de Pagamento" — campo obrigatório na Omie; sem
   // negociação de prazo próprio, usamos a mesma data do vencimento (ver chamador).
   codigoCategoria: string
@@ -187,6 +190,7 @@ export async function incluirContaPagar(p: IncluirContaPagarParams): Promise<Inc
         codigo_cliente_fornecedor: p.codigoClienteOmie,
         data_vencimento: p.dataVencimento,
         ...(p.dataEmissao ? { data_emissao: p.dataEmissao } : {}),
+        ...(p.dataRegistro ? { data_entrada: p.dataRegistro } : {}),
         data_previsao: p.dataPrevisao ?? p.dataVencimento,
         valor_documento: p.valor,
         codigo_categoria: p.codigoCategoria,

@@ -1495,6 +1495,11 @@ sistema.
       mês apurado (`calcularUltimoDiaMesBr`), não o dia em que o Gestor efetivamente clica em
       enviar. Falha ao anexar **não impede o pagamento** — só fica registrada em
       `anexo_status`/`anexo_erro` (migration `0011_omie_anexo.sql`) pra auditoria.
+  - **Data de Registro (15/10/2026, pedido do cliente)**: também passa a ser o último dia do mês
+    apurado (ex.: apuração de 09/2026 → 30/09/2026). Na API da Omie esse campo se chama
+    `data_entrada` (conferido na documentação oficial); sem ele a Omie gravava o dia do envio
+    (print do cliente: Emissão 30/09, Registro 06/10). Vale só para envios novos — títulos já
+    criados continuam com a data antiga.
   - **Dois bugs reais corrigidos (achados com dado real de produção, não suposição)**:
     `cCodIntAnexo` tem limite de 20 caracteres na Omie — o identificador original
     (`${codigo_integracao}-anexo`, com o UUID da apuração) tinha 51 e sempre falhava; corrigido
