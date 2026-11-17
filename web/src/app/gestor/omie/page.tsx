@@ -31,6 +31,7 @@ export default async function GestorOmiePage({
             consultor por vez, depois de você confirmar o vínculo e conferir o valor.
           </p>
         </div>
+        <Botao href="/gestor/omie/pagos" variante="secundaria">Relatório de consultores pagos</Botao>
       </div>
 
       <Cartao className="flex flex-wrap items-end gap-3 p-4">
