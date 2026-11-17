@@ -45,6 +45,8 @@ export async function listarVeiculos(
     possui_rastreador?: 0 | 1 // atenção: inteiro na query, string "Sim"/"Não" só na resposta
     mostrar_beneficios?: 0 | 1
     cod_situacao?: number
+    // Inclui os veículos ANTERIORES de troca de titularidade (ocultos por padrão).
+    mostrar_troca_titularidade?: boolean
   }
 ): Promise<{ total_encontrados: number; veiculos: Veiculo[] }> {
   return ilevaGet('/veiculo/listar', { ...params })

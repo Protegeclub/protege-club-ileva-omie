@@ -53,6 +53,9 @@ export interface Veiculo {
   dt_contrato: string
   nome_plano: string
   situacao: string
+  // Só vem "Sim" no veículo ANTERIOR de uma troca de titularidade (e só quando a listagem pede
+  // `mostrar_troca_titularidade`). O veículo NOVO (o do novo titular) não traz marca nenhuma.
+  veiculo_anterior_troca_titularidade?: 'Sim' | 'Não'
   beneficios?: BeneficioVeiculo[]
 }
 
@@ -124,6 +127,10 @@ export const COD_BENEFICIO_ASSISTENCIA_PROFISSIONAL = [65, 66, 110, 121] as cons
 // instalação do rastreador é um valor fixo (R$100) por veículo com `possui_rastreador = "Sim"`
 // cujo `dt_contrato` cai dentro do mês/ano apurado — não é recorrente, só no mês da adesão.
 export const VALOR_DESCONTO_RASTREADOR = 100
+
+// `cod_situacao` do Ileva para "Veiculo Transferido" (tipo INATIVO) — a situação em que o veículo
+// antigo fica depois de uma troca de titularidade. Confirmado em produção (17/11/2026).
+export const COD_SITUACAO_VEICULO_TRANSFERIDO = 2
 
 export interface ApuracaoConsultorMes {
   cod_consultor: number

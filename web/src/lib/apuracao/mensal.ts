@@ -1,5 +1,9 @@
 import { buscarCobranca, buscarConsultorSemCache, listarCobrancasPorVeiculo, listarVeiculos } from '@/lib/ileva/api'
-import { COD_BENEFICIO_ASSISTENCIA_PROFISSIONAL, VALOR_DESCONTO_RASTREADOR } from '@/types/domain'
+import {
+  COD_BENEFICIO_ASSISTENCIA_PROFISSIONAL,
+  COD_SITUACAO_VEICULO_TRANSFERIDO,
+  VALOR_DESCONTO_RASTREADOR,
+} from '@/types/domain'
 import type { Veiculo } from '@/types/domain'
 
 export interface AdesaoItem {
@@ -166,6 +170,43 @@ function temBeneficioRastreador(veiculo: Veiculo): boolean {
   return (veiculo.beneficios ?? []).some((b) => b.beneficio_nome.toLowerCase().includes('rastreamento'))
 }
 
+// Troca de titularidade: o Ileva cria um veículo NOVO (outro cod_veiculo/associado/dt_contrato)
+// pro novo titular e deixa o antigo como "Veiculo Transferido" (veiculo_anterior_troca_titularidade
+// = "Sim"). O benefício de rastreamento é copiado pro novo, mas o rastreador já está instalado no
+// carro — então não há instalação nova a cobrar nem a descontar do consultor (pedido do cliente,
+// 17/11/2026). O veículo novo não traz nenhuma marca de "veio de troca", então o único jeito de
+// reconhecer é achar o antigo (mesma placa). O antigo pode estar no cadastro de OUTRO consultor,
+// por isso a busca é global (uma página só: ~150 veículos em 17/11/2026), não por consultor.
+//
+// Só conta como troca quando o veículo antigo TINHA rastreador: se o antigo não tinha e o novo
+// titular contratou rastreamento, é instalação nova e continua sendo descontada.
+// '0KM' não é placa real (todo zero quilômetro vem assim) — nunca serve de chave de comparação.
+async function listarTrocasTitularidadeComRastreador(): Promise<Map<string, string[]>> {
+  const tamanhoPagina = 200
+  let inicio = 0
+  // placa -> dt_contrato de cada veículo antigo (com rastreador) daquela placa
+  const porPlaca = new Map<string, string[]>()
+
+  while (true) {
+    const { total_encontrados, veiculos } = await listarVeiculos({
+      cod_situacao: COD_SITUACAO_VEICULO_TRANSFERIDO,
+      mostrar_troca_titularidade: true,
+      mostrar_beneficios: 1,
+      inicio_paginacao: inicio,
+      quantidade_por_pagina: tamanhoPagina,
+    })
+    for (const v of veiculos) {
+      if (v.veiculo_anterior_troca_titularidade !== 'Sim') continue
+      if (!v.placa || v.placa === '0KM' || !temBeneficioRastreador(v)) continue
+      porPlaca.set(v.placa, [...(porPlaca.get(v.placa) ?? []), v.dt_contrato])
+    }
+    inicio += tamanhoPagina
+    if (inicio >= total_encontrados || veiculos.length === 0) break
+  }
+
+  return porPlaca
+}
+
 /**
  * Apura adesão, recorrência, desconto de rastreador e inadimplência de um consultor num mês,
  * direto na API do Ileva.
@@ -203,8 +244,15 @@ export async function apurarConsultorMes(
     .filter(temBeneficioRastreador)
     .map((v) => ({ cod_veiculo: v.cod_veiculo, placa: v.placa, associado: v.associado }))
 
-  const descontosRastreador: DescontoRastreadorItem[] = veiculos
-    .filter((v) => temBeneficioRastreador(v) && v.dt_contrato >= de && v.dt_contrato <= ate)
+  const candidatosDesconto = veiculos.filter(
+    (v) => temBeneficioRastreador(v) && v.dt_contrato >= de && v.dt_contrato <= ate
+  )
+  // Só consulta o Ileva se houver candidato — consultor sem rastreador novo no mês não paga a chamada.
+  const trocasComRastreador =
+    candidatosDesconto.length > 0 ? await listarTrocasTitularidadeComRastreador() : new Map<string, string[]>()
+
+  const descontosRastreador: DescontoRastreadorItem[] = candidatosDesconto
+    .filter((v) => !(trocasComRastreador.get(v.placa) ?? []).some((dtAnterior) => dtAnterior <= v.dt_contrato))
     .map((v) => ({
       cod_veiculo: v.cod_veiculo,
       placa: v.placa,
